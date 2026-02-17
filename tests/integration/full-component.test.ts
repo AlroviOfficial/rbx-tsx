@@ -69,12 +69,12 @@ describe("Card component (full example from spec)", () => {
 
   test("maps className to React.Tag", () => {
     const result = compileFixture("Card.tsx");
-    expect(result.luau).toContain('[React["Tag"]] = "card"');
+    expect(result.luau).toContain("[React.Tag] = \"card\"");
   });
 
   test("maps onClick to React.Event.Activated", () => {
     const result = compileFixture("Card.tsx");
-    expect(result.luau).toContain('React.Event["Activated"]');
+    expect(result.luau).toContain("React.Event.Activated");
   });
 
   test("returns Card at end", () => {

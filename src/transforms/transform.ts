@@ -8,7 +8,6 @@ import type { TransformContext } from "./transform-context.ts";
 import { transformImport, processExportDeclaration, generateModuleReturn } from "./module-transform.ts";
 import { transformStatement, transformStatements } from "./statement-transform.ts";
 import { transformExpression } from "./expression-transform.ts";
-import { extractTextFromChildren } from "./jsx-transform.ts";
 
 /**
  * Transform a parsed TypeScript source file into Luau statements.

@@ -85,6 +85,14 @@ function transformJSXElement(
   // Process children
   const childEntries = processJSXChildren(children, robloxClass, ctx);
 
+  // For text-capable elements, extract text children as the Text property
+  if (childEntries.length === 0 && robloxClass && TEXT_ELEMENTS.has(robloxClass) && children.length > 0) {
+    const textExpr = extractTextFromChildren(children, ctx);
+    if (textExpr) {
+      propsEntries.push({ key: str("Text"), value: textExpr });
+    }
+  }
+
   // Build the React.createElement call
   let propsArg: LuauExpression;
 
@@ -234,7 +242,7 @@ function processAttributes(
     // className → [React.Tag]
     if (propName === "className") {
       propsEntries.push({
-        key: bracketIndex(ident("React"), str("Tag")),
+        key: index(ident("React"), "Tag"),
         value: propValue,
       });
       continue;
@@ -347,9 +355,9 @@ function transformEventProp(
   }
 
   // Build the Roblox event key: [React.Event.X] or [React.Change.X]
-  const eventKey = bracketIndex(
+  const eventKey = index(
     index(ident("React"), mapping.kind),
-    str(mapping.name),
+    mapping.name,
   );
 
   // Special handling for onSubmit: wrap in enterPressed check
@@ -462,30 +470,16 @@ function rewriteEventTargetValue(
 
 function wrapEventHandler(
   value: LuauExpression,
-  attr: ts.JsxAttribute,
+  _attr: ts.JsxAttribute,
   mapping: typeof EVENT_MAP[string],
-  ctx: TransformContext,
+  _ctx: TransformContext,
 ): LuauExpression {
-  // If the handler is already a function expression with the right params, adjust
   if (!mapping.params) return value;
 
-  // For simple callbacks like onClick={handleClick}, wrap in Roblox signature
+  // Direct function reference: onClick={increment} → pass through as-is
+  // Wrapping is only needed for arrow functions with explicit event parameter remapping
   if (value.type === "identifier") {
-    // onClick={handleClick} → function(_rbx, ...) handleClick(...) end
-    const robloxParams = mapping.params.robloxParams.map((n) => ({ name: n }));
-    const eventArgIdx = mapping.params.eventArgIndex;
-
-    if (eventArgIdx >= 0 && eventArgIdx < robloxParams.length) {
-      return funcExpr(robloxParams, [{
-        type: "expression-statement",
-        expr: call(value, [ident(robloxParams[eventArgIdx]!.name)]),
-      }]);
-    }
-
-    return funcExpr(robloxParams, [{
-      type: "expression-statement",
-      expr: call(value, []),
-    }]);
+    return value;
   }
 
   // For inline function expressions, they're already transformed
@@ -517,7 +511,7 @@ function processJSXChildren(
   // Filter out whitespace-only text
   const meaningful = children.filter((child) => {
     if (ts.isJsxText(child)) {
-      return child.text.trim().length > 0;
+      return normalizeJSXText(child.text).length > 0;
     }
     return true;
   });
@@ -527,10 +521,11 @@ function processJSXChildren(
   const elementChildren: { key: LuauExpression | null; value: LuauExpression }[] = [];
   let hasText = false;
   let hasElements = false;
+  const usedChildNames = new Map<string, number>();
 
   for (const child of meaningful) {
     if (ts.isJsxText(child)) {
-      const text = child.text.trim();
+      const text = normalizeJSXText(child.text);
       if (text) {
         textParts.push(str(text));
         hasText = true;
@@ -565,7 +560,14 @@ function processJSXChildren(
     } else if (ts.isJsxElement(child) || ts.isJsxSelfClosingElement(child)) {
       const key = extractKeyFromElement(child);
       const childExpr = transformJSX(child, ctx);
-      const childName = getChildName(child, elementChildren.length);
+      let childName = getChildName(child, elementChildren.length);
+      if (!key) {
+        const nameCount = (usedChildNames.get(childName) ?? 0) + 1;
+        usedChildNames.set(childName, nameCount);
+        if (nameCount > 1) {
+          childName = `${childName}${nameCount}`;
+        }
+      }
       elementChildren.push({
         key: key ? transformExpression(key, ctx) : str(childName),
         value: childExpr,
@@ -635,7 +637,7 @@ export function extractTextFromChildren(
   ctx: TransformContext,
 ): LuauExpression | null {
   const meaningful = children.filter((child) => {
-    if (ts.isJsxText(child)) return child.text.trim().length > 0;
+    if (ts.isJsxText(child)) return normalizeJSXText(child.text).length > 0;
     return true;
   });
 
@@ -645,7 +647,7 @@ export function extractTextFromChildren(
   const parts: LuauExpression[] = [];
   for (const child of meaningful) {
     if (ts.isJsxText(child)) {
-      const text = child.text.trim();
+      const text = normalizeJSXText(child.text);
       if (text) parts.push(str(text));
     } else if (ts.isJsxExpression(child) && child.expression) {
       if (isTextExpression(child.expression)) {
@@ -803,6 +805,22 @@ function isConditionalJSX(expr: ts.Expression): boolean {
   return false;
 }
 
+/**
+ * Normalize JSX text: collapse indentation and newlines while preserving
+ * meaningful internal/trailing spaces (e.g., "Count: " before an expression).
+ */
+function normalizeJSXText(text: string): string {
+  const lines = text.split(/\r?\n/);
+  const processed: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i]!.replace(/\t/g, " ");
+    if (i > 0) line = line.trimStart();
+    if (i < lines.length - 1) line = line.trimEnd();
+    if (line) processed.push(line);
+  }
+  return processed.join(" ");
+}
+
 function wrapToString(expr: LuauExpression): LuauExpression {
   // If already a string literal, no need to wrap
   if (expr.type === "string") return expr;
@@ -845,9 +863,29 @@ function extractKeyFromElement(child: ts.JsxElement | ts.JsxSelfClosingElement):
 
 function getChildName(child: ts.JsxElement | ts.JsxSelfClosingElement, idx: number): string {
   const tag = ts.isJsxElement(child) ? child.openingElement.tagName : child.tagName;
+  const attrs = ts.isJsxElement(child) ? child.openingElement.attributes : child.attributes;
+
   if (ts.isIdentifier(tag)) {
     const name = tag.text;
     const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+
+    // Try to derive a unique name from className
+    for (const attr of attrs.properties) {
+      if (
+        ts.isJsxAttribute(attr) &&
+        attr.name.text === "className" &&
+        attr.initializer &&
+        ts.isStringLiteral(attr.initializer)
+      ) {
+        const className = attr.initializer.text;
+        const pascalClassName = className
+          .split("-")
+          .map((s: string) => s.charAt(0).toUpperCase() + s.slice(1))
+          .join("");
+        return `${pascalClassName}${capitalized}`;
+      }
+    }
+
     return capitalized;
   }
   return `Child${idx + 1}`;
