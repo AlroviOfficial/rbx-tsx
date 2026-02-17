@@ -280,8 +280,8 @@ function processAttributes(
       continue;
     }
 
-    // Event handlers
-    if (propName.startsWith("on")) {
+    // Event handlers (only for native elements, not components)
+    if (propName.startsWith("on") && !isComponent) {
       const eventEntry = transformEventProp(propName, propValue, attr, robloxClass, ctx);
       if (eventEntry) {
         propsEntries.push(eventEntry);
