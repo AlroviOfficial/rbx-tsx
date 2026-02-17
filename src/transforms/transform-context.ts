@@ -1,3 +1,4 @@
+import ts from "typescript";
 import type { WarningCollector, WarningCode } from "../warnings.ts";
 import type { LuauStatement } from "../ast/luau-ast.ts";
 
@@ -63,6 +64,9 @@ export class TransformContext {
   /** CSS module imports: localName → style require path */
   readonly cssModuleImports = new Map<string, string>();
 
+  /** Source file reference for line/column extraction */
+  sourceFile?: ts.SourceFile;
+
   constructor(warnings: WarningCollector, options: CompileOptions) {
     this.warnings = warnings;
     this.options = options;
@@ -77,6 +81,19 @@ export class TransformContext {
       line,
       column,
     });
+  }
+
+  /** Warn with automatic line/column extraction from a TS node */
+  warnAtNode(code: WarningCode, message: string, node: ts.Node): void {
+    let line: number | undefined;
+    let column: number | undefined;
+    if (this.sourceFile) {
+      const pos = node.getStart(this.sourceFile);
+      const lineAndChar = ts.getLineAndCharacterOfPosition(this.sourceFile, pos);
+      line = lineAndChar.line + 1;
+      column = lineAndChar.character + 1;
+    }
+    this.warn(code, message, line, column);
   }
 
   /** Request a Roblox service to be auto-imported */

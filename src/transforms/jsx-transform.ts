@@ -138,7 +138,7 @@ function resolveElementType(
       const robloxClass = HTML_TO_ROBLOX[name];
 
       if (!robloxClass && !ROBLOX_GUI_CLASSES.has(name)) {
-        ctx.warn("unsupported-element", `HTML element '${name}' has no Roblox mapping`);
+        ctx.warnAtNode("unsupported-element", `HTML element '${name}' has no Roblox mapping`, tagName);
         return { elementArg: str(name), robloxClass: name, isComponent: false };
       }
 
@@ -246,21 +246,29 @@ function processAttributes(
       continue;
     }
 
-    // style → inline properties (simplified: pass as-is for components, expand for native)
+    // style → inline properties (expand for native elements, pass through for components)
     if (propName === "style") {
       if (isComponent) {
         propsEntries.push({ key: str("style"), value: propValue });
       } else {
-        // For native elements, inline styles would need expansion
-        // For now, pass through as a table (user can use Roblox props directly)
-        propsEntries.push({ key: str("style"), value: propValue });
+        // For native elements, expand CSS-like properties to Roblox properties
+        if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+          const styleExpr = attr.initializer.expression;
+          if (ts.isObjectLiteralExpression(styleExpr)) {
+            expandInlineStyle(styleExpr, propsEntries, ctx);
+          } else {
+            propsEntries.push({ key: str("style"), value: propValue });
+          }
+        } else {
+          propsEntries.push({ key: str("style"), value: propValue });
+        }
       }
       continue;
     }
 
     // dangerouslySetInnerHTML → warning
     if (propName === "dangerouslySetInnerHTML") {
-      ctx.warn("unsupported-prop", "'dangerouslySetInnerHTML' is not supported");
+      ctx.warnAtNode("unsupported-prop", "'dangerouslySetInnerHTML' is not supported", attr);
       continue;
     }
 
@@ -286,7 +294,7 @@ function processAttributes(
     }
 
     // Unknown prop on native element
-    ctx.warn("unsupported-prop", `Unknown prop '${propName}' on <${robloxClass ?? "unknown"}>`);
+    ctx.warnAtNode("unsupported-prop", `Unknown prop '${propName}' on <${robloxClass ?? "unknown"}>`, attr);
     propsEntries.push({ key: str(propName), value: propValue });
   }
 
@@ -327,14 +335,14 @@ function transformEventProp(
 ): LuauTableEntry | null {
   // Check unsupported events
   if (UNSUPPORTED_EVENTS.has(propName)) {
-    ctx.warn("unsupported-event", `'${propName}' has no Roblox equivalent - skipped`);
+    ctx.warnAtNode("unsupported-event", `'${propName}' has no Roblox equivalent - skipped`, attr);
     return null;
   }
 
   const mapping = EVENT_MAP[propName];
   if (!mapping) {
     // Unknown event — try to pass through
-    ctx.warn("unsupported-event", `Unknown event '${propName}'`);
+    ctx.warnAtNode("unsupported-event", `Unknown event '${propName}'`, attr);
     return null;
   }
 
@@ -395,7 +403,7 @@ function buildOnChangeHandler(
   attr: ts.JsxAttribute,
   ctx: TransformContext,
 ): LuauExpression {
-  ctx.warn("lossy-transform", "'onChange' with e.target.value transformed to rbx.Text");
+  ctx.warnAtNode("lossy-transform", "'onChange' with e.target.value transformed to rbx.Text", attr);
 
   // Detect (e) => setText(e.target.value) pattern
   if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
@@ -432,6 +440,13 @@ function rewriteEventTargetValue(
         const text = arg.getText();
         if (text.includes(".target.value")) {
           return index(ident("rbx"), "Text");
+        }
+        if (text.includes(".target.checked")) {
+          ctx.warnAtNode("lossy-transform", "e.target.checked has no direct Roblox equivalent; using nil", arg);
+          return nil();
+        }
+        if (text.includes(".target.name")) {
+          return index(ident("rbx"), "Name");
         }
         return transformExpression(arg, ctx);
       });
@@ -686,8 +701,25 @@ function transformJSXMap(
   }
 
   // Extract key from the rendered element (if any)
-  // This is complex — for now, use the index as key
-  // The body expression is a React.createElement call; we'd need to peek inside
+  let keyExpr: LuauExpression = ident(indexName); // default: numeric index
+  const callbackBody = (callback as ts.ArrowFunction | ts.FunctionExpression).body;
+  if (!ts.isBlock(callbackBody)) {
+    const bodyNode = callbackBody as ts.Expression;
+    const extractedKey = extractKeyFromJSXBody(bodyNode, ctx);
+    if (extractedKey) {
+      keyExpr = extractedKey;
+    }
+  } else if (ts.isBlock(callbackBody)) {
+    // Check last return statement for key
+    for (const stmt of callbackBody.statements) {
+      if (ts.isReturnStatement(stmt) && stmt.expression) {
+        const extractedKey = extractKeyFromJSXBody(stmt.expression, ctx);
+        if (extractedKey) {
+          keyExpr = extractedKey;
+        }
+      }
+    }
+  }
 
   // Build: local _elements = {} ; for idx, item in arr do _elements[key] = expr end
   // Return as an IIFE
@@ -701,12 +733,45 @@ function transformJSXMap(
       iterators: [arr],
       body: [{
         type: "assignment",
-        target: bracketIndex(ident(tempVar), ident(indexName)),
+        target: bracketIndex(ident(tempVar), keyExpr),
         value: bodyExpr,
       }],
     },
     { type: "return", value: call(index(ident("React"), "createFragment"), [ident(tempVar)]) },
   ]);
+}
+
+// ── Inline style expansion ──
+
+const CSS_TO_ROBLOX_PROP: Record<string, string> = {
+  backgroundColor: "BackgroundColor3",
+  color: "TextColor3",
+  opacity: "BackgroundTransparency",
+  fontSize: "TextSize",
+  visible: "Visible",
+  zIndex: "ZIndex",
+  overflow: "ClipsDescendants",
+};
+
+function expandInlineStyle(
+  styleObj: ts.ObjectLiteralExpression,
+  propsEntries: LuauTableEntry[],
+  ctx: TransformContext,
+): void {
+  for (const prop of styleObj.properties) {
+    if (ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name)) {
+      const cssProp = prop.name.text;
+      const robloxProp = CSS_TO_ROBLOX_PROP[cssProp];
+      if (robloxProp) {
+        propsEntries.push({
+          key: str(robloxProp),
+          value: transformExpression(prop.initializer, ctx),
+        });
+      } else {
+        ctx.warnAtNode("unsupported-prop", `CSS property '${cssProp}' has no Roblox mapping`, prop);
+      }
+    }
+  }
 }
 
 // ── Helper functions ──
@@ -742,6 +807,20 @@ function wrapToString(expr: LuauExpression): LuauExpression {
   // If already a string literal, no need to wrap
   if (expr.type === "string") return expr;
   return call(ident("tostring"), [expr]);
+}
+
+function extractKeyFromJSXBody(
+  expr: ts.Expression,
+  ctx: TransformContext,
+): LuauExpression | null {
+  if (ts.isJsxElement(expr) || ts.isJsxSelfClosingElement(expr)) {
+    const key = extractKeyFromElement(expr);
+    if (key) return transformExpression(key, ctx);
+  }
+  if (ts.isParenthesizedExpression(expr)) {
+    return extractKeyFromJSXBody(expr.expression, ctx);
+  }
+  return null;
 }
 
 function extractKeyFromElement(child: ts.JsxElement | ts.JsxSelfClosingElement): ts.Expression | null {

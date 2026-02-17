@@ -8,6 +8,9 @@ export function transformType(
   node: ts.TypeNode,
   ctx: TransformContext,
 ): string {
+  // Type predicate: x is Type → boolean
+  if (node.kind === ts.SyntaxKind.TypePredicate) return "boolean";
+
   // string
   if (node.kind === ts.SyntaxKind.StringKeyword) return "string";
 
@@ -95,14 +98,20 @@ export function transformType(
     return "any";
   }
 
-  // Conditional type → any
+  // Conditional type: T extends U ? X : Y → union of X | Y
   if (ts.isConditionalTypeNode(node)) {
-    return "any";
+    const trueType = transformType(node.trueType, ctx);
+    const falseType = transformType(node.falseType, ctx);
+    if (trueType === falseType) return trueType;
+    return `${trueType} | ${falseType}`;
   }
 
-  // Mapped type → any
+  // Mapped type: { [K in T]: V } → { [T]: V }
   if (ts.isMappedTypeNode(node)) {
-    return "any";
+    const constraint = node.typeParameter.constraint;
+    const keyType = constraint ? transformType(constraint, ctx) : "string";
+    const valueType = node.type ? transformType(node.type, ctx) : "any";
+    return `{ [${keyType}]: ${valueType} }`;
   }
 
   // Template literal type → string

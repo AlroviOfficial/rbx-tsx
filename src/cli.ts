@@ -131,6 +131,25 @@ function handleCompile(
       }
     }
 
+    // CSS compilation (--css flag)
+    if (opts.css) {
+      const cssFiles = findCSSFiles(absInput);
+      if (cssFiles.length > 0) {
+        for (const cssFile of cssFiles) {
+          const relCssPath = relative(absInput, cssFile);
+          const cssOutputPath = join(outputDir, relCssPath.replace(/\.css$/, ".style.luau"));
+          try {
+            const { execSync } = require("child_process");
+            mkdirSync(dirname(cssOutputPath), { recursive: true });
+            execSync(`rbx-css "${cssFile}" -o "${cssOutputPath}"`, { stdio: "pipe" });
+            console.log(`CSS: ${relCssPath} -> ${relative(process.cwd(), cssOutputPath)}`);
+          } catch {
+            console.warn(`Warning: Could not compile ${relCssPath}. Is rbx-css installed?`);
+          }
+        }
+      }
+    }
+
     if (hasErrors && opts.strict) {
       process.exit(1);
     }
@@ -222,6 +241,25 @@ function handleCheck(
   }
 
   console.log("Check passed.");
+}
+
+function findCSSFiles(dir: string): string[] {
+  const files: string[] = [];
+  try {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "node_modules" || entry.name === ".git") continue;
+        files.push(...findCSSFiles(fullPath));
+      } else if (entry.name.endsWith(".css")) {
+        files.push(fullPath);
+      }
+    }
+  } catch {
+    // Ignore permission errors
+  }
+  return files;
 }
 
 function findSourceFiles(dir: string): string[] {

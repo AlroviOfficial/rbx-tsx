@@ -60,6 +60,8 @@ export interface LuauFunctionDecl {
   params: LuauParam[];
   body: LuauStatement[];
   returnType?: string;
+  sourceLine?: number;
+  sourceFile?: string;
 }
 
 export interface LuauIf {

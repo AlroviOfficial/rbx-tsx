@@ -158,15 +158,22 @@ export function transformExpression(
     return nil();
   }
 
+  // Regular expression literal — unsupported
+  if (ts.isRegularExpressionLiteral(node)) {
+    ctx.warnAtNode("unsupported-syntax", "Regular expressions are not supported in Luau; use string.match patterns instead", node);
+    return raw(`nil --[[ regex not supported ]]`);
+  }
+
   // Tagged template literal — unsupported
   if (ts.isTaggedTemplateExpression(node)) {
-    ctx.warn("unsupported-syntax", "Tagged template literals are not supported");
+    ctx.warnAtNode("unsupported-syntax", "Tagged template literals are not supported", node);
     return raw(`--[[ unsupported: tagged template ]] nil`);
   }
 
   // Await expression
   if (ts.isAwaitExpression(node)) {
-    ctx.warn("complex-async", "Async transform may need manual review");
+    ctx.warnAtNode("complex-async", "Async transform may need manual review", node);
+    ctx.needsPromise = true;
     // Simple transform: await expr → expr:expect()
     const inner = transformExpression(node.expression, ctx);
     return methodCall(inner, "expect", []);
@@ -174,7 +181,7 @@ export function transformExpression(
 
   // Yield — not supported
   if (ts.isYieldExpression(node)) {
-    ctx.warn("unsupported-syntax", "Yield expressions are not supported");
+    ctx.warnAtNode("unsupported-syntax", "Yield expressions are not supported", node);
     return raw("--[[ unsupported: yield ]] nil");
   }
 
@@ -196,7 +203,7 @@ export function transformExpression(
   }
 
   // Fallback
-  ctx.warn("unsupported-syntax", `Unsupported expression kind: ${ts.SyntaxKind[node.kind]}`);
+  ctx.warnAtNode("unsupported-syntax", `Unsupported expression kind: ${ts.SyntaxKind[node.kind]}`, node);
   return raw(`--[[ unsupported: ${ts.SyntaxKind[node.kind]} ]] nil`);
 }
 
@@ -480,6 +487,16 @@ function transformCallExpression(
 ): LuauExpression {
   const args = node.arguments.map((a) => transformExpression(a, ctx));
 
+  // Optional call: a?.()
+  if (node.questionDotToken) {
+    const callee = transformExpression(node.expression, ctx);
+    return ifExpr(
+      binary(callee, "~=", nil()),
+      call(callee, args),
+      nil(),
+    );
+  }
+
   // Special built-in transforms
   if (ts.isPropertyAccessExpression(node.expression)) {
     const special = transformSpecialCallExpression(node, node.expression, args, ctx);
@@ -489,6 +506,12 @@ function transformCallExpression(
   // Simple identifier calls
   if (ts.isIdentifier(node.expression)) {
     const name = node.expression.text;
+
+    // clsx/classnames → joinClasses() transform
+    if (name === "clsx" || name === "classnames") {
+      return transformClsxCall(node, ctx);
+    }
+
     return transformSimpleCallExpression(name, args, ctx);
   }
 
@@ -554,9 +577,45 @@ function transformSimpleCallExpression(
       // Keep require as-is (it's Luau require)
       return call(ident("require"), args);
 
+    case "forwardRef":
+      ctx.needsReact = true;
+      return call(index(ident("React"), "forwardRef"), args);
+
+    case "memo":
+      ctx.needsReact = true;
+      return call(index(ident("React"), "memo"), args);
+
     default:
       return call(ident(name), args);
   }
+}
+
+function transformClsxCall(
+  node: ts.CallExpression,
+  ctx: TransformContext,
+): LuauExpression {
+  ctx.requireHelper("joinClasses");
+  const joinArgs: LuauExpression[] = [];
+
+  for (const arg of node.arguments) {
+    if (ts.isObjectLiteralExpression(arg)) {
+      // {active: isActive} → (isActive and "active" or nil)
+      for (const prop of arg.properties) {
+        if (ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name)) {
+          const className = prop.name.text;
+          const condition = transformExpression(prop.initializer, ctx);
+          joinArgs.push(ifExpr(condition, str(className), nil()));
+        } else if (ts.isShorthandPropertyAssignment(prop)) {
+          const name = prop.name.text;
+          joinArgs.push(ifExpr(ident(name), str(name), nil()));
+        }
+      }
+    } else {
+      joinArgs.push(transformExpression(arg, ctx));
+    }
+  }
+
+  return call(ident("joinClasses"), joinArgs);
 }
 
 function transformSpecialCallExpression(
@@ -606,6 +665,18 @@ function transformSpecialCallExpression(
     if (methodName === "parse") {
       ctx.requireService("HttpService");
       return methodCall(ident("HttpService"), "JSONDecode", args);
+    }
+  }
+
+  // Number.isInteger / Number.isNaN
+  if (objText === "Number") {
+    if (methodName === "isInteger") {
+      ctx.requireHelper("numberIsInteger");
+      return call(ident("_numberIsInteger"), args);
+    }
+    if (methodName === "isNaN") {
+      ctx.requireHelper("numberIsNaN");
+      return call(ident("_numberIsNaN"), args);
     }
   }
 
@@ -920,8 +991,14 @@ function transformPropertyAccess(
     if (propName === "POSITIVE_INFINITY") return index(ident("math"), "huge");
     if (propName === "NEGATIVE_INFINITY") return unary("-", index(ident("math"), "huge"));
     if (propName === "NaN") return binary(num(0), "/", num(0));
-    if (propName === "isInteger") return ident("_numberIsInteger");
-    if (propName === "isNaN") return ident("_numberIsNaN");
+    if (propName === "isInteger") {
+      ctx.requireHelper("numberIsInteger");
+      return ident("_numberIsInteger");
+    }
+    if (propName === "isNaN") {
+      ctx.requireHelper("numberIsNaN");
+      return ident("_numberIsNaN");
+    }
   }
 
   // Array/string .length → #obj
@@ -963,12 +1040,32 @@ function transformElementAccess(
   ctx: TransformContext,
 ): LuauExpression {
   const obj = transformExpression(node.expression, ctx);
-  const idx = transformExpression(node.argumentExpression, ctx);
+  const argExpr = node.argumentExpression;
 
-  // Numeric index: adjust for 1-based indexing
-  // arr[0] → arr[1], arr[i] → arr[i + 1]
-  // But this is tricky — we can't always know if it's an array.
-  // Leave as-is for now and let users handle 0/1 indexing
+  // Optional element access: a?.[b]
+  if (node.questionDotToken) {
+    const idx = transformExpression(argExpr, ctx);
+    return ifExpr(
+      binary(obj, "~=", nil()),
+      bracketIndex(obj, idx),
+      nil(),
+    );
+  }
+
+  // Numeric literal index: arr[0] → arr[1] (0-to-1 based adjustment)
+  if (ts.isNumericLiteral(argExpr)) {
+    const n = Number(argExpr.text);
+    return bracketIndex(obj, num(n + 1));
+  }
+
+  // Variable index (likely numeric): arr[i] → arr[i + 1]
+  if (ts.isIdentifier(argExpr)) {
+    const idx = transformExpression(argExpr, ctx);
+    return bracketIndex(obj, binary(idx, "+", num(1)));
+  }
+
+  // String literal keys and other expressions: no adjustment
+  const idx = transformExpression(argExpr, ctx);
   return bracketIndex(obj, idx);
 }
 
@@ -1151,7 +1248,6 @@ export function emitDestructuringStatements(
       const propName = element.propertyName
         ? (ts.isIdentifier(element.propertyName) ? element.propertyName.text : element.propertyName.getText())
         : (ts.isIdentifier(element.name) ? element.name.getText() : "");
-      const localName = ts.isIdentifier(element.name) ? element.name.getText() : propName;
 
       let value: LuauExpression = index(source, propName);
 
@@ -1161,7 +1257,15 @@ export function emitDestructuringStatements(
         value = ifExpr(binary(value, "~=", nil()), value, defaultVal);
       }
 
-      stmts.push({ type: "local", name: localName, value });
+      // Nested destructuring: { a: { b, c } } = obj
+      if (ts.isObjectBindingPattern(element.name) || ts.isArrayBindingPattern(element.name)) {
+        const tempName = `_dest_${propName}`;
+        stmts.push({ type: "local", name: tempName, value });
+        stmts.push(...emitDestructuringStatements(element.name, ident(tempName), ctx));
+      } else {
+        const localName = ts.isIdentifier(element.name) ? element.name.getText() : propName;
+        stmts.push({ type: "local", name: localName, value });
+      }
     }
 
     // Rest element: { ...rest } = obj
@@ -1196,7 +1300,6 @@ export function emitDestructuringStatements(
       }
       if (element.dotDotDotToken) break;
 
-      const localName = ts.isIdentifier(element.name) ? element.name.getText() : `_${idx}`;
       let value: LuauExpression = bracketIndex(source, num(idx));
 
       if (element.initializer) {
@@ -1204,7 +1307,15 @@ export function emitDestructuringStatements(
         value = ifExpr(binary(value, "~=", nil()), value, defaultVal);
       }
 
-      stmts.push({ type: "local", name: localName, value });
+      // Nested destructuring: [[x, y], z] = matrix
+      if (ts.isObjectBindingPattern(element.name) || ts.isArrayBindingPattern(element.name)) {
+        const tempName = `_dest_${idx}`;
+        stmts.push({ type: "local", name: tempName, value });
+        stmts.push(...emitDestructuringStatements(element.name, ident(tempName), ctx));
+      } else {
+        const localName = ts.isIdentifier(element.name) ? element.name.getText() : `_${idx}`;
+        stmts.push({ type: "local", name: localName, value });
+      }
       idx++;
     }
 

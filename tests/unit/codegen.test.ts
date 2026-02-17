@@ -232,3 +232,17 @@ describe("special numbers", () => {
     expect(result).toContain("return -math.huge");
   });
 });
+
+// ── Task 6: Source map comments ──
+
+describe("source map comments", () => {
+  test("sourcemap option emits source comments", () => {
+    const { compile } = require("../../src/compiler.ts");
+    const result = compile(`
+      export default function App() {
+        return "hello";
+      }
+    `, "App.tsx", { sourcemap: true });
+    expect(result.luau).toContain("-- source: App.tsx:");
+  });
+});

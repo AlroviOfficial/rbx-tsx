@@ -94,6 +94,10 @@ function emitStatement(
     }
 
     case "function-decl": {
+      // Source map comment
+      if (stmt.sourceLine && stmt.sourceFile) {
+        lines.push(`${t}-- source: ${stmt.sourceFile}:${stmt.sourceLine}`);
+      }
       const prefix = stmt.local ? "local function" : "function";
       const params = emitParams(stmt.params);
       let sig = `${t}${prefix} ${stmt.name}(${params})`;

@@ -204,7 +204,7 @@ function transformVariableStatement(
 
   // Check for var usage
   if (node.declarationList.flags === ts.NodeFlags.None) {
-    ctx.warn("var-declaration", "Use 'const' or 'let' instead of 'var'");
+    ctx.warnAtNode("var-declaration", "Use 'const' or 'let' instead of 'var'", node);
   }
 
   for (const decl of node.declarationList.declarations) {
@@ -300,7 +300,7 @@ function transformFunctionDeclaration(
   );
 
   if (isAsync) {
-    ctx.warn("complex-async", `Async function '${name}' may need manual review`);
+    ctx.warnAtNode("complex-async", `Async function '${name}' may need manual review`, node);
   }
 
   // Check for destructured parameters — if the first param is destructured,
@@ -313,9 +313,44 @@ function transformFunctionDeclaration(
     returnType = transformType(node.type, ctx);
   }
 
-  const body = node.body
+  const innerBody = node.body
     ? [...additionalBodyStmts, ...transformStatements(node.body.statements, ctx)]
     : additionalBodyStmts;
+
+  // Async function: wrap body in Promise.new(function(resolve, reject) ... end)
+  let body: LuauStatement[];
+  if (isAsync) {
+    ctx.needsPromise = true;
+    // Replace return statements with resolve() calls
+    const promiseBody = innerBody.map((stmt): LuauStatement => {
+      if (stmt.type === "return" && stmt.value) {
+        return { type: "expression-statement", expr: call(ident("resolve"), [stmt.value]) };
+      }
+      return stmt;
+    });
+
+    body = [{
+      type: "return",
+      value: call(index(ident("Promise"), "new"), [
+        funcExpr(
+          [{ name: "resolve" }, { name: "reject" }],
+          promiseBody,
+        ),
+      ]),
+    }];
+  } else {
+    body = innerBody;
+  }
+
+  // Add source map info
+  let sourceLine: number | undefined;
+  let sourceFileStr: string | undefined;
+  if (ctx.options.sourcemap && ctx.sourceFile) {
+    const pos = node.getStart(ctx.sourceFile);
+    const lineAndChar = ts.getLineAndCharacterOfPosition(ctx.sourceFile, pos);
+    sourceLine = lineAndChar.line + 1;
+    sourceFileStr = ctx.filename;
+  }
 
   const result: LuauStatement[] = [{
     type: "function-decl",
@@ -324,6 +359,8 @@ function transformFunctionDeclaration(
     params: params,
     body,
     returnType,
+    sourceLine,
+    sourceFile: sourceFileStr,
   }];
 
   if (isDefault) {
@@ -664,6 +701,25 @@ function transformExpressionStatement(
       target: transformExpression(expr.left, ctx),
       value: transformExpression(expr.right, ctx),
     }];
+  }
+
+  // Logical assignment operators: &&=, ||=, ??=
+  if (ts.isBinaryExpression(expr)) {
+    if (expr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandEqualsToken) {
+      const target = transformExpression(expr.left, ctx);
+      const value = transformExpression(expr.right, ctx);
+      return [{ type: "if", condition: target, body: [{ type: "assignment", target, value }] }];
+    }
+    if (expr.operatorToken.kind === ts.SyntaxKind.BarBarEqualsToken) {
+      const target = transformExpression(expr.left, ctx);
+      const value = transformExpression(expr.right, ctx);
+      return [{ type: "if", condition: unary("not", target), body: [{ type: "assignment", target, value }] }];
+    }
+    if (expr.operatorToken.kind === ts.SyntaxKind.QuestionQuestionEqualsToken) {
+      const target = transformExpression(expr.left, ctx);
+      const value = transformExpression(expr.right, ctx);
+      return [{ type: "if", condition: binary(target, "==", nil()), body: [{ type: "assignment", target, value }] }];
+    }
   }
 
   // Compound assignment: +=, -=, *=, /=

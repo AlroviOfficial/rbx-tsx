@@ -237,3 +237,94 @@ describe("setTimeout/setInterval", () => {
     expect(result).toContain("task.cancel(id)");
   });
 });
+
+// ── Task 9: Missing array helpers ──
+
+describe("array flat/flatMap/fill methods", () => {
+  test(".flat() emits _arrayFlat helper", () => {
+    const result = compileStmt("const x = arr.flat();");
+    expect(result).toContain("_arrayFlat(arr, 1)");
+    expect(result).toContain("local function _arrayFlat");
+  });
+
+  test(".flat(2) passes depth argument", () => {
+    const result = compileStmt("const x = arr.flat(2);");
+    expect(result).toContain("_arrayFlat(arr, 2)");
+  });
+
+  test(".flatMap() emits _arrayFlatMap helper", () => {
+    const result = compileStmt("const x = arr.flatMap(fn);");
+    expect(result).toContain("_arrayFlatMap(arr, fn)");
+    expect(result).toContain("local function _arrayFlatMap");
+  });
+
+  test(".fill() emits _arrayFill helper", () => {
+    const result = compileStmt("const x = arr.fill(0);");
+    expect(result).toContain("_arrayFill(arr, 0)");
+    expect(result).toContain("local function _arrayFill");
+  });
+});
+
+describe("Number static methods", () => {
+  test("Number.isInteger emits helper", () => {
+    const result = compileStmt("const x = Number.isInteger(val);");
+    expect(result).toContain("_numberIsInteger");
+    expect(result).toContain("local function _numberIsInteger");
+  });
+
+  test("Number.isNaN emits helper", () => {
+    const result = compileStmt("const x = Number.isNaN(val);");
+    expect(result).toContain("_numberIsNaN");
+    expect(result).toContain("local function _numberIsNaN");
+  });
+});
+
+// ── Task 15: Regex literal warning ──
+
+describe("regex literals", () => {
+  test("regex literal emits warning and nil", () => {
+    const result = compile("const r = /test/gi;", "test.ts", { warnLevel: "all" });
+    expect(result.luau).toContain("nil");
+    const warnings = result.warnings.getWarnings();
+    expect(warnings.some(w => w.code === "unsupported-syntax")).toBe(true);
+  });
+});
+
+// ── Task 10: Optional chaining for calls and bracket access ──
+
+describe("optional chaining extensions", () => {
+  test("a?.() → nil check with call", () => {
+    const result = compileStmt("const x = a?.();");
+    expect(result).toContain("~= nil");
+  });
+
+  test("a?.[b] → nil check with bracket access", () => {
+    const result = compileStmt("const x = a?.[b];");
+    expect(result).toContain("~= nil");
+  });
+});
+
+// ── Task 18: 0-to-1 based indexing ──
+
+describe("0-to-1 based indexing", () => {
+  test("arr[0] → arr[1]", () => {
+    const result = compileStmt("const x = arr[0];");
+    expect(result).toContain("arr[1]");
+  });
+
+  test("arr[5] → arr[6]", () => {
+    const result = compileStmt("const x = arr[5];");
+    expect(result).toContain("arr[6]");
+  });
+
+  test('obj["key"] unchanged (string keys)', () => {
+    const result = compileStmt('const x = obj["key"];');
+    expect(result).toContain('obj["key"]');
+    expect(result).not.toContain("+ 1");
+  });
+
+  test("arr[i] → arr[i + 1]", () => {
+    const result = compileStmt("const x = arr[i];");
+    expect(result).toContain("i + 1");
+  });
+});

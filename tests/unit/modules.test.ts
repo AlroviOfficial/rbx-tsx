@@ -139,6 +139,22 @@ describe("ReactRoblox imports", () => {
   });
 });
 
+// ── Task 8: CSS module property access ──
+
+describe("CSS module property access", () => {
+  test("styles.card resolves to property access on required module", () => {
+    const result = compileTSX(`
+      import React from "react";
+      import styles from "./Card.module.css";
+      export default function App() {
+        return <div className={styles.card} />;
+      }
+    `);
+    expect(result).toContain("styles.card");
+    expect(result).toContain('require(script.Parent["Card.style"])');
+  });
+});
+
 describe("file naming", () => {
   test("index.tsx → init.luau", () => {
     const { getOutputPath } = require("../../src/compiler.ts");

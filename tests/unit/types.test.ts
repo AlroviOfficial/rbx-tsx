@@ -118,3 +118,32 @@ describe("as const", () => {
     expect(result).toContain("lg = 24");
   });
 });
+
+// ── Task 16: Type guards ──
+
+describe("type predicates", () => {
+  test("x is Type → boolean return type", () => {
+    const result = compileTS(`
+      function isString(x: unknown): x is string {
+        return typeof x === "string";
+      }
+    `);
+    expect(result).toContain("boolean");
+  });
+});
+
+// ── Task 17: Conditional and mapped types ──
+
+describe("conditional types", () => {
+  test("conditional type emits union of both branches", () => {
+    const result = compileTS("type Check<T> = T extends string ? string : number;");
+    expect(result).toContain("string | number");
+  });
+});
+
+describe("mapped types", () => {
+  test("mapped type produces index signature", () => {
+    const result = compileTS("type Flags = { [K in string]: boolean };");
+    expect(result).toContain("[string]: boolean");
+  });
+});

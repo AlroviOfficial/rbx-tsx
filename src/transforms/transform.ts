@@ -20,6 +20,9 @@ export function transformSourceFile(
 ): LuauStatement[] {
   const allStatements: LuauStatement[] = [];
 
+  // Wire up sourceFile for line/column tracking in warnings
+  ctx.sourceFile = sourceFile;
+
   // Phase 1: Process imports (determines what React/services/modules we need)
   const importStatements: LuauStatement[] = [];
   const bodyStatements: ts.Statement[] = [];
@@ -108,7 +111,7 @@ export function transformSourceFile(
     });
   }
 
-  // Phase 3: Transform body statements (this populates ctx.requiredServices, ctx.requiredHelpers)
+  // Phase 3: Transform body statements (this populates ctx.requiredServices, ctx.requiredHelpers, ctx.needsPromise)
   const transformedBody: LuauStatement[] = [];
   for (const stmt of bodyStatements) {
     transformedBody.push(...transformStatement(stmt, ctx));
@@ -125,6 +128,15 @@ export function transformSourceFile(
       });
       ctx.importedModules.set(service, "@rbx-services");
     }
+  }
+
+  // Promise require (for async/await)
+  if (ctx.needsPromise) {
+    allStatements.push({
+      type: "local",
+      name: "Promise",
+      value: call(ident("require"), [raw(buildRequirePath("ReplicatedStorage.Packages.Promise"))]),
+    });
   }
 
   // Emit module import statements (after services so React/services come first)
@@ -543,6 +555,141 @@ function getHelperFunction(name: string): LuauStatement[] | null {
           },
           { type: "return", value: call(index(ident("table"), "concat"), [ident("parts"), str(" ")]) },
         ],
+      }];
+
+    case "arrayFlat":
+      return [{
+        type: "function-decl",
+        local: true,
+        name: "_arrayFlat",
+        params: [{ name: "t" }, { name: "depth" }],
+        body: [
+          { type: "local", name: "result", value: table([]) },
+          {
+            type: "for-in",
+            vars: ["_", "v"],
+            iterators: [ident("t")],
+            body: [{
+              type: "if",
+              condition: binary(
+                binary(call(ident("typeof"), [ident("v")]), "==", str("table")),
+                "and",
+                binary(ident("depth"), ">", num(0))
+              ),
+              body: [{
+                type: "for-in",
+                vars: ["_", "fv"],
+                iterators: [call(ident("_arrayFlat"), [ident("v"), binary(ident("depth"), "-", num(1))])],
+                body: [{
+                  type: "expression-statement",
+                  expr: call(index(ident("table"), "insert"), [ident("result"), ident("fv")]),
+                }],
+              }],
+              elseBody: [{
+                type: "expression-statement",
+                expr: call(index(ident("table"), "insert"), [ident("result"), ident("v")]),
+              }],
+            }],
+          },
+          { type: "return", value: ident("result") },
+        ],
+      }];
+
+    case "arrayFlatMap":
+      return [{
+        type: "function-decl",
+        local: true,
+        name: "_arrayFlatMap",
+        params: [{ name: "t" }, { name: "fn" }],
+        body: [
+          { type: "local", name: "result", value: table([]) },
+          {
+            type: "for-in",
+            vars: ["i", "v"],
+            iterators: [ident("t")],
+            body: [
+              { type: "local", name: "mapped", value: call(ident("fn"), [ident("v"), ident("i")]) },
+              {
+                type: "if",
+                condition: binary(call(ident("typeof"), [ident("mapped")]), "==", str("table")),
+                body: [{
+                  type: "for-in",
+                  vars: ["_", "mv"],
+                  iterators: [ident("mapped")],
+                  body: [{
+                    type: "expression-statement",
+                    expr: call(index(ident("table"), "insert"), [ident("result"), ident("mv")]),
+                  }],
+                }],
+                elseBody: [{
+                  type: "expression-statement",
+                  expr: call(index(ident("table"), "insert"), [ident("result"), ident("mapped")]),
+                }],
+              },
+            ],
+          },
+          { type: "return", value: ident("result") },
+        ],
+      }];
+
+    case "arrayFill":
+      return [{
+        type: "function-decl",
+        local: true,
+        name: "_arrayFill",
+        params: [{ name: "t" }, { name: "val" }, { name: "startIdx" }, { name: "endIdx" }],
+        body: [
+          {
+            type: "local",
+            name: "s",
+            value: ifExpr(binary(ident("startIdx"), "~=", nil()), binary(ident("startIdx"), "+", num(1)), num(1)),
+          },
+          {
+            type: "local",
+            name: "e",
+            value: ifExpr(binary(ident("endIdx"), "~=", nil()), ident("endIdx"), unary("#", ident("t"))),
+          },
+          {
+            type: "for-numeric",
+            var: "i",
+            start: ident("s"),
+            end: ident("e"),
+            body: [{
+              type: "assignment",
+              target: bracketIndex(ident("t"), ident("i")),
+              value: ident("val"),
+            }],
+          },
+          { type: "return", value: ident("t") },
+        ],
+      }];
+
+    case "numberIsInteger":
+      return [{
+        type: "function-decl",
+        local: true,
+        name: "_numberIsInteger",
+        params: [{ name: "v" }],
+        body: [{
+          type: "return",
+          value: binary(
+            binary(call(ident("typeof"), [ident("v")]), "==", str("number")),
+            "and",
+            binary(call(index(ident("math"), "floor"), [ident("v")]), "==", ident("v")),
+          ),
+        }],
+      }];
+
+    case "numberIsNaN":
+      return [{
+        type: "function-decl",
+        local: true,
+        name: "_numberIsNaN",
+        params: [{ name: "v" }],
+        body: [{
+          type: "return",
+          value: binary(ident("v"), "~=", ident("v")),
+        }],
       }];
 
     default:

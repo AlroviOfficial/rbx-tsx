@@ -158,3 +158,74 @@ describe("throw", () => {
     expect(result).toContain("error(");
   });
 });
+
+// ── Task 13: Logical assignment operators ──
+
+describe("logical assignment operators", () => {
+  test("&&= → if x then x = y end", () => {
+    const result = compileStmt("x &&= y;");
+    expect(result).toContain("if x then");
+    expect(result).toContain("x = y");
+  });
+
+  test("||= → if not x then x = y end", () => {
+    const result = compileStmt("x ||= y;");
+    expect(result).toContain("if not x then");
+    expect(result).toContain("x = y");
+  });
+
+  test("??= → if x == nil then x = y end", () => {
+    const result = compileStmt("x ??= y;");
+    expect(result).toContain("== nil");
+    expect(result).toContain("x = y");
+  });
+});
+
+// ── Task 14: Nested destructuring ──
+
+describe("nested destructuring", () => {
+  test("nested object destructuring", () => {
+    const result = compileStmt("const { a: { b, c } } = obj;");
+    expect(result).toContain("local b = ");
+    expect(result).toContain("local c = ");
+  });
+
+  test("mixed nested destructuring (object → array)", () => {
+    const result = compileStmt("const { items: [first, second] } = data;");
+    expect(result).toContain("local first = ");
+    expect(result).toContain("local second = ");
+  });
+});
+
+// ── Task 4: Async/await ──
+
+describe("async/await", () => {
+  test("async function wraps body in Promise.new", () => {
+    const result = compileStmt(`
+      async function fetchData() {
+        return "data";
+      }
+    `);
+    expect(result).toContain("Promise.new");
+    expect(result).toContain("resolve");
+  });
+
+  test("await expr → expr:expect()", () => {
+    const result = compileStmt(`
+      async function run() {
+        const data = await fetchData();
+        return data;
+      }
+    `);
+    expect(result).toContain(":expect()");
+  });
+
+  test("async function generates Promise require", () => {
+    const result = compileStmt(`
+      async function fetchData() {
+        return "data";
+      }
+    `);
+    expect(result).toContain("Promise");
+  });
+});
