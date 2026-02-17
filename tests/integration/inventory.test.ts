@@ -447,18 +447,24 @@ describe("Inventory: event handler transforms", () => {
 // ── Regression: sort comparators preserved ──
 
 describe("Inventory: sort comparators", () => {
-  test("preserves sort comparator function for name sort", () => {
-    expect(luau).toContain("table.sort(_s, function(a, b)");
-    expect(luau).toContain("a.name > b.name");
+  test("converts ternary comparator to boolean (name sort)", () => {
+    // (a, b) => a.name > b.name ? 1 : -1  →  function(a, b) return a.name < b.name end
+    expect(luau).toContain("table.sort(_s, function(a, b) return a.name < b.name end)");
   });
 
-  test("preserves sort comparator function for rarity sort", () => {
+  test("converts subtraction comparator to boolean (rarity sort)", () => {
+    // (a, b) => (RARITY_ORDER[a.rarity] ?? 0) - (RARITY_ORDER[b.rarity] ?? 0)
+    // →  function(a, b) return (...) < (...) end
     expect(luau).toContain("RARITY_ORDER[a.rarity]");
     expect(luau).toContain("RARITY_ORDER[b.rarity]");
+    // The subtraction is replaced with <
+    expect(luau).not.toMatch(/RARITY_ORDER\[a\.rarity\].*-.*RARITY_ORDER\[b\.rarity\]/);
   });
 
-  test("preserves sort comparator function for quantity sort", () => {
-    expect(luau).toContain("b.quantity - a.quantity");
+  test("converts subtraction comparator to boolean (quantity sort)", () => {
+    // (a, b) => b.quantity - a.quantity  →  function(a, b) return b.quantity < a.quantity end
+    expect(luau).toContain("b.quantity < a.quantity");
+    expect(luau).not.toContain("b.quantity - a.quantity");
   });
 
   test("sort clones the array before sorting", () => {
@@ -556,6 +562,24 @@ describe("Inventory: component callback props", () => {
     expect(luau).toContain("onSelect = handleSelect");
     expect(luau).toContain("onEquip = handleEquip");
     expect(luau).toContain("onDrop = handleDrop");
+  });
+});
+
+// ── Regression: ?? null optimization ──
+
+describe("Inventory: nullish coalescing with null", () => {
+  test("x ?? null does not produce double evaluation", () => {
+    // items.find(...) ?? null should NOT produce:
+    //   if _arrayFind(...) ~= nil then _arrayFind(...) else nil
+    // Instead it should just produce _arrayFind(...) directly
+    expect(luau).not.toMatch(/_arrayFind\(.*\) ~= nil then _arrayFind/);
+  });
+
+  test("selectedItem uses single _arrayFind call", () => {
+    // Should be: if selectedId then _arrayFind(items, fn) else nil
+    expect(luau).toContain(
+      "return if selectedId then _arrayFind(items, function(item) return item.id == selectedId end) else nil"
+    );
   });
 });
 

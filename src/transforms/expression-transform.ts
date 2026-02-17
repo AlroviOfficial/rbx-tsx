@@ -267,6 +267,8 @@ function transformBinaryExpression(
   if (op === ts.SyntaxKind.QuestionQuestionToken) {
     const left = transformExpression(node.left, ctx);
     const right = transformExpression(node.right, ctx);
+    // x ?? null/undefined → just x (nil ?? nil = nil, no-op)
+    if (right.type === "nil") return left;
     return ifExpr(binary(left, "~=", nil()), left, right);
   }
 
@@ -774,7 +776,12 @@ function transformArrayMethod(
       // Build: (function() local _s = table.clone(obj); table.sort(_s, cmp?); return _s end)()
       const sortArgs: LuauExpression[] = [ident("_s")];
       if (args.length > 0) {
-        sortArgs.push(args[0]!);
+        // JS comparators return numbers (-1/0/1), Luau expects booleans.
+        // Try to convert the comparator to a boolean form.
+        const boolComp = node.arguments[0]
+          ? transformSortComparator(node.arguments[0], ctx)
+          : null;
+        sortArgs.push(boolComp ?? args[0]!);
       }
       return call(funcExpr([], [
         { type: "local", name: "_s", value: call(index(ident("table"), "clone"), [obj]) },
@@ -870,6 +877,114 @@ function isLikelyStringResult(expr: LuauExpression): boolean {
     return true;
   }
   return false;
+}
+
+// ── Sort comparator transform ──
+
+/**
+ * Converts a JS numeric sort comparator to a Luau boolean comparator.
+ * JS: (a, b) => a.x - b.x  OR  (a, b) => a.x > b.x ? 1 : -1
+ * Luau: function(a, b) return a.x < b.x end
+ */
+function transformSortComparator(
+  node: ts.Expression,
+  ctx: TransformContext,
+): LuauExpression | null {
+  if (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node)) return null;
+  if (node.parameters.length !== 2) return null;
+
+  const paramA = node.parameters[0]!.name;
+  const paramB = node.parameters[1]!.name;
+  if (!ts.isIdentifier(paramA) || !ts.isIdentifier(paramB)) return null;
+
+  const params: LuauParam[] = [{ name: paramA.text }, { name: paramB.text }];
+
+  // Get the body expression
+  let bodyExpr: ts.Expression | undefined;
+  if (!ts.isBlock(node.body)) {
+    bodyExpr = node.body as ts.Expression;
+  } else {
+    const stmts = node.body.statements;
+    if (
+      stmts.length === 1 &&
+      ts.isReturnStatement(stmts[0]!) &&
+      stmts[0]!.expression
+    ) {
+      bodyExpr = stmts[0]!.expression;
+    }
+  }
+  if (!bodyExpr) return null;
+
+  // Unwrap parens
+  while (ts.isParenthesizedExpression(bodyExpr)) {
+    bodyExpr = bodyExpr.expression;
+  }
+
+  // Pattern 1: condition ? number : number
+  if (ts.isConditionalExpression(bodyExpr)) {
+    const thenVal = getNumericValue(bodyExpr.whenTrue);
+    const elseVal = getNumericValue(bodyExpr.whenFalse);
+
+    if (thenVal !== null && elseVal !== null && ts.isBinaryExpression(bodyExpr.condition)) {
+      if (thenVal > 0 && elseVal < 0) {
+        // condition ? positive : negative → flip the comparison
+        // e.g., a > b ? 1 : -1  →  a < b
+        const flipped = flipComparison(bodyExpr.condition, ctx);
+        if (flipped) return funcExpr(params, [{ type: "return", value: flipped }]);
+      } else if (thenVal < 0 && elseVal > 0) {
+        // condition ? negative : positive → keep the comparison
+        // e.g., a < b ? -1 : 1  →  a < b
+        return funcExpr(params, [{ type: "return", value: transformExpression(bodyExpr.condition, ctx) }]);
+      }
+    }
+  }
+
+  // Pattern 2: left - right  →  left < right
+  if (
+    ts.isBinaryExpression(bodyExpr) &&
+    bodyExpr.operatorToken.kind === ts.SyntaxKind.MinusToken
+  ) {
+    const left = transformExpression(bodyExpr.left, ctx);
+    const right = transformExpression(bodyExpr.right, ctx);
+    return funcExpr(params, [{ type: "return", value: binary(left, "<", right) }]);
+  }
+
+  return null;
+}
+
+/** Extract a numeric constant from a TS expression (handles -1, 0, 1, etc.) */
+function getNumericValue(node: ts.Expression): number | null {
+  while (ts.isParenthesizedExpression(node)) {
+    node = node.expression;
+  }
+  if (ts.isNumericLiteral(node)) return Number(node.text);
+  if (
+    ts.isPrefixUnaryExpression(node) &&
+    node.operator === ts.SyntaxKind.MinusToken &&
+    ts.isNumericLiteral(node.operand)
+  ) {
+    return -Number(node.operand.text);
+  }
+  return null;
+}
+
+/** Flip a comparison operator: > → <, < → >, >= → <=, <= → >= */
+function flipComparison(
+  node: ts.BinaryExpression,
+  ctx: TransformContext,
+): LuauExpression | null {
+  const flipMap: Partial<Record<ts.SyntaxKind, string>> = {
+    [ts.SyntaxKind.GreaterThanToken]: "<",
+    [ts.SyntaxKind.LessThanToken]: ">",
+    [ts.SyntaxKind.GreaterThanEqualsToken]: "<=",
+    [ts.SyntaxKind.LessThanEqualsToken]: ">=",
+  };
+  const flipped = flipMap[node.operatorToken.kind];
+  if (!flipped) return null;
+
+  const left = transformExpression(node.left, ctx);
+  const right = transformExpression(node.right, ctx);
+  return binary(left, flipped, right);
 }
 
 // ── String methods ──
