@@ -746,12 +746,15 @@ function transformArrayMethod(
     case "pop":
       return call(index(ident("table"), "remove"), [obj]);
 
-    case "includes":
+    case "includes": {
+      // If receiver looks like a string, defer to string handler
+      if (isLikelyStringResult(obj)) return null;
       return binary(
         call(index(ident("table"), "find"), [obj, args[0] ?? nil()]),
         "~=",
         nil(),
       );
+    }
 
     case "indexOf": {
       // (table.find(arr, x) or 0) - 1
@@ -768,11 +771,16 @@ function transformArrayMethod(
     }
 
     case "sort": {
-      const clone = call(index(ident("table"), "clone"), [obj]);
+      // Build: (function() local _s = table.clone(obj); table.sort(_s, cmp?); return _s end)()
+      const sortArgs: LuauExpression[] = [ident("_s")];
       if (args.length > 0) {
-        return raw(`(function() local _s = table.clone(${emitExprQuick(obj)}); table.sort(_s, ${emitExprQuick(args[0]!)}); return _s end)()`);
+        sortArgs.push(args[0]!);
       }
-      return raw(`(function() local _s = table.clone(${emitExprQuick(obj)}); table.sort(_s); return _s end)()`);
+      return call(funcExpr([], [
+        { type: "local", name: "_s", value: call(index(ident("table"), "clone"), [obj]) },
+        { type: "expression-statement", expr: call(index(ident("table"), "sort"), sortArgs) },
+        { type: "return", value: ident("_s") },
+      ]), []);
     }
 
     case "slice": {
@@ -838,6 +846,30 @@ function transformArrayMethod(
     default:
       return null;
   }
+}
+
+/** Heuristic: does this expression look like it produces a string? */
+function isLikelyStringResult(expr: LuauExpression): boolean {
+  if (expr.type === "string") return true;
+  if (expr.type === "concat") return true;
+  // Result of a string.* call (e.g., string.lower, string.upper)
+  if (
+    expr.type === "call" &&
+    expr.callee.type === "index" &&
+    expr.callee.object.type === "identifier" &&
+    expr.callee.object.name === "string"
+  ) {
+    return true;
+  }
+  // tostring() call
+  if (
+    expr.type === "call" &&
+    expr.callee.type === "identifier" &&
+    expr.callee.name === "tostring"
+  ) {
+    return true;
+  }
+  return false;
 }
 
 // ── String methods ──
@@ -968,6 +1000,15 @@ function transformPropertyAccess(
 ): LuauExpression {
   const propName = node.name.text;
   const objText = node.expression.getText();
+
+  // React event pattern: e.target.value → e (value already extracted at call site)
+  if (
+    propName === "value" &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    node.expression.name.text === "target"
+  ) {
+    return transformExpression(node.expression.expression, ctx);
+  }
 
   // Math constants
   if (objText === "Math") {

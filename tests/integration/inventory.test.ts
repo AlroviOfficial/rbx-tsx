@@ -262,8 +262,9 @@ describe("Inventory: main component state and hooks", () => {
     expect(luau).toContain("string.lower(filter)");
   });
 
-  test("compiles .includes() to table.find ~= nil", () => {
-    expect(luau).toContain("table.find(");
+  test("compiles string .includes() to string.find with plain flag", () => {
+    // string.includes() should use string.find, not table.find
+    expect(luau).toContain("string.find(string.lower(item.name), string.lower(filter), 1, true)");
     expect(luau).toContain("~= nil");
   });
 });
@@ -440,6 +441,121 @@ describe("Inventory: event handler transforms", () => {
     expect(luau).toContain(
       'if sortBy == "name" then "sort-btn active" else "sort-btn"'
     );
+  });
+});
+
+// ── Regression: sort comparators preserved ──
+
+describe("Inventory: sort comparators", () => {
+  test("preserves sort comparator function for name sort", () => {
+    expect(luau).toContain("table.sort(_s, function(a, b)");
+    expect(luau).toContain("a.name > b.name");
+  });
+
+  test("preserves sort comparator function for rarity sort", () => {
+    expect(luau).toContain("RARITY_ORDER[a.rarity]");
+    expect(luau).toContain("RARITY_ORDER[b.rarity]");
+  });
+
+  test("preserves sort comparator function for quantity sort", () => {
+    expect(luau).toContain("b.quantity - a.quantity");
+  });
+
+  test("sort clones the array before sorting", () => {
+    expect(luau).toContain("table.clone(result)");
+  });
+});
+
+// ── Regression: if-expression precedence ──
+
+describe("Inventory: if-expression precedence in binary ops", () => {
+  test("parenthesizes if-expressions inside addition", () => {
+    // Each ?? 0 becomes (if x ~= nil then x else 0), and they're added together
+    expect(luau).toContain(
+      "(if item.stats.damage ~= nil then item.stats.damage else 0) + (if item.stats.defense ~= nil then item.stats.defense else 0)"
+    );
+  });
+});
+
+// ── Regression: string.find for string includes ──
+
+describe("Inventory: string includes routing", () => {
+  test("uses string.find (not table.find) for string receiver", () => {
+    expect(luau).toContain("string.find(");
+    // Should NOT use table.find for this string includes call
+    expect(luau).not.toMatch(/table\.find\(string\.lower/);
+  });
+
+  test("passes plain=true flag to string.find", () => {
+    expect(luau).toContain(", 1, true)");
+  });
+});
+
+// ── Regression: e.target.value in standalone callbacks ──
+
+describe("Inventory: e.target.value transform", () => {
+  test("collapses e.target.value to just the parameter", () => {
+    // The standalone callback (e) => setFilter(e.target.value) should compile
+    // to function(e) setFilter(e) end — not setFilter(e.target.value)
+    expect(luau).toContain("setFilter(e)");
+    expect(luau).not.toContain("e.target.value");
+  });
+});
+
+// ── Regression: property access recognized as text ──
+
+describe("Inventory: property access text children", () => {
+  test("extracts property access as Text prop", () => {
+    expect(luau).toContain("Text = tostring(item.name)");
+    expect(luau).toContain("Text = tostring(item.rarity)");
+  });
+
+  test("concatenates mixed text + property access", () => {
+    expect(luau).toContain('Text = "DMG: " .. tostring(item.stats.damage)');
+    expect(luau).toContain('Text = "DEF: " .. tostring(item.stats.defense)');
+    expect(luau).toContain('Text = "SPD: " .. tostring(item.stats.speed)');
+  });
+
+  test("no mixed-children warnings for text elements", () => {
+    // With property access now recognized as text, these should not produce warnings
+    const withWarnings = compile(
+      readFileSync(join(import.meta.dir, "..", "fixtures", "Inventory.tsx"), "utf-8"),
+      "Inventory.tsx"
+    );
+    const mixedChildrenWarnings = withWarnings.warnings.getWarnings().filter(
+      (w) => w.code === "mixed-children"
+    );
+    expect(mixedChildrenWarnings.length).toBe(0);
+  });
+});
+
+// ── Regression: .map() IIFE is actually called ──
+
+describe("Inventory: map IIFE invocation", () => {
+  test("map loop function is invoked (IIFE, not bare function)", () => {
+    // Should contain end() — the function is called
+    expect(luau).toContain("end(),");
+  });
+});
+
+// ── Regression: value prop → Text on TextBox ──
+
+describe("Inventory: value prop on TextBox", () => {
+  test("maps value prop to Text on TextBox", () => {
+    // <input value={filter} /> should produce Text = filter, not value = filter
+    expect(luau).toContain("Text = filter");
+    expect(luau).not.toMatch(/value = filter/);
+  });
+});
+
+// ── Regression: component on* props pass through ──
+
+describe("Inventory: component callback props", () => {
+  test("on* props on components are not treated as DOM events", () => {
+    // onSelect, onEquip, onDrop should pass through as regular props on components
+    expect(luau).toContain("onSelect = handleSelect");
+    expect(luau).toContain("onEquip = handleEquip");
+    expect(luau).toContain("onDrop = handleDrop");
   });
 });
 

@@ -254,6 +254,12 @@ function processAttributes(
       continue;
     }
 
+    // value → Text (for TextBox elements, the Roblox equivalent of a controlled input)
+    if (propName === "value" && (robloxClass === "TextBox")) {
+      propsEntries.push({ key: str("Text"), value: propValue });
+      continue;
+    }
+
     // style → inline properties (expand for native elements, pass through for components)
     if (propName === "style") {
       if (isComponent) {
@@ -723,11 +729,10 @@ function transformJSXMap(
     }
   }
 
-  // Build: local _elements = {} ; for idx, item in arr do _elements[key] = expr end
-  // Return as an IIFE
+  // Build: (function() local _map_result = {} ; for idx, item in arr do _map_result[key] = expr end ; return createFragment(_map_result) end)()
   const tempVar = `_map_result`;
 
-  return funcExpr([], [
+  return call(funcExpr([], [
     { type: "local", name: tempVar, value: table([]) },
     {
       type: "for-in",
@@ -740,7 +745,7 @@ function transformJSXMap(
       }],
     },
     { type: "return", value: call(index(ident("React"), "createFragment"), [ident(tempVar)]) },
-  ]);
+  ]), []);
 }
 
 // ── Inline style expansion ──
@@ -786,6 +791,8 @@ function isTextExpression(expr: ts.Expression): boolean {
   if (ts.isNoSubstitutionTemplateLiteral(expr)) return true;
   // Identifiers could be anything, but in text context they're likely string/number
   if (ts.isIdentifier(expr)) return true;
+  // Property access (e.g., item.name) — in text context, likely a string/number field
+  if (ts.isPropertyAccessExpression(expr)) return true;
   // Binary + of strings
   if (ts.isBinaryExpression(expr) && expr.operatorToken.kind === ts.SyntaxKind.PlusToken) return true;
   return false;

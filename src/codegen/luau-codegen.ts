@@ -426,6 +426,10 @@ function emitExprWrapped(
       return `(${s})`;
     }
   }
+  // if-expressions must be parenthesized inside binary ops to avoid ambiguity
+  if (expr.type === "if-expr") {
+    return `(${s})`;
+  }
   return s;
 }
 
