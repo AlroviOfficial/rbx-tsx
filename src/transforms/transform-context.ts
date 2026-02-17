@@ -1,0 +1,91 @@
+import type { WarningCollector, WarningCode } from "../warnings.ts";
+import type { LuauStatement } from "../ast/luau-ast.ts";
+
+export interface CompileOptions {
+  reactPath: string;
+  reactRobloxPath: string;
+  strict: boolean;
+  sourcemap: boolean;
+  filename?: string;
+}
+
+export const DEFAULT_OPTIONS: CompileOptions = {
+  reactPath: "ReplicatedStorage.Packages.React",
+  reactRobloxPath: "ReplicatedStorage.Packages.ReactRoblox",
+  strict: false,
+  sourcemap: false,
+};
+
+/**
+ * Shared context passed through all transform phases.
+ * Tracks imports, helpers, and accumulated state.
+ */
+export class TransformContext {
+  /** Warnings collector */
+  readonly warnings: WarningCollector;
+  /** Compile options */
+  readonly options: CompileOptions;
+  /** Source filename */
+  readonly filename: string;
+
+  /** Whether React import is needed (always true for TSX files) */
+  needsReact = false;
+  /** Whether ReactRoblox import is needed */
+  needsReactRoblox = false;
+  /** Whether the Promise library is needed */
+  needsPromise = false;
+
+  /** Named React imports needed (useState, useEffect, etc.) */
+  readonly reactImports = new Set<string>();
+
+  /** Roblox services that need game:GetService() */
+  readonly requiredServices = new Set<string>();
+
+  /** Helper functions that need to be emitted */
+  readonly requiredHelpers = new Set<string>();
+
+  /** Tracks what the default export is */
+  defaultExport: string | null = null;
+  /** Named exports */
+  readonly namedExports = new Map<string, string>();
+  /** Type exports */
+  readonly typeExports = new Set<string>();
+
+  /** Whether this file has any non-default exports */
+  hasNamedExports = false;
+
+  /** Accumulated top-level statements (before return) */
+  readonly bodyStatements: LuauStatement[] = [];
+
+  /** Track imported modules for require path resolution */
+  readonly importedModules = new Map<string, string>();
+
+  /** CSS module imports: localName → style require path */
+  readonly cssModuleImports = new Map<string, string>();
+
+  constructor(warnings: WarningCollector, options: CompileOptions) {
+    this.warnings = warnings;
+    this.options = options;
+    this.filename = options.filename ?? "unknown";
+  }
+
+  warn(code: WarningCode, message: string, line?: number, column?: number): void {
+    this.warnings.warn({
+      code,
+      message,
+      file: this.filename,
+      line,
+      column,
+    });
+  }
+
+  /** Request a Roblox service to be auto-imported */
+  requireService(name: string): void {
+    this.requiredServices.add(name);
+  }
+
+  /** Request a helper function to be generated */
+  requireHelper(name: string): void {
+    this.requiredHelpers.add(name);
+  }
+}
