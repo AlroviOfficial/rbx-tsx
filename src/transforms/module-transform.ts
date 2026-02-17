@@ -301,7 +301,7 @@ function relativePathToRequirePath(specifier: string): string {
     if (part === ".") {
       base += ".Parent";
     } else if (part === "..") {
-      base += ".Parent";
+      base += ".Parent.Parent";
     } else if (part === "index") {
       // index → folder module (skip, already pointed at folder)
     } else {
