@@ -378,12 +378,12 @@ describe("Inventory: component instantiation", () => {
     expect(luau).toContain("_map_result[item.id] = React.createElement(ItemSlot");
   });
 
-  test("uses React.createFragment for map results", () => {
-    expect(luau).toContain("return React.createFragment(_map_result)");
+  test("uses React.createElement(React.Fragment) for map results", () => {
+    expect(luau).toContain("return React.createElement(React.Fragment, _map_result)");
   });
 
   test("compiles ternary conditional rendering in children", () => {
-    expect(luau).toContain("#displayItems > 0 then React.createFragment");
+    expect(luau).toContain("#displayItems > 0 then React.createElement(React.Fragment,");
     expect(luau).toContain('else React.createElement("TextLabel"');
   });
 

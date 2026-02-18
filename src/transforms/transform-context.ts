@@ -75,11 +75,15 @@ export class TransformContext {
   /** Source file reference for line/column extraction */
   sourceFile?: ts.SourceFile;
 
+  /** Whether the current file is an index file (becomes init.luau — script IS the folder) */
+  readonly isIndexFile: boolean;
+
   constructor(warnings: WarningCollector, options: CompileOptions) {
     this.warnings = warnings;
     this.options = options;
     this.filename = options.filename ?? "unknown";
     this.cssManifest = options.cssManifest ?? null;
+    this.isIndexFile = /(?:^|[\\/])index(?:\.(?:client|server))?\.[tj]sx?$/.test(this.filename);
   }
 
   warn(code: WarningCode, message: string, line?: number, column?: number): void {

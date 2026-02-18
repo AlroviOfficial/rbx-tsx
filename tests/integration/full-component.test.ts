@@ -163,7 +163,7 @@ describe("basic JSX transforms", () => {
         );
       }
     `);
-    expect(result.luau).toContain("React.createFragment");
+    expect(result.luau).toContain("React.createElement(React.Fragment,");
   });
 
   test("conditional rendering with &&", () => {

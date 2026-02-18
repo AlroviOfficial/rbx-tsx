@@ -52,10 +52,11 @@ function transformJSXFragment(
   const children = processJSXChildren(Array.from(node.children), null, ctx);
 
   if (children.length === 0) {
-    return call(index(ident("React"), "createFragment"), [table([])]);
+    return call(index(ident("React"), "createElement"), [index(ident("React"), "Fragment"), table([])]);
   }
 
-  return call(index(ident("React"), "createFragment"), [
+  return call(index(ident("React"), "createElement"), [
+    index(ident("React"), "Fragment"),
     table(children),
   ]);
 }
@@ -715,7 +716,7 @@ function transformJSXMap(
     if (returnStmt && returnStmt.type === "return" && returnStmt.value) {
       bodyExpr = returnStmt.value;
     } else {
-      return call(index(ident("React"), "createFragment"), [table([])]);
+      return call(index(ident("React"), "createElement"), [index(ident("React"), "Fragment"), table([])]);
     }
   } else {
     bodyExpr = transformExpression(callback.body as ts.Expression, ctx);
@@ -757,7 +758,7 @@ function transformJSXMap(
         value: bodyExpr,
       }],
     },
-    { type: "return", value: call(index(ident("React"), "createFragment"), [ident(tempVar)]) },
+    { type: "return", value: call(index(ident("React"), "createElement"), [index(ident("React"), "Fragment"), ident(tempVar)]) },
   ]), []);
 }
 

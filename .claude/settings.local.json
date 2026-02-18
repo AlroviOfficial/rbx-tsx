@@ -18,7 +18,8 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:devforum.roblox.com)",
       "Bash(bun:*)",
-      "Bash(bash build.sh:*)"
+      "Bash(bash build.sh:*)",
+      "WebFetch(domain:react.luau.page)"
     ]
   }
 }

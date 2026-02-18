@@ -262,11 +262,32 @@ function transformVariableStatement(
         const containerArg = (decl.initializer as ts.CallExpression).arguments[0];
         if (containerArg) {
           const containerExpr = transformExpression(containerArg, ctx);
-          for (const stylePath of ctx.pendingStylesheets) {
-            // require(path)().Parent = container
+          for (let i = 0; i < ctx.pendingStylesheets.length; i++) {
+            const stylePath = ctx.pendingStylesheets[i];
+            const sheetVar = `_styleSheet${i > 0 ? i : ""}`;
+            const linkVar = `_styleLink${i > 0 ? i : ""}`;
+            // local _styleSheet = require(path)()
+            results.push({
+              type: "local",
+              name: sheetVar,
+              value: call(call(ident("require"), [raw(stylePath)]), []),
+            });
+            // local _styleLink = Instance.new("StyleLink")
+            results.push({
+              type: "local",
+              name: linkVar,
+              value: call(index(ident("Instance"), "new"), [str("StyleLink")]),
+            });
+            // _styleLink.StyleSheet = _styleSheet
             results.push({
               type: "assignment",
-              target: index(call(call(ident("require"), [raw(stylePath)]), []), "Parent"),
+              target: index(ident(linkVar), "StyleSheet"),
+              value: ident(sheetVar),
+            });
+            // _styleLink.Parent = container
+            results.push({
+              type: "assignment",
+              target: index(ident(linkVar), "Parent"),
               value: containerExpr,
             });
           }

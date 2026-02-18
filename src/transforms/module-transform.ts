@@ -135,7 +135,7 @@ function transformCSSImport(
   if (node.importClause?.name) {
     // Default import: import styles from "./Card.module.css"
     const localName = node.importClause.name.text;
-    const stylePath = cssPathToRequirePath(moduleSpecifier);
+    const stylePath = cssPathToRequirePath(moduleSpecifier, ctx.isIndexFile);
     ctx.cssModuleImports.set(localName, stylePath);
 
     return [{
@@ -146,19 +146,19 @@ function transformCSSImport(
   }
 
   // Side-effect CSS import — defer attachment to createRoot container
-  const stylePath = cssPathToRequirePath(moduleSpecifier);
+  const stylePath = cssPathToRequirePath(moduleSpecifier, ctx.isIndexFile);
   ctx.pendingStylesheets.push(stylePath);
   return [];
 }
 
-function cssPathToRequirePath(specifier: string): string {
-  // "./Card.css" → script.Parent["Card.style"]
-  // "./Card.module.css" → script.Parent["Card.style"]
+function cssPathToRequirePath(specifier: string, isIndexFile: boolean): string {
+  // "./Card.css" → script.Parent["Card.style"]  (from regular file)
+  // "./Card.css" → script["Card.style"]         (from index file)
   const parts = specifier.replace(/^\.\//, "").replace(/\.(module\.)?css$/, "");
   const segments = parts.split("/");
   const fileName = segments.pop()!;
 
-  let base = "script.Parent";
+  let base = isIndexFile ? "script" : "script.Parent";
   for (const segment of segments) {
     if (segment === "..") {
       base += ".Parent";
@@ -178,7 +178,7 @@ function transformRelativeImport(
   ctx: TransformContext,
 ): LuauStatement[] {
   const results: LuauStatement[] = [];
-  const requirePath = relativePathToRequirePath(moduleSpecifier);
+  const requirePath = relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile);
 
   const defaultImport = node.importClause?.name;
   const namedBindings = node.importClause?.namedBindings;
@@ -288,8 +288,9 @@ function transformRelativeImport(
   return results;
 }
 
-function relativePathToRequirePath(specifier: string): string {
-  // "./Card" → script.Parent.Card
+function relativePathToRequirePath(specifier: string, isIndexFile: boolean): string {
+  // "./Card" → script.Parent.Card  (from regular file)
+  // "./Card" → script.Card         (from index file — script IS the folder)
   // "../types" → script.Parent.Parent.types
   // "./Button/index" → script.Parent.Button
   // "./components/Card" → script.Parent.components.Card
@@ -301,9 +302,13 @@ function relativePathToRequirePath(specifier: string): string {
   let base = "script";
   for (const part of parts) {
     if (part === ".") {
-      base += ".Parent";
+      // "." means current directory — for index files, script IS the folder
+      if (!isIndexFile) {
+        base += ".Parent";
+      }
     } else if (part === "..") {
-      base += ".Parent.Parent";
+      // ".." means parent directory
+      base += isIndexFile ? ".Parent" : ".Parent.Parent";
     } else if (part === "index") {
       // index → folder module (skip, already pointed at folder)
     } else {
