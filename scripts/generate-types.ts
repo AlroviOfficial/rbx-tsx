@@ -17,11 +17,11 @@ import { parse as parseYaml } from "yaml";
 const API_DUMP_URL =
   "https://raw.githubusercontent.com/MaximumADHD/Roblox-Client-Tracker/roblox/API-Dump.json";
 
-const DATATYPES_DIR_URL =
-  "https://api.github.com/repos/Roblox/creator-docs/contents/content/en-us/reference/engine/datatypes";
+const CREATOR_DOCS_API =
+  "https://api.github.com/repos/Roblox/creator-docs/contents/content/en-us/reference/engine";
 
-const DATATYPE_RAW_BASE =
-  "https://raw.githubusercontent.com/Roblox/creator-docs/main/content/en-us/reference/engine/datatypes";
+const CREATOR_DOCS_RAW =
+  "https://raw.githubusercontent.com/Roblox/creator-docs/main/content/en-us/reference/engine";
 
 const ROOT = join(import.meta.dir, "..");
 const TYPES_DIR = join(ROOT, "types");
@@ -79,6 +79,7 @@ interface YamlParam {
 
 interface YamlConstructor {
   name: string;
+  summary?: string;
   parameters?: YamlParam[];
   deprecation_message?: string;
 }
@@ -86,11 +87,13 @@ interface YamlConstructor {
 interface YamlProperty {
   name: string;
   type: string;
+  summary?: string;
   deprecation_message?: string;
 }
 
 interface YamlMethod {
   name: string;
+  summary?: string;
   parameters?: YamlParam[];
   returns?: { type: string }[] | string;
   deprecation_message?: string;
@@ -99,12 +102,14 @@ interface YamlMethod {
 interface YamlConstant {
   name: string;
   type: string;
+  summary?: string;
   deprecation_message?: string;
 }
 
 interface YamlDatatype {
   name: string;
   type: string;
+  summary?: string;
   constructors?: YamlConstructor[];
   properties?: YamlProperty[];
   methods?: YamlMethod[];
@@ -113,10 +118,67 @@ interface YamlDatatype {
   deprecation_message?: string;
 }
 
+// YAML class doc — same shape for class YAMLs from creator-docs
+interface YamlClassMember {
+  name: string;
+  summary?: string;
+  deprecation_message?: string;
+  parameters?: YamlParam[];
+}
+
+interface YamlClassDoc {
+  name: string;
+  summary?: string;
+  properties?: YamlClassMember[];
+  methods?: YamlClassMember[];
+  events?: YamlClassMember[];
+  callbacks?: YamlClassMember[];
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────
 
 function hasTag(tags: string[] | undefined, tag: string): boolean {
   return tags?.includes(tag) ?? false;
+}
+
+/**
+ * Clean a YAML summary string into plain text suitable for JSDoc.
+ * Strips Roblox doc cross-references like `Class.Player` and `Datatype.Vector3`.
+ */
+function cleanSummary(text: string | undefined): string {
+  if (!text) return "";
+  return text
+    // References with display text (pipe separator) — use the display text
+    .replace(/`(?:Class|Datatype|Enum)\.[^`|]+\|([^`]+)`/g, "`$1`")
+    // Enum references — keep the Enum. prefix
+    .replace(/`Enum\.(\w+)`/g, "`Enum.$1`")
+    // Class/Datatype.Name:Method() or .Member — strip the prefix
+    .replace(/`(?:Class|Datatype)\.(\w+[.:]\w+(?:\(\))?)`/g, "`$1`")
+    // Class/Datatype.Name — strip the prefix
+    .replace(/`(?:Class|Datatype)\.(\w+)`/g, "`$1`")
+    .replace(/\n/g, " ")
+    .trim();
+}
+
+/** Emit a JSDoc comment block. Combines summary + optional @deprecated tag. */
+function jsdoc(
+  summary: string | undefined,
+  deprecated: string | undefined,
+  indent: string,
+): string {
+  const clean = cleanSummary(summary);
+  const dep = deprecated ? `@deprecated ${cleanSummary(deprecated)}` : "";
+
+  if (!clean && !dep) return "";
+  const parts: string[] = [];
+  if (clean) parts.push(clean);
+  if (dep) parts.push(dep);
+
+  if (parts.length === 1 && parts[0].length < 80) {
+    return `${indent}/** ${parts[0]} */\n`;
+  }
+  const lines = parts.map((p) => `${indent} * ${p}`).join("\n");
+  return `${indent}/**\n${lines}\n${indent} */\n`;
 }
 
 function isScriptable(member: Member): boolean {
@@ -160,9 +222,12 @@ function safeParamName(name: string): string {
 
 // Types handled in primitives.d.ts (need TS generics the YAML can't express)
 // or generated from the API dump (Instance is a full class there with all members)
+// Types that need hand-written TS generics the YAML can't express.
+// Instance is skipped here — its generic constructor is generated in instances.d.ts
+// alongside the CreatableInstances map.
 const YAML_SKIP = new Set([
   "RBXScriptSignal", "RBXScriptConnection", "EnumItem", "Enum", "Enums",
-  "Instance", // Instance comes from the API dump, not the YAML (YAML only has constructors)
+  "Instance",
 ]);
 
 // All generated datatype names — populated during YAML processing.
@@ -205,10 +270,10 @@ function mapValueType(vt: ValueType): string {
   }
 }
 
-function formatParams(params: Parameter[]): string {
+function formatParams(params: Parameter[], yamlOptional?: Set<string>): string {
   return params
     .map((p) => {
-      const optional = p.Default !== undefined ? "?" : "";
+      const optional = p.Default !== undefined || yamlOptional?.has(p.Name) ? "?" : "";
       return `${safeParamName(p.Name)}${optional}: ${mapValueType(p.Type)}`;
     })
     .join(", ");
@@ -293,7 +358,8 @@ function formatYamlParams(params: YamlParam[]): string {
   const seen = new Map<string, number>();
   return params
     .map((p) => {
-      const opt = p.default != null ? "?" : "";
+      // Optional if: type ends with "?" OR "default" key is present (even as null)
+      const opt = p.type?.endsWith("?") || "default" in p ? "?" : "";
       let name = safeParamName(p.name);
       // Deduplicate parameter names
       const count = seen.get(name) ?? 0;
@@ -326,11 +392,11 @@ function generateDatatypesFromYaml(datatypes: YamlDatatype[]): string {
   for (const dt of datatypes) {
     if (YAML_SKIP.has(dt.name)) continue;
 
-    const deprecated = dt.deprecation_message ? "/** @deprecated */\n" : "";
     const constantNames = getConstantNames(dt);
 
     // --- Instance interface (properties + methods) ---
-    lines.push(`${deprecated}interface ${dt.name} {`);
+    const ifaceDoc = jsdoc(dt.summary, dt.deprecation_message, "");
+    lines.push(`${ifaceDoc}interface ${dt.name} {`);
 
     // Properties (skip constants — those go on the constructor object)
     if (dt.properties) {
@@ -338,10 +404,9 @@ function generateDatatypesFromYaml(datatypes: YamlDatatype[]): string {
         const propName = prop.name.includes(".")
           ? prop.name.split(".").pop()!
           : prop.name;
-        // Skip if this is actually a constant (static, not instance member)
         if (constantNames.has(propName)) continue;
-        const dep = prop.deprecation_message ? "\t/** @deprecated */\n" : "";
-        lines.push(`${dep}\treadonly ${safeName(propName)}: ${mapYamlType(prop.type)};`);
+        const doc = jsdoc(prop.summary, prop.deprecation_message, "\t");
+        lines.push(`${doc}\treadonly ${safeName(propName)}: ${mapYamlType(prop.type)};`);
       }
     }
 
@@ -351,10 +416,10 @@ function generateDatatypesFromYaml(datatypes: YamlDatatype[]): string {
         const methodName = method.name.includes(":")
           ? method.name.split(":").pop()!
           : method.name;
-        const dep = method.deprecation_message ? "\t/** @deprecated */\n" : "";
+        const doc = jsdoc(method.summary, method.deprecation_message, "\t");
         const params = formatYamlParams(method.parameters ?? []);
         const ret = resolveReturnType(method);
-        lines.push(`${dep}\t${safeName(methodName)}(${params}): ${ret};`);
+        lines.push(`${doc}\t${safeName(methodName)}(${params}): ${ret};`);
       }
     }
 
@@ -371,7 +436,7 @@ function generateDatatypesFromYaml(datatypes: YamlDatatype[]): string {
       // Constructors
       if (dt.constructors) {
         for (const ctor of dt.constructors) {
-          const dep = ctor.deprecation_message ? "\t/** @deprecated */\n" : "";
+          const doc = jsdoc(ctor.summary, ctor.deprecation_message, "\t");
           const params = formatYamlParams(ctor.parameters ?? []);
 
           const ctorName = ctor.name.includes(".")
@@ -379,9 +444,9 @@ function generateDatatypesFromYaml(datatypes: YamlDatatype[]): string {
             : ctor.name;
 
           if (ctorName === "new") {
-            lines.push(`${dep}\tnew (${params}): ${dt.name};`);
+            lines.push(`${doc}\tnew (${params}): ${dt.name};`);
           } else {
-            lines.push(`${dep}\t${safeName(ctorName)}(${params}): ${dt.name};`);
+            lines.push(`${doc}\t${safeName(ctorName)}(${params}): ${dt.name};`);
           }
         }
       }
@@ -392,8 +457,8 @@ function generateDatatypesFromYaml(datatypes: YamlDatatype[]): string {
           const constName = c.name.includes(".")
             ? c.name.split(".").pop()!
             : c.name;
-          const dep = c.deprecation_message ? "\t/** @deprecated */\n" : "";
-          lines.push(`${dep}\treadonly ${safeName(constName)}: ${mapYamlType(c.type)};`);
+          const doc = jsdoc(c.summary, c.deprecation_message, "\t");
+          lines.push(`${doc}\treadonly ${safeName(constName)}: ${mapYamlType(c.type)};`);
         }
       }
 
@@ -403,10 +468,10 @@ function generateDatatypesFromYaml(datatypes: YamlDatatype[]): string {
           const fnName = fn.name.includes(".")
             ? fn.name.split(".").pop()!
             : fn.name;
-          const dep = fn.deprecation_message ? "\t/** @deprecated */\n" : "";
+          const doc = jsdoc(fn.summary, fn.deprecation_message, "\t");
           const params = formatYamlParams(fn.parameters ?? []);
           const ret = resolveReturnType(fn);
-          lines.push(`${dep}\t${safeName(fnName)}(${params}): ${ret};`);
+          lines.push(`${doc}\t${safeName(fnName)}(${params}): ${ret};`);
         }
       }
 
@@ -441,9 +506,19 @@ function resolveReturnType(method: YamlMethod): string {
 
 // ─── Instance generation (from API dump) ─────────────────────────────
 
-function generateInstances(classes: ApiClass[]): string {
+// Docs lookup: className → { classSummary, members: memberName → { summary, optionalParams } }
+interface MemberDoc {
+  summary?: string;
+  optionalParams: Set<string>;
+}
+type ClassDocsMap = Map<string, {
+  summary?: string;
+  members: Map<string, MemberDoc>;
+}>;
+
+function generateInstances(classes: ApiClass[], docs: ClassDocsMap): string {
   const lines: string[] = [
-    "// Auto-generated from Roblox API Dump — do not edit manually",
+    "// Auto-generated from Roblox API Dump + creator-docs — do not edit manually",
     "// Run `bun run generate` to regenerate",
     "",
   ];
@@ -458,44 +533,45 @@ function generateInstances(classes: ApiClass[]): string {
         ? ` extends ${cls.Superclass}`
         : "";
 
-    if (hasTag(cls.Tags, "Deprecated")) {
-      lines.push("/** @deprecated */");
-    }
-
-    lines.push(`interface ${cls.Name}${extendsClause} {`);
+    const classDoc = docs.get(cls.Name);
+    const classSummary = classDoc?.summary;
+    const isDeprecated = hasTag(cls.Tags, "Deprecated");
+    const doc = jsdoc(classSummary, isDeprecated ? "This class is deprecated." : undefined, "");
+    lines.push(`${doc}interface ${cls.Name}${extendsClause} {`);
 
     for (const member of cls.Members) {
       if (!isScriptable(member)) continue;
 
-      const deprecated = hasTag(member.Tags, "Deprecated")
-        ? "\t/** @deprecated */\n"
-        : "";
+      const memberDoc = classDoc?.members.get(member.Name);
+      const memberDeprecated = hasTag(member.Tags, "Deprecated");
+      const doc = jsdoc(memberDoc?.summary, memberDeprecated ? "Deprecated." : undefined, "\t");
       const name = safeName(member.Name);
+      const yamlOptional = memberDoc?.optionalParams;
 
       switch (member.MemberType) {
         case "Property": {
           const type = mapValueType(member.ValueType!);
           const readonly = !isWritable(member) ? "readonly " : "";
-          lines.push(`${deprecated}\t${readonly}${name}: ${type};`);
+          lines.push(`${doc}\t${readonly}${name}: ${type};`);
           break;
         }
         case "Function": {
-          const params = formatParams(member.Parameters ?? []);
+          const params = formatParams(member.Parameters ?? [], yamlOptional);
           const ret = mapValueType(member.ReturnType!);
-          lines.push(`${deprecated}\t${name}(${params}): ${ret};`);
+          lines.push(`${doc}\t${name}(${params}): ${ret};`);
           break;
         }
         case "Event": {
-          const params = formatParams(member.Parameters ?? []);
+          const params = formatParams(member.Parameters ?? [], yamlOptional);
           lines.push(
-            `${deprecated}\treadonly ${name}: RBXScriptSignal<(${params}) => void>;`
+            `${doc}\treadonly ${name}: RBXScriptSignal<(${params}) => void>;`
           );
           break;
         }
         case "Callback": {
-          const params = formatParams(member.Parameters ?? []);
+          const params = formatParams(member.Parameters ?? [], yamlOptional);
           const ret = mapValueType(member.ReturnType!);
-          lines.push(`${deprecated}\t${name}?: (${params}) => ${ret};`);
+          lines.push(`${doc}\t${name}?: (${params}) => ${ret};`);
           break;
         }
       }
@@ -503,6 +579,47 @@ function generateInstances(classes: ApiClass[]): string {
 
     lines.push("}\n");
   }
+
+  // ── CreatableInstances map + generic Instance constructor ──
+  // Classes that can be created with Instance.new() are those NOT tagged
+  // NotCreatable and NOT tagged Service.
+  const creatableClasses = classes.filter(
+    (c) =>
+      !hasTag(c.Tags, "NotScriptable") &&
+      !hasTag(c.Tags, "NotCreatable") &&
+      !hasTag(c.Tags, "Service") &&
+      !hasTag(c.Tags, "Deprecated"),
+  );
+
+  lines.push("interface CreatableInstances {");
+  for (const cls of creatableClasses) {
+    lines.push(`\t${cls.Name}: ${cls.Name};`);
+  }
+  lines.push("}\n");
+
+  lines.push("declare const Instance: {");
+  lines.push("\t/** Creates a new Instance of the given class. */");
+  lines.push("\tnew <T extends keyof CreatableInstances>(className: T, parent?: Instance): CreatableInstances[T];");
+  lines.push("\t/** Returns a copy of an existing Instance (like Clone but ignores Archivable). */");
+  lines.push("\tfromExisting(existingInstance: Instance): Instance;");
+  lines.push("};\n");
+
+  // ── Services map + generic GetService override ──
+  const serviceClasses = classes.filter(
+    (c) => hasTag(c.Tags, "Service") && !hasTag(c.Tags, "NotScriptable"),
+  );
+
+  lines.push("interface CheckableServices {");
+  for (const cls of serviceClasses) {
+    lines.push(`\t${cls.Name}: ${cls.Name};`);
+  }
+  lines.push("}\n");
+
+  // Augment ServiceProvider with a generic GetService overload via declaration merging
+  lines.push("interface ServiceProvider {");
+  lines.push("\t/** Returns the service with the requested class name, creating it if it does not exist. */");
+  lines.push("\tGetService<T extends keyof CheckableServices>(className: T): CheckableServices[T];");
+  lines.push("}\n");
 
   return lines.join("\n");
 }
@@ -645,38 +762,80 @@ async function main() {
   const dump: ApiDump = await fetchJson(API_DUMP_URL);
   console.log(`  API Dump version ${dump.Version} — ${dump.Classes.length} classes, ${dump.Enums.length} enums`);
 
-  // 2. Fetch datatype YAML listing
-  console.log("Fetching datatype YAML listing...");
-  const dirEntries: { name: string }[] = await fetchJson(DATATYPES_DIR_URL);
-  const yamlFiles = dirEntries
-    .map((e) => e.name)
-    .filter((n) => n.endsWith(".yaml"));
-  console.log(`  Found ${yamlFiles.length} datatype YAML files`);
+  // 2. Fetch YAML directory listings (datatypes + classes) in parallel
+  console.log("Fetching YAML directory listings...");
+  const [dtDirEntries, clsDirEntries] = await Promise.all([
+    fetchJson<{ name: string }[]>(`${CREATOR_DOCS_API}/datatypes`),
+    fetchJson<{ name: string }[]>(`${CREATOR_DOCS_API}/classes`),
+  ]);
+  const dtYamlFiles = dtDirEntries.map((e) => e.name).filter((n) => n.endsWith(".yaml"));
+  const clsYamlFiles = clsDirEntries.map((e) => e.name).filter((n) => n.endsWith(".yaml"));
+  console.log(`  Found ${dtYamlFiles.length} datatype YAMLs, ${clsYamlFiles.length} class YAMLs`);
 
   // 3. Fetch all YAML files in parallel
-  console.log("Fetching datatype YAML files...");
-  const yamlContents = await Promise.all(
-    yamlFiles.map(async (filename) => {
-      const url = `${DATATYPE_RAW_BASE}/${filename}`;
-      const text = await fetchText(url);
-      return { filename, text };
-    })
-  );
+  console.log("Fetching YAML files...");
+  const [dtYamlContents, clsYamlContents] = await Promise.all([
+    Promise.all(
+      dtYamlFiles.map(async (filename) => {
+        const text = await fetchText(`${CREATOR_DOCS_RAW}/datatypes/${filename}`);
+        return { filename, text };
+      })
+    ),
+    Promise.all(
+      clsYamlFiles.map(async (filename) => {
+        const text = await fetchText(`${CREATOR_DOCS_RAW}/classes/${filename}`);
+        return { filename, text };
+      })
+    ),
+  ]);
 
-  // 4. Parse YAMLs
+  // 4. Parse datatype YAMLs
   const datatypes: YamlDatatype[] = [];
-  for (const { filename, text } of yamlContents) {
+  for (const { filename, text } of dtYamlContents) {
     try {
       const parsed = parseYaml(text) as YamlDatatype;
-      if (parsed && parsed.name) {
-        datatypes.push(parsed);
-      }
+      if (parsed && parsed.name) datatypes.push(parsed);
     } catch (e) {
-      console.warn(`  Warning: failed to parse ${filename}: ${e}`);
+      console.warn(`  Warning: failed to parse datatype ${filename}: ${e}`);
     }
   }
   datatypes.sort((a, b) => a.name.localeCompare(b.name));
   console.log(`  Parsed ${datatypes.length} datatypes`);
+
+  // 5. Parse class YAMLs into a docs lookup map
+  const classDocs: ClassDocsMap = new Map();
+  for (const { filename, text } of clsYamlContents) {
+    try {
+      const parsed = parseYaml(text) as YamlClassDoc;
+      if (!parsed?.name) continue;
+      const members = new Map<string, MemberDoc>();
+      for (const list of [parsed.properties, parsed.methods, parsed.events, parsed.callbacks]) {
+        if (!list) continue;
+        for (const m of list) {
+          // Member names in YAML are prefixed: "ClassName.MemberName" or "ClassName:MethodName"
+          const memberName = m.name.includes(".")
+            ? m.name.split(".").pop()!
+            : m.name.includes(":")
+              ? m.name.split(":").pop()!
+              : m.name;
+          // Collect optional params: type ending with "?" or "default" key present
+          const optionalParams = new Set<string>();
+          if (m.parameters) {
+            for (const p of m.parameters) {
+              if (p.type?.endsWith("?") || "default" in p) {
+                optionalParams.add(p.name);
+              }
+            }
+          }
+          members.set(memberName, { summary: m.summary, optionalParams });
+        }
+      }
+      classDocs.set(parsed.name, { summary: parsed.summary, members });
+    } catch (e) {
+      // Silently skip unparseable files
+    }
+  }
+  console.log(`  Parsed docs for ${classDocs.size} classes`);
 
   // Populate enum names from the API dump so YAML types like "EasingStyle" → "Enum.EasingStyle"
   for (const e of dump.Enums) {
@@ -689,16 +848,15 @@ async function main() {
       generatedDatatypes.add(dt.name);
     }
   }
-  // Also add hand-written primitives
   generatedDatatypes.add("RBXScriptSignal");
   generatedDatatypes.add("RBXScriptConnection");
 
-  // 5. Generate all files
+  // 6. Generate all files
   console.log("Generating types/datatypes.d.ts...");
   writeFileSync(join(TYPES_DIR, "datatypes.d.ts"), generateDatatypesFromYaml(datatypes));
 
   console.log("Generating types/instances.d.ts...");
-  writeFileSync(join(TYPES_DIR, "instances.d.ts"), generateInstances(dump.Classes));
+  writeFileSync(join(TYPES_DIR, "instances.d.ts"), generateInstances(dump.Classes, classDocs));
 
   console.log("Generating types/enums.d.ts...");
   writeFileSync(join(TYPES_DIR, "enums.d.ts"), generateEnums(dump.Enums));
