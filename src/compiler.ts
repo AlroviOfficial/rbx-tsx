@@ -97,5 +97,5 @@ export function getOutputPath(inputPath: string): string {
   return inputPath
     .replace(/\.tsx?$/, ".luau")
     .replace(/\.jsx?$/, ".luau")
-    .replace(/index\.luau$/, "init.luau");
+    .replace(/index(\.(?:client|server))?\.luau$/, "init$1.luau");
 }

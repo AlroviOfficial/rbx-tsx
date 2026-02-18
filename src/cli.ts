@@ -16,6 +16,7 @@ import {
 import { startWatch } from "./watch.ts";
 import type { WarningLevel } from "./warnings.ts";
 import { execSync } from "child_process";
+import { handleInit, type InitOptions } from "./init.ts";
 
 export function createCLI(): Command {
     const program = new Command();
@@ -69,6 +70,15 @@ export function createCLI(): Command {
         .option("--warn <level>", "Warning level", "all")
         .action((watchPath: string, opts) => {
             handleWatch(watchPath, opts);
+        });
+
+    program
+        .command("init")
+        .description("Scaffold a new rbx-tsx project")
+        .argument("[directory]", "Project directory (defaults to current dir)")
+        .option("-n, --name <name>", "Project name (defaults to directory name)")
+        .action((directory: string | undefined, opts: InitOptions) => {
+            handleInit(directory, opts);
         });
 
     program
