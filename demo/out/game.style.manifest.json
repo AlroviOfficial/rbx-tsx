@@ -1,0 +1,71 @@
+{
+  "classes": {
+    "game": {
+      "overflowScroll": false
+    },
+    "header": {
+      "overflowScroll": false
+    },
+    "title": {
+      "overflowScroll": false
+    },
+    "score": {
+      "overflowScroll": false
+    },
+    "info": {
+      "overflowScroll": false
+    },
+    "click-area": {
+      "overflowScroll": false
+    },
+    "gem-button": {
+      "overflowScroll": false
+    },
+    "shop": {
+      "overflowScroll": false
+    },
+    "shop-header": {
+      "overflowScroll": false
+    },
+    "shop-list": {
+      "overflowScroll": true
+    },
+    "shop-item": {
+      "overflowScroll": false
+    },
+    "item-info": {
+      "overflowScroll": false
+    },
+    "item-name": {
+      "overflowScroll": false
+    },
+    "item-desc": {
+      "overflowScroll": false
+    },
+    "item-cost": {
+      "overflowScroll": false
+    },
+    "buy-btn": {
+      "overflowScroll": false
+    },
+    "buy-btn-locked": {
+      "overflowScroll": false
+    }
+  },
+  "elementMap": {
+    "div": "Frame",
+    "span": "TextLabel",
+    "p": "TextLabel",
+    "h1": "TextLabel",
+    "h2": "TextLabel",
+    "h3": "TextLabel",
+    "h4": "TextLabel",
+    "h5": "TextLabel",
+    "h6": "TextLabel",
+    "button": "TextButton",
+    "input": "TextBox",
+    "img": "ImageLabel",
+    "a": "TextButton",
+    "canvas": "ViewportFrame"
+  }
+}

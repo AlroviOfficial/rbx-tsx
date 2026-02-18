@@ -245,6 +245,10 @@ function emitExpr(
     case "call": {
       const callee = emitExpr(expr.callee, ctx, depth);
       const args = expr.args.map((a) => emitExpr(a, ctx, depth)).join(", ");
+      // Wrap function expressions in parens for IIFE: (function() ... end)()
+      if (expr.callee.type === "function-expr") {
+        return `(${callee})(${args})`;
+      }
       return `${callee}(${args})`;
     }
 

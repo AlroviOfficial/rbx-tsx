@@ -1,0 +1,184 @@
+/* ============================================
+   Gem Clicker — CSS Styles (rbx-css)
+   ============================================ */
+
+/* Design tokens */
+:root {
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --surface-hover: #1a2744;
+  --primary: #e94560;
+  --primary-hover: #ff6b81;
+  --gold: #ffd700;
+  --text: #eaeaea;
+  --text-dim: #8888a0;
+  --radius: 8px;
+  --gap: 8px;
+}
+
+/* Main game container — full-screen column layout */
+.game {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+}
+
+/* ---- Header ---- */
+.header {
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  gap: 4px;
+}
+
+.title {
+  color: var(--gold);
+  font-size: 36px;
+  font-family: gotham;
+  font-weight: 700;
+}
+
+.score {
+  color: var(--text);
+  font-size: 28px;
+  font-family: gotham;
+  font-weight: 600;
+}
+
+.info {
+  color: var(--text-dim);
+  font-size: 14px;
+  font-family: gotham;
+}
+
+/* ---- Click area ---- */
+.click-area {
+  width: 100%;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gem-button {
+  width: 180px;
+  height: 180px;
+  background-color: var(--primary);
+  border-radius: 90px;
+  border: 3px solid var(--primary-hover);
+  font-size: 24px;
+  color: white;
+  font-family: gotham;
+  font-weight: 700;
+}
+
+.gem-button:hover {
+  background-color: var(--primary-hover);
+}
+
+/* ---- Shop ---- */
+.shop {
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: 8px;
+}
+
+.shop-header {
+  color: var(--gold);
+  font-size: 22px;
+  font-family: gotham;
+  font-weight: 700;
+}
+
+.shop-list {
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  overflow: scroll;
+  padding: 4px;
+}
+
+.shop-item {
+  width: 100%;
+  height: auto;
+  background-color: var(--surface);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+}
+
+.shop-item:hover {
+  background-color: var(--surface-hover);
+}
+
+.item-info {
+  width: auto;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 2px;
+}
+
+.item-name {
+  color: var(--text);
+  font-size: 16px;
+  font-family: gotham;
+  font-weight: 600;
+}
+
+.item-desc {
+  color: var(--text-dim);
+  font-size: 12px;
+  font-family: gotham;
+}
+
+.item-cost {
+  color: var(--gold);
+  font-size: 14px;
+  font-family: gotham;
+  font-weight: 600;
+}
+
+.buy-btn {
+  width: auto;
+  height: auto;
+  background-color: var(--primary);
+  border-radius: 6px;
+  padding: 8px 20px;
+  color: white;
+  font-size: 14px;
+  font-family: gotham;
+  font-weight: 600;
+}
+
+.buy-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+.buy-btn-locked {
+  width: auto;
+  height: auto;
+  background-color: #2a2a3e;
+  border-radius: 6px;
+  padding: 8px 20px;
+  color: #555570;
+  font-size: 14px;
+  font-family: gotham;
+  font-weight: 600;
+}
