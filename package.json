@@ -10,14 +10,17 @@
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node --external typescript",
     "test": "bun test",
-    "dev": "bun run src/index.ts"
+    "dev": "bun run src/index.ts",
+    "generate": "bun run scripts/generate-types.ts"
   },
   "files": [
     "dist/",
+    "types/",
     "README.md"
   ],
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "yaml": "^2.8.2"
   },
   "peerDependencies": {
     "typescript": "^5"
