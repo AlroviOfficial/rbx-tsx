@@ -12,7 +12,13 @@
       "WebFetch(domain:api.github.com)",
       "Bash(dir:*)",
       "Bash(bun run:*)",
-      "Bash(bun src/index.ts:*)"
+      "Bash(bun src/index.ts:*)",
+      "WebSearch",
+      "WebFetch(domain:create.roblox.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:devforum.roblox.com)",
+      "Bash(bun:*)",
+      "Bash(bash build.sh:*)"
     ]
   }
 }

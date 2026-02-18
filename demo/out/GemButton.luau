@@ -10,7 +10,7 @@ type GemButtonProps = {
 local function GemButton(props: GemButtonProps)
     local onClick = props.onClick
     local power = props.power
-    return React.createElement("Frame", { [React.Tag] = "click-area" }, {
+    return React.createElement("Frame", { [React.Tag] = "w-full grow flex items-center justify-center" }, {
         GemButtonButton = React.createElement("TextButton", {
             [React.Tag] = "gem-button",
             [React.Event.Activated] = onClick,

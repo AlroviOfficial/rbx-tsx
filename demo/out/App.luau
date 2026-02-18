@@ -61,7 +61,7 @@ local function App()
             buy = buyDrill,
         },
     }
-    return React.createElement("Frame", { [React.Tag] = "game" }, {
+    return React.createElement("Frame", { [React.Tag] = "w-full h-full bg-bg flex flex-col p-4 gap-3" }, {
         Header = React.createElement(Header, { gems = gems, power = power }),
         GemButton = React.createElement(GemButton, { onClick = handleClick, power = power }),
         Shop = React.createElement(Shop, { gems = gems, items = shopItems }),

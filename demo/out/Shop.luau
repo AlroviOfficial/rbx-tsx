@@ -17,19 +17,30 @@ type ShopProps = {
 local function Shop(props: ShopProps)
     local gems = props.gems
     local items = props.items
-    return React.createElement("Frame", { [React.Tag] = "shop" }, {
-        ShopHeaderH1 = React.createElement("TextLabel", { [React.Tag] = "shop-header", Text = "Upgrades" }),
-        ShopListDiv = React.createElement("Frame", { [React.Tag] = "shop-list" }, {
+    return React.createElement("Frame", { [React.Tag] = "w-full h-auto flex flex-col gap-2 p-2" }, {
+        ["TextGold text[22px] fontTitleH1"] = React.createElement("TextLabel", { [React.Tag] = "text-gold text-[22px] font-title", Text = "Upgrades" }),
+        ["WFull hAuto flex flexCol gap2 overflowScroll p1Div"] = React.createElement("Frame", { [React.Tag] = "w-full h-auto flex flex-col gap-2 overflow-scroll p-1" }, {
             (function()
                 local _map_result = {}
                 for _idx, item in items do
-                    _map_result[item.id] = React.createElement("Frame", { [React.Tag] = "shop-item" }, {
-                        ItemInfoDiv = React.createElement("Frame", { [React.Tag] = "item-info" }, {
-                            ItemNameSpan = React.createElement("TextLabel", { [React.Tag] = "item-name", Text = tostring(item.name) }),
-                            ItemDescSpan = React.createElement("TextLabel", { [React.Tag] = "item-desc", Text = tostring(item.desc) }),
-                            ItemCostSpan = React.createElement("TextLabel", { [React.Tag] = "item-cost", Text = tostring(item.cost) .. " gems" }),
+                    _map_result[item.id] = React.createElement("Frame", {
+                        [React.Tag] = "w-full h-auto bg-surface rounded-lg p-3 flex flex-row gap-3 items-center hover:bg-surface-hover",
+                    }, {
+                        ["WAuto hAuto flex flexCol grow gap0.5Div"] = React.createElement("Frame", { [React.Tag] = "w-auto h-auto flex flex-col grow gap-0.5" }, {
+                            ["TextText textBase fontHeadingSpan"] = React.createElement("TextLabel", { [React.Tag] = "text-text text-base font-heading", Text = tostring(item.name) }),
+                            ["TextTextDim textXs fontBodySpan"] = React.createElement("TextLabel", { [React.Tag] = "text-text-dim text-xs font-body", Text = tostring(item.desc) }),
+                            ["TextGold textSm fontHeadingSpan"] = React.createElement("TextLabel", {
+                                [React.Tag] = "text-gold text-sm font-heading",
+                                Text = tostring(item.cost) .. " gems",
+                            }),
                         }),
-                        if gems >= item.cost then React.createElement("TextButton", { [React.Tag] = "buy-btn", [React.Event.Activated] = item.buy, Text = "Buy" }) else React.createElement("TextButton", { [React.Tag] = "buy-btn-locked", Text = "Locked" }),
+                        if gems >= item.cost then React.createElement("TextButton", {
+                            [React.Tag] = "w-auto h-auto bg-primary rounded-md px-5 py-2 text-white text-sm font-heading hover:bg-primary-hover",
+                            Text = "Buy",
+                        }) else React.createElement("TextButton", {
+                            [React.Tag] = "w-auto h-auto bg-locked-bg rounded-md px-5 py-2 text-locked-text text-sm font-heading",
+                            Text = "Locked",
+                        }),
                     })
                 end
                 return React.createFragment(_map_result)

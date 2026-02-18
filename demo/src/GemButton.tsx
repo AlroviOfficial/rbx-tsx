@@ -7,7 +7,7 @@ interface GemButtonProps {
 
 export default function GemButton({ onClick, power }: GemButtonProps) {
   return (
-    <div className="click-area">
+    <div className="w-full grow flex items-center justify-center">
       <button className="gem-button" onClick={onClick}>
         Click! +{power}
       </button>

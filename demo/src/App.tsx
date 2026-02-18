@@ -46,7 +46,7 @@ export default function App() {
   ];
 
   return (
-    <div className="game">
+    <div className="w-full h-full bg-bg flex flex-col p-4 gap-3">
       <Header gems={gems} power={power} />
       <GemButton onClick={handleClick} power={power} />
       <Shop gems={gems} items={shopItems} />

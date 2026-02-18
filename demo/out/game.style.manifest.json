@@ -1,54 +1,135 @@
 {
   "classes": {
-    "game": {
+    "5": {
       "overflowScroll": false
     },
-    "header": {
+    "container": {
       "overflowScroll": false
     },
-    "title": {
+    "flex": {
       "overflowScroll": false
     },
-    "score": {
+    "h-auto": {
       "overflowScroll": false
     },
-    "info": {
+    "h-full": {
       "overflowScroll": false
     },
-    "click-area": {
+    "w-auto": {
+      "overflowScroll": false
+    },
+    "w-full": {
+      "overflowScroll": false
+    },
+    "grow": {
+      "overflowScroll": false
+    },
+    "flex-col": {
+      "overflowScroll": false
+    },
+    "flex-row": {
+      "overflowScroll": false
+    },
+    "items-center": {
+      "overflowScroll": false
+    },
+    "justify-center": {
+      "overflowScroll": false
+    },
+    "gap-0": {
+      "overflowScroll": false
+    },
+    "gap-1": {
+      "overflowScroll": false
+    },
+    "gap-2": {
+      "overflowScroll": false
+    },
+    "gap-3": {
+      "overflowScroll": false
+    },
+    "overflow-scroll": {
+      "overflowScroll": true
+    },
+    "rounded-lg": {
+      "overflowScroll": false
+    },
+    "rounded-md": {
+      "overflowScroll": false
+    },
+    "bg-bg": {
+      "overflowScroll": false
+    },
+    "bg-locked-bg": {
+      "overflowScroll": false
+    },
+    "bg-primary": {
+      "overflowScroll": false
+    },
+    "bg-surface": {
+      "overflowScroll": false
+    },
+    "p-1": {
+      "overflowScroll": false
+    },
+    "p-2": {
+      "overflowScroll": false
+    },
+    "p-3": {
+      "overflowScroll": false
+    },
+    "p-4": {
+      "overflowScroll": false
+    },
+    "px-5": {
+      "overflowScroll": false
+    },
+    "py-2": {
+      "overflowScroll": false
+    },
+    "text-4xl": {
+      "overflowScroll": false
+    },
+    "text-base": {
+      "overflowScroll": false
+    },
+    "text-sm": {
+      "overflowScroll": false
+    },
+    "text-xs": {
+      "overflowScroll": false
+    },
+    "text-": {
+      "overflowScroll": false
+    },
+    "text-gold": {
+      "overflowScroll": false
+    },
+    "text-locked-text": {
+      "overflowScroll": false
+    },
+    "text-text": {
+      "overflowScroll": false
+    },
+    "text-text-dim": {
+      "overflowScroll": false
+    },
+    "text-white": {
+      "overflowScroll": false
+    },
+    "font-title": {
+      "overflowScroll": false
+    },
+    "font-heading": {
+      "overflowScroll": false
+    },
+    "font-body": {
       "overflowScroll": false
     },
     "gem-button": {
       "overflowScroll": false
     },
-    "shop": {
-      "overflowScroll": false
-    },
-    "shop-header": {
-      "overflowScroll": false
-    },
-    "shop-list": {
-      "overflowScroll": true
-    },
-    "shop-item": {
-      "overflowScroll": false
-    },
-    "item-info": {
-      "overflowScroll": false
-    },
-    "item-name": {
-      "overflowScroll": false
-    },
-    "item-desc": {
-      "overflowScroll": false
-    },
-    "item-cost": {
-      "overflowScroll": false
-    },
-    "buy-btn": {
-      "overflowScroll": false
-    },
-    "buy-btn-locked": {
+    "hover": {
       "overflowScroll": false
     }
   },
