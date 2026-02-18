@@ -145,7 +145,9 @@ function transformCSSImport(
     }];
   }
 
-  // Side-effect CSS import — no output needed (CSS compiled separately)
+  // Side-effect CSS import — defer attachment to createRoot container
+  const stylePath = cssPathToRequirePath(moduleSpecifier);
+  ctx.pendingStylesheets.push(stylePath);
   return [];
 }
 

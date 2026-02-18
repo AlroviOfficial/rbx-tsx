@@ -7,7 +7,6 @@ local ReactRoblox = require(game:GetService("ReplicatedStorage").Packages.ReactR
 local Players = game:GetService("Players")
 local createRoot = ReactRoblox.createRoot
 local App = require(script.Parent.App)
-local createStyleSheet = require(script.Parent["game.style"])
 -- 
 local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
@@ -15,7 +14,6 @@ screenGui.Name = "GemClicker"
 screenGui.Parent = playerGui
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-local styleSheet = createStyleSheet()
-styleSheet.Parent = screenGui
 local root = createRoot(screenGui)
+require(script.Parent["game.style"])().Parent = screenGui
 root:render(React.createElement(App, {}))

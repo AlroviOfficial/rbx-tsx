@@ -338,7 +338,8 @@ function findSourceFiles(dir: string): string[] {
             } else if (
                 entry.name.match(/\.(tsx?|jsx?)$/) &&
                 !entry.name.includes(".test.") &&
-                !entry.name.includes(".spec.")
+                !entry.name.includes(".spec.") &&
+                !entry.name.endsWith(".d.ts")
             ) {
                 files.push(fullPath);
             }

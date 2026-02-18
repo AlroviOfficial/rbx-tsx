@@ -66,6 +66,9 @@ export class TransformContext {
   /** CSS module imports: localName → style require path */
   readonly cssModuleImports = new Map<string, string>();
 
+  /** Side-effect CSS imports awaiting auto-attachment to createRoot container */
+  readonly pendingStylesheets: string[] = [];
+
   /** CSS manifest for cross-compiler collaboration */
   readonly cssManifest: CSSManifest | null;
 

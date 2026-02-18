@@ -257,6 +257,23 @@ function transformVariableStatement(
         typeAnnotation,
       });
 
+      // Auto-attach pending CSS stylesheets when createRoot(container) is found
+      if (decl.initializer && isCreateRootCall(decl.initializer) && ctx.pendingStylesheets.length > 0) {
+        const containerArg = (decl.initializer as ts.CallExpression).arguments[0];
+        if (containerArg) {
+          const containerExpr = transformExpression(containerArg, ctx);
+          for (const stylePath of ctx.pendingStylesheets) {
+            // require(path)().Parent = container
+            results.push({
+              type: "assignment",
+              target: index(call(call(ident("require"), [raw(stylePath)]), []), "Parent"),
+              value: containerExpr,
+            });
+          }
+          ctx.pendingStylesheets.length = 0;
+        }
+      }
+
       if (isExported) {
         ctx.namedExports.set(name, name);
         ctx.hasNamedExports = true;
@@ -265,6 +282,14 @@ function transformVariableStatement(
   }
 
   return results;
+}
+
+function isCreateRootCall(node: ts.Expression): boolean {
+  if (!ts.isCallExpression(node)) return false;
+  const callee = node.expression;
+  if (ts.isIdentifier(callee)) return callee.text === "createRoot";
+  if (ts.isPropertyAccessExpression(callee)) return callee.name.text === "createRoot";
+  return false;
 }
 
 function isHookCall(node: ts.Expression): boolean {
