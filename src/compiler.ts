@@ -3,6 +3,7 @@ import { transformSourceFile } from "./transforms/transform.ts";
 import { TransformContext, DEFAULT_OPTIONS, type CompileOptions } from "./transforms/transform-context.ts";
 import { generateLuau } from "./codegen/luau-codegen.ts";
 import { WarningCollector, type WarningLevel } from "./warnings.ts";
+import type { CSSManifest } from "./css-manifest.ts";
 
 export interface CompilerOptions {
   reactPath?: string;
@@ -10,6 +11,7 @@ export interface CompilerOptions {
   strict?: boolean;
   sourcemap?: boolean;
   warnLevel?: WarningLevel;
+  cssManifest?: CSSManifest;
 }
 
 export interface CompileResult {
@@ -38,6 +40,7 @@ export function compile(
     strict: options.strict ?? false,
     sourcemap: options.sourcemap ?? false,
     filename,
+    cssManifest: options.cssManifest ?? null,
   };
 
   // Parse TSX/TS with TypeScript compiler API

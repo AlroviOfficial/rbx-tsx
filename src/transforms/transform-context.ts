@@ -1,6 +1,7 @@
 import ts from "typescript";
 import type { WarningCollector, WarningCode } from "../warnings.ts";
 import type { LuauStatement } from "../ast/luau-ast.ts";
+import type { CSSManifest } from "../css-manifest.ts";
 
 export interface CompileOptions {
   reactPath: string;
@@ -8,6 +9,7 @@ export interface CompileOptions {
   strict: boolean;
   sourcemap: boolean;
   filename?: string;
+  cssManifest?: CSSManifest | null;
 }
 
 export const DEFAULT_OPTIONS: CompileOptions = {
@@ -64,6 +66,9 @@ export class TransformContext {
   /** CSS module imports: localName → style require path */
   readonly cssModuleImports = new Map<string, string>();
 
+  /** CSS manifest for cross-compiler collaboration */
+  readonly cssManifest: CSSManifest | null;
+
   /** Source file reference for line/column extraction */
   sourceFile?: ts.SourceFile;
 
@@ -71,6 +76,7 @@ export class TransformContext {
     this.warnings = warnings;
     this.options = options;
     this.filename = options.filename ?? "unknown";
+    this.cssManifest = options.cssManifest ?? null;
   }
 
   warn(code: WarningCode, message: string, line?: number, column?: number): void {
@@ -104,5 +110,10 @@ export class TransformContext {
   /** Request a helper function to be generated */
   requireHelper(name: string): void {
     this.requiredHelpers.add(name);
+  }
+
+  /** Check if a CSS className triggers ScrollingFrame upgrade */
+  isScrollingFrameClass(className: string): boolean {
+    return this.cssManifest?.classes[className]?.overflowScroll === true;
   }
 }

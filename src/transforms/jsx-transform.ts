@@ -66,8 +66,11 @@ function transformJSXElement(
   children: ts.JsxChild[],
   ctx: TransformContext,
 ): LuauExpression {
+  // Extract static className before element resolution (for manifest-driven upgrades)
+  const staticClassName = extractStaticClassName(attributes);
+
   // Determine the element type
-  const { elementArg, robloxClass, isComponent } = resolveElementType(tagName, ctx);
+  const { elementArg, robloxClass, isComponent } = resolveElementType(tagName, ctx, staticClassName);
 
   // Special: portal
   if (!isComponent && ts.isIdentifier(tagName) && tagName.text === "portal") {
@@ -137,13 +140,23 @@ interface ResolvedElement {
 function resolveElementType(
   tagName: ts.JsxTagNameExpression,
   ctx: TransformContext,
+  staticClassName?: string | null,
 ): ResolvedElement {
   if (ts.isIdentifier(tagName)) {
     const name = tagName.text;
 
     // Lowercase = HTML element
     if (name[0] === name[0]!.toLowerCase()) {
-      const robloxClass = HTML_TO_ROBLOX[name];
+      let robloxClass = HTML_TO_ROBLOX[name];
+
+      // ScrollingFrame upgrade: if any className triggers overflow:scroll in the CSS manifest
+      if (robloxClass === "Frame" && staticClassName && ctx.cssManifest) {
+        const classNames = staticClassName.split(/\s+/);
+        const needsScroll = classNames.some((cls) => ctx.isScrollingFrameClass(cls));
+        if (needsScroll) {
+          robloxClass = "ScrollingFrame";
+        }
+      }
 
       if (!robloxClass && !ROBLOX_GUI_CLASSES.has(name)) {
         ctx.warnAtNode("unsupported-element", `HTML element '${name}' has no Roblox mapping`, tagName);
@@ -863,6 +876,20 @@ function extractKeyFromElement(child: ts.JsxElement | ts.JsxSelfClosingElement):
           return attr.initializer;
         }
       }
+    }
+  }
+  return null;
+}
+
+function extractStaticClassName(attributes: ts.JsxAttributes): string | null {
+  for (const attr of attributes.properties) {
+    if (
+      ts.isJsxAttribute(attr) &&
+      attr.name.text === "className" &&
+      attr.initializer &&
+      ts.isStringLiteral(attr.initializer)
+    ) {
+      return attr.initializer.text;
     }
   }
   return null;

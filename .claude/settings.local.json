@@ -9,7 +9,9 @@
       "Bash(bun test:*)",
       "Bash(bun run generate:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:api.github.com)"
+      "WebFetch(domain:api.github.com)",
+      "Bash(dir:*)",
+      "Bash(bun run:*)"
     ]
   }
 }

@@ -1,0 +1,22 @@
+.panel {
+  background-color: #1a1a2e;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.scroll-area {
+  overflow: scroll;
+  padding: 8px;
+}
+
+.title {
+  color: #ffffff;
+  font-size: 24px;
+}
+
+.card {
+  background-color: #16213e;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+}
