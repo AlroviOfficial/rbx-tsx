@@ -23,6 +23,8 @@ export function handleInit(
 
     // Generate files
     const files: [string, string][] = [
+        ["package.json", packageJson(projectName)],
+        ["tsconfig.json", TSCONFIG],
         ["wally.toml", wallyToml(projectName)],
         ["default.project.json", projectJson(projectName)],
         ["src/client/index.client.tsx", CLIENT_INDEX],
@@ -41,13 +43,27 @@ export function handleInit(
         console.log(`  create ${filePath}`);
     }
 
+    // Install npm dependencies (for rbx-tsx types)
+    console.log("\nInstalling dependencies...");
+    try {
+        execSync("bun install", { cwd: targetDir, stdio: "inherit" });
+    } catch {
+        try {
+            execSync("npm install", { cwd: targetDir, stdio: "inherit" });
+        } catch {
+            console.log(
+                "Could not install npm dependencies. Run 'bun install' or 'npm install' manually.",
+            );
+        }
+    }
+
     // Try to run wally install
-    console.log("\nInstalling packages with wally...");
+    console.log("\nInstalling Roblox packages with wally...");
     try {
         execSync("wally install", { cwd: targetDir, stdio: "inherit" });
     } catch {
         console.log(
-            "\nCould not run wally. Install it from https://github.com/UpliftGames/wally",
+            "Could not run wally. Install it from https://github.com/UpliftGames/wally",
         );
         console.log("Then run: wally install");
     }
@@ -64,6 +80,35 @@ Done! Next steps:
 // ---------------------------------------------------------------------------
 // Templates
 // ---------------------------------------------------------------------------
+
+function packageJson(name: string): string {
+    const pkg = {
+        name,
+        private: true,
+        devDependencies: {
+            "rbx-tsx": "^0.1.0",
+        },
+    };
+    return JSON.stringify(pkg, null, 2) + "\n";
+}
+
+const TSCONFIG = JSON.stringify(
+    {
+        compilerOptions: {
+            target: "ESNext",
+            lib: ["ESNext"],
+            module: "ESNext",
+            moduleResolution: "bundler",
+            jsx: "react",
+            strict: true,
+            noEmit: true,
+            skipLibCheck: true,
+        },
+        include: ["src/**/*", "node_modules/rbx-tsx/types/**/*"],
+    },
+    null,
+    2,
+) + "\n";
 
 function wallyToml(name: string): string {
     return `[package]
@@ -149,7 +194,7 @@ export default function App() {
 const SERVER_INDEX = `import { Players } from "@rbx-services";
 
 Players.PlayerAdded.Connect((player) => {
-  print(\`\${player.Name} joined the game\`);
+  print(\`\${player!.Name} joined the game\`);
 });
 
 print("Server started!");

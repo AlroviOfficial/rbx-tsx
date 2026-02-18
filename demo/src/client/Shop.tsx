@@ -26,7 +26,7 @@ export default function Shop({ gems, items }: ShopProps) {
               <span className="text-gold text-sm font-heading">{item.cost} gems</span>
             </div>
             {gems >= item.cost ? (
-              <button className="w-auto h-auto bg-primary rounded-md px-5 py-2 text-white text-sm font-heading hover:bg-primary-hover">Buy</button>
+              <button className="w-auto h-auto bg-primary rounded-md px-5 py-2 text-white text-sm font-heading hover:bg-primary-hover" onClick={item.buy}>Buy</button>
             ) : (
               <button className="w-auto h-auto bg-locked-bg rounded-md px-5 py-2 text-locked-text text-sm font-heading">Locked</button>
             )}

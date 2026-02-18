@@ -1,18 +1,27 @@
 {
-  "name": "rbx-tsx-demo",
+  "name": "demo",
   "tree": {
     "$className": "DataModel",
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "Demo": {
-          "$path": "out"
+        "Client": {
+          "$path": "out/client"
         }
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "Server": {
+        "$path": "out/server"
       }
     },
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
+      "Shared": {
+        "$path": "out/shared"
+      },
       "Packages": {
         "$path": "Packages"
       }

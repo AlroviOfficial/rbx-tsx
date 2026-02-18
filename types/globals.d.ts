@@ -11,7 +11,7 @@ declare function warn(...args: any[]): void;
 declare function error(message: string, level?: number): never;
 
 // Type utilities
-declare function typeof(value: any): string;
+// Note: Roblox's typeof() cannot be declared in TS (reserved keyword). Use type() instead.
 declare function tostring(value: any): string;
 declare function tonumber(value: any, base?: number): number | undefined;
 declare function type(value: any): string;

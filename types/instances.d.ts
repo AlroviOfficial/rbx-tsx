@@ -12469,7 +12469,7 @@ interface Studio extends Instance {
 	["Skip Closing Brackets and Quotes"]: boolean;
 	/** Specifies the color of strings in the script editor. */
 	["String Color"]: Color3;
-	[""TODO" Color"]: Color3;
+	["\u201CTODO\u201D Color"]: Color3;
 	/** Specifies how many spaces are used to represent a tab in the script editor. */
 	["Tab Width"]: number;
 	/** Specifies the color of normal text in the script editor. */
@@ -12483,10 +12483,10 @@ interface Studio extends Instance {
 	 */
 	["Warning Color"]: Color3;
 	["Whitespace Color"]: Color3;
-	[""function" Color"]: Color3;
-	[""local" Color"]: Color3;
-	[""nil" Color"]: Color3;
-	[""self" Color"]: Color3;
+	["\u201Cfunction\u201D Color"]: Color3;
+	["\u201Clocal\u201D Color"]: Color3;
+	["\u201Cnil\u201D Color"]: Color3;
+	["\u201Cself\u201D Color"]: Color3;
 	/** Returns a list of `themes` available in Studio. */
 	GetAvailableThemes(): unknown;
 	/** Event called when Studio's `theme` changes. */
@@ -13713,9 +13713,7 @@ interface UIDragDetector extends UIComponent {
 	SelectionModeDragSpeed: UDim2;
 	/** Maximum angle per second the `UIDragDetector` can rotate at. */
 	SelectionModeRotateSpeed: number;
-	/**
-	 * `Enum.UIDragSpeedAxisMapping` value that determines the **X**/**Y** dimension dragging speeds.
-	 */
+	/** `Enum.UIDragSpeedAxisMapping` value that determines the X/Y dimension dragging speeds. */
 	UIDragSpeedAxisMapping: Enum.UIDragSpeedAxisMapping;
 	/** Adds a function to modify or constrain proposed motion. */
 	AddConstraintFunction(priority?: number, _function?: Function): RBXScriptConnection;

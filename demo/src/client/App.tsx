@@ -38,7 +38,6 @@ export default function App() {
     }
   }, [gems, drillCost]);
 
-  // Upgrade definitions passed to the shop — demonstrates arrays of objects
   const shopItems = [
     { id: "pickaxe", name: "Better Pickaxe", desc: "+1 per click", cost: pickCost, buy: buyPickaxe },
     { id: "charm", name: "Lucky Charm", desc: "+5 per click", cost: charmCost, buy: buyCharm },
