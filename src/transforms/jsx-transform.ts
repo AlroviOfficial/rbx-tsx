@@ -688,12 +688,29 @@ function processJSXChildren(
             hasElements = true;
           }
         } else if (isConditionalJSX(child.expression)) {
-          // Conditional rendering
-          elementChildren.push({
-            key: null,
-            value: transformExpression(child.expression, ctx),
-          });
-          hasElements = true;
+          // In text elements, ternaries with text-only branches → treat as text
+          if (isTextElement && isTextConditional(child.expression)) {
+            textParts.push(transformExpression(child.expression, ctx));
+            hasText = true;
+          } else {
+            // Conditional rendering (JSX children)
+            // Use named keys to avoid react-lua bug with positional false/nil
+            const jsxChild = extractJSXFromConditional(child.expression);
+            let childName = jsxChild
+              ? getChildName(jsxChild, elementChildren.length)
+              : "_cond";
+            const nameCount =
+              (usedChildNames.get(childName) ?? 0) + 1;
+            usedChildNames.set(childName, nameCount);
+            if (nameCount > 1) {
+              childName = `${childName}${nameCount}`;
+            }
+            elementChildren.push({
+              key: str(childName),
+              value: transformExpression(child.expression, ctx),
+            });
+            hasElements = true;
+          }
         } else if (isTextExpression(child.expression)) {
           textParts.push(transformExpression(child.expression, ctx));
           hasText = true;
@@ -804,6 +821,8 @@ export function extractTextFromChildren(
       if (text) parts.push(str(text));
     } else if (ts.isJsxExpression(child) && child.expression) {
       if (isTextExpression(child.expression)) {
+        parts.push(transformExpression(child.expression, ctx));
+      } else if (isTextConditional(child.expression)) {
         parts.push(transformExpression(child.expression, ctx));
       } else {
         return null; // Not pure text
@@ -996,6 +1015,18 @@ function isConditionalJSX(expr: ts.Expression): boolean {
   return false;
 }
 
+/** Check if a ternary expression has text-only branches (both sides are text expressions). */
+function isTextConditional(expr: ts.Expression): boolean {
+  if (!ts.isConditionalExpression(expr)) return false;
+  const whenTrue = ts.isParenthesizedExpression(expr.whenTrue)
+    ? expr.whenTrue.expression
+    : expr.whenTrue;
+  const whenFalse = ts.isParenthesizedExpression(expr.whenFalse)
+    ? expr.whenFalse.expression
+    : expr.whenFalse;
+  return isTextExpression(whenTrue) && isTextExpression(whenFalse);
+}
+
 /**
  * Normalize JSX text: collapse indentation and newlines while preserving
  * meaningful internal/trailing spaces (e.g., "Count: " before an expression).
@@ -1113,6 +1144,26 @@ function mergeDefaultProps(
       }
     }
   }
+}
+
+/** Extract the JSX element from a conditional expression (&&, ternary) for key naming. */
+function extractJSXFromConditional(
+  expr: ts.Expression
+): ts.JsxElement | ts.JsxSelfClosingElement | null {
+  let target: ts.Expression | undefined;
+  if (
+    ts.isBinaryExpression(expr) &&
+    expr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+  ) {
+    target = expr.right;
+  } else if (ts.isConditionalExpression(expr)) {
+    target = expr.whenTrue;
+  }
+  if (!target) return null;
+  if (ts.isParenthesizedExpression(target)) target = target.expression;
+  if (ts.isJsxElement(target) || ts.isJsxSelfClosingElement(target))
+    return target;
+  return null;
 }
 
 function getChildName(
