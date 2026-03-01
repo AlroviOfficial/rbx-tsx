@@ -673,13 +673,8 @@ function processJSXChildren(
       }
     } else if (ts.isJsxExpression(child)) {
       if (child.expression) {
-        // Check if it's a text expression or an element expression
-        if (isTextExpression(child.expression)) {
-          textParts.push(
-            wrapToString(transformExpression(child.expression, ctx))
-          );
-          hasText = true;
-        } else if (isMapExpression(child.expression)) {
+        // Check structural JSX patterns first (map, conditional), then text
+        if (isMapExpression(child.expression)) {
           // .map() in JSX context → for loop
           const mapResult = transformJSXMap(
             child.expression as ts.CallExpression,
@@ -696,6 +691,11 @@ function processJSXChildren(
             value: transformExpression(child.expression, ctx),
           });
           hasElements = true;
+        } else if (isTextExpression(child.expression)) {
+          textParts.push(
+            wrapToString(transformExpression(child.expression, ctx))
+          );
+          hasText = true;
         } else {
           // Could be text or element — treat as expression child
           const expr = transformExpression(child.expression, ctx);
@@ -967,6 +967,12 @@ function isTextExpression(expr: ts.Expression): boolean {
     expr.operatorToken.kind === ts.SyntaxKind.PlusToken
   )
     return true;
+  // Call expressions (e.g., formatNumber(x)) — treat as text in JSX children.
+  // Note: .map() calls are handled separately before isTextExpression is checked.
+  if (ts.isCallExpression(expr)) return true;
+  // Parenthesized expressions — delegate to inner expression
+  if (ts.isParenthesizedExpression(expr))
+    return isTextExpression(expr.expression);
   return false;
 }
 

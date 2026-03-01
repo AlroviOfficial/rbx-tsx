@@ -16,6 +16,8 @@ export interface CompilerOptions {
   sourcemap?: boolean;
   warnLevel?: WarningLevel;
   cssManifest?: CSSManifest;
+  /** Directory-to-Luau-path mappings for cross-boundary imports */
+  pathAliases?: Map<string, string>;
 }
 
 export interface CompileResult {
@@ -45,6 +47,7 @@ export function compile(
     sourcemap: options.sourcemap ?? false,
     filename,
     cssManifest: options.cssManifest ?? null,
+    pathAliases: options.pathAliases,
   };
 
   // Parse TSX/TS with TypeScript compiler API

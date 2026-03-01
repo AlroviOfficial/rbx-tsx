@@ -22,6 +22,7 @@ import {
   concat,
   raw,
 } from "../ast/luau-ast.ts";
+import { posix } from "node:path";
 import { ROBLOX_SERVICES } from "../mappings/roblox-services.ts";
 import type { TransformContext } from "./transform-context.ts";
 import { transformExpression } from "./expression-transform.ts";
@@ -211,7 +212,8 @@ function transformRelativeImport(
   ctx: TransformContext
 ): LuauStatement[] {
   const results: LuauStatement[] = [];
-  const requirePath = relativePathToRequirePath(
+  const aliasPath = resolvePathAlias(moduleSpecifier, ctx);
+  const requirePath = aliasPath ?? relativePathToRequirePath(
     moduleSpecifier,
     ctx.isIndexFile
   );
@@ -236,6 +238,7 @@ function transformRelativeImport(
       name: moduleName,
       value: call(ident("require"), [raw(requirePath)]),
     });
+    ctx.requiredModulePaths.set(requirePath, moduleName);
     results.push({
       type: "local",
       name: defaultImport.text,
@@ -261,6 +264,7 @@ function transformRelativeImport(
       name: defaultImport.text,
       value: call(ident("require"), [raw(requirePath)]),
     });
+    ctx.requiredModulePaths.set(requirePath, defaultImport.text);
     ctx.importedModules.set(defaultImport.text, moduleSpecifier);
   } else if (hasNamedImports) {
     // import { helper, utils } from "./utils"
@@ -275,6 +279,7 @@ function transformRelativeImport(
         name: moduleName,
         value: call(ident("require"), [raw(requirePath)]),
       });
+      ctx.requiredModulePaths.set(requirePath, moduleName);
 
       for (const spec of nonTypeImports) {
         const name = spec.name.text;
@@ -319,6 +324,7 @@ function transformRelativeImport(
       name,
       value: call(ident("require"), [raw(requirePath)]),
     });
+    ctx.requiredModulePaths.set(requirePath, name);
     ctx.importedModules.set(name, moduleSpecifier);
   } else {
     // Side-effect import: import "./setup"
@@ -425,22 +431,27 @@ function transformTypeImport(
 
   if (moduleSpecifier === "react") return results;
 
-  const requirePath =
+  const aliasPath =
     moduleSpecifier.startsWith("./") || moduleSpecifier.startsWith("../")
+      ? resolvePathAlias(moduleSpecifier, ctx)
+      : null;
+  const requirePath = aliasPath ??
+    (moduleSpecifier.startsWith("./") || moduleSpecifier.startsWith("../")
       ? relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile)
-      : `ReplicatedStorage.Packages.${capitalize(moduleSpecifier)}`;
+      : `ReplicatedStorage.Packages.${capitalize(moduleSpecifier)}`);
 
   if (
     node.importClause?.namedBindings &&
     ts.isNamedImports(node.importClause.namedBindings)
   ) {
-    const typesModuleName = `_types_${sanitizeName(moduleSpecifier)}`;
-    let needsRequire = false;
+    // Check if this module was already required by a value import
+    const existingVar = ctx.requiredModulePaths.get(requirePath);
+    const typesModuleName = existingVar ?? `_types_${sanitizeName(moduleSpecifier)}`;
+    let needsRequire = !existingVar;
 
     for (const spec of node.importClause.namedBindings.elements) {
       const name = spec.name.text;
       const originalName = spec.propertyName?.text ?? name;
-      needsRequire = true;
       results.push({
         type: "type-alias",
         name,
@@ -448,12 +459,13 @@ function transformTypeImport(
       });
     }
 
-    if (needsRequire) {
+    if (needsRequire && results.length > 0) {
       results.unshift({
         type: "local",
         name: typesModuleName,
         value: call(ident("require"), [raw(requirePath)]),
       });
+      ctx.requiredModulePaths.set(requirePath, typesModuleName);
     }
   }
 
@@ -542,6 +554,40 @@ export function generateModuleReturn(ctx: TransformContext): LuauStatement[] {
 }
 
 // ── Helpers ──
+
+/**
+ * Resolve a relative import specifier against path aliases.
+ * Returns the Luau require path if matched, or null if no alias applies.
+ */
+function resolvePathAlias(
+  moduleSpecifier: string,
+  ctx: TransformContext
+): string | null {
+  if (ctx.pathAliases.size === 0) return null;
+
+  // Derive current file's directory relative to source root
+  const fileDir = posix.dirname(ctx.filename.replaceAll("\\", "/"));
+
+  // Resolve the import relative to the file's directory
+  const resolved = posix
+    .normalize(posix.join(fileDir, moduleSpecifier))
+    .replace(/\.(tsx?|jsx?)$/, ""); // strip extensions
+
+  // Check each alias (skip if the file is within the same alias tree — use script.Parent instead)
+  for (const [prefix, luauBase] of ctx.pathAliases) {
+    if (fileDir === prefix || fileDir.startsWith(prefix + "/")) continue;
+
+    if (resolved === prefix || resolved.startsWith(prefix + "/")) {
+      const rest = resolved.slice(prefix.length).replace(/^\//, "");
+      if (rest) {
+        return `${luauBase}.${rest.split("/").join(".")}`;
+      }
+      return luauBase;
+    }
+  }
+
+  return null;
+}
 
 function sanitizeName(specifier: string): string {
   return specifier.replace(/[^a-zA-Z0-9]/g, "_").replace(/^_+|_+$/g, "");

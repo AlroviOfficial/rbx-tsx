@@ -5,6 +5,7 @@ import {
   mkdirSync,
   statSync,
   readdirSync,
+  existsSync,
 } from "fs";
 import { join, resolve, dirname, relative, basename } from "path";
 import { compile, getOutputPath, type CompilerOptions } from "./compiler.ts";
@@ -90,6 +91,86 @@ export function createCLI(): Command {
   return program;
 }
 
+// ── Rojo Project Integration ──
+
+interface RojoPathMapping {
+  /** Filesystem path relative to project root */
+  fsPath: string;
+  /** Roblox instance path segments (e.g. ["ReplicatedStorage", "Shared"]) */
+  robloxPath: string[];
+}
+
+/** Walk up from startDir to find default.project.json */
+function findRojoProject(startDir: string): string | null {
+  let dir = startDir;
+  for (;;) {
+    const candidate = join(dir, "default.project.json");
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+/** Recursively walk a Rojo tree node, collecting $path entries */
+function walkRojoTree(
+  node: Record<string, unknown>,
+  path: string[] = []
+): RojoPathMapping[] {
+  const results: RojoPathMapping[] = [];
+  for (const [key, value] of Object.entries(node)) {
+    if (key.startsWith("$") || typeof value !== "object" || value === null)
+      continue;
+    const child = value as Record<string, unknown>;
+    const childPath = [...path, key];
+    if (typeof child.$path === "string") {
+      results.push({
+        fsPath: (child.$path as string).replaceAll("\\", "/"),
+        robloxPath: childPath,
+      });
+    }
+    results.push(...walkRojoTree(child, childPath));
+  }
+  return results;
+}
+
+/**
+ * Parse a Rojo default.project.json and derive path aliases.
+ * Maps source-relative directories to Luau require paths.
+ */
+function buildAliasesFromRojo(
+  projectPath: string,
+  outputDir: string
+): Map<string, string> {
+  const projectRoot = dirname(projectPath);
+  const project = JSON.parse(readFileSync(projectPath, "utf-8"));
+  if (!project.tree) return new Map();
+
+  const mappings = walkRojoTree(project.tree);
+  const outRel = relative(projectRoot, outputDir).replaceAll("\\", "/");
+  const aliases = new Map<string, string>();
+
+  for (const { fsPath, robloxPath } of mappings) {
+    // Only care about $path entries under the output directory
+    const isUnder =
+      fsPath === outRel || fsPath.startsWith(outRel + "/");
+    if (!isUnder) continue;
+
+    const sourceDir =
+      fsPath === outRel ? "" : fsPath.slice(outRel.length + 1);
+    if (!sourceDir) continue; // skip root output dir itself
+
+    // Build Luau path: game:GetService("TopService").rest.of.path
+    const [service, ...rest] = robloxPath;
+    let luauPath = `game:GetService("${service}")`;
+    for (const seg of rest) luauPath += `.${seg}`;
+    aliases.set(sourceDir, luauPath);
+  }
+
+  return aliases;
+}
+
 function handleCompile(
   input: string,
   opts: {
@@ -139,10 +220,34 @@ function handleCompile(
     // Directory compilation
     const outputDir = opts.output ? resolve(opts.output) : absInput;
 
+    // Auto-detect Rojo project for cross-boundary import resolution
+    if (!compilerOpts.pathAliases) {
+      const rojoProject = findRojoProject(absInput);
+      if (rojoProject) {
+        const aliases = buildAliasesFromRojo(rojoProject, outputDir);
+        if (aliases.size > 0) {
+          compilerOpts.pathAliases = aliases;
+          console.log(
+            `Rojo: ${relative(process.cwd(), rojoProject)}`
+          );
+        }
+      }
+    }
+
     // Phase 1: Compile CSS files first (--css flag) to generate manifests
     if (opts.css) {
       const cssFiles = findCSSFiles(absInput);
       if (cssFiles.length > 0) {
+        // Generate css.d.ts for TypeScript CSS import support
+        const cssDtsPath = join(absInput, "css.d.ts");
+        if (!existsSync(cssDtsPath)) {
+          writeFileSync(
+            cssDtsPath,
+            'declare module "*.css" {\n  const createStyleSheet: () => Instance;\n  export default createStyleSheet;\n}\n'
+          );
+          console.log("Generated css.d.ts for CSS import support");
+        }
+
         for (const cssFile of cssFiles) {
           const relCssPath = relative(absInput, cssFile);
           const cssOutputPath = join(

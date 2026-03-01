@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { formatNumber, formatTime } from "./GameConfig";
+import { formatNumber, formatTime } from "../shared/GameConfig";
 
 interface StatsProps {
   totalGems: number;

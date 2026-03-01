@@ -7,8 +7,8 @@ import Inventory from "./Inventory";
 import Stats from "./Stats";
 import { useAutoClicker } from "./hooks/useAutoClicker";
 import { useTimer } from "./hooks/useTimer";
-import { GEM_COLLECTION } from "./GameConfig";
-import type { GemInfo, ShopItem } from "./GameConfig";
+import { GEM_COLLECTION } from "../shared/GameConfig";
+import type { GemInfo, ShopItem } from "../shared/GameConfig";
 
 export default function App() {
   // Navigation

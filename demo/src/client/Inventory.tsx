@@ -1,6 +1,6 @@
 import React from "react";
-import { formatNumber } from "./GameConfig";
-import type { GemInfo } from "./GameConfig";
+import { formatNumber } from "../shared/GameConfig";
+import type { GemInfo } from "../shared/GameConfig";
 
 interface GemCardProps {
   gem: GemInfo;
@@ -40,11 +40,11 @@ export default function Inventory({ totalGems, collection, unlocked }: Inventory
       <div className="w-full h-auto flex flex-col gap-1 p-2">
         <div className="w-full h-auto flex flex-row items-center">
           <h1 className="text-gold text-[22px] font-title grow">Gem Collection</h1>
-          <span className="text-text-dim text-sm font-body">{`${unlocked.length}/${collection.length}`}</span>
+          <span className="text-text-dim text-sm font-body">{unlocked.length}/{collection.length}</span>
         </div>
         {nextGem && (
           <span className="text-text-dim text-xs font-body">
-            {`Next discovery at ${formatNumber(nextGem.milestone)} total gems`}
+            Next discovery at {formatNumber(nextGem.milestone)} total gems
           </span>
         )}
       </div>

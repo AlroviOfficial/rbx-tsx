@@ -1,6 +1,6 @@
 import React from "react";
-import { formatNumber } from "./GameConfig";
-import type { ShopItem } from "./GameConfig";
+import { formatNumber } from "../shared/GameConfig";
+import type { ShopItem } from "../shared/GameConfig";
 
 interface ShopProps {
   gems: number;
@@ -17,7 +17,7 @@ export default function Shop({ gems, items }: ShopProps) {
             <div className="w-auto h-auto flex flex-col grow gap-0.5">
               <span className="text-text text-base font-heading">{item.name}</span>
               <span className="text-text-dim text-xs font-body">{item.desc}</span>
-              <span className="text-gold text-sm font-heading">{`${formatNumber(item.cost)} gems`}</span>
+              <span className="text-gold text-sm font-heading">{formatNumber(item.cost)} gems</span>
             </div>
             {gems >= item.cost ? (
               <button className="w-auto h-auto bg-primary rounded-md px-5 py-2 text-white text-sm font-heading hover:bg-primary-hover" onClick={item.buy}>Buy</button>

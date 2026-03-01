@@ -10,6 +10,8 @@ export interface CompileOptions {
   sourcemap: boolean;
   filename?: string;
   cssManifest?: CSSManifest | null;
+  /** Directory-to-Luau-path mappings for cross-boundary imports */
+  pathAliases?: Map<string, string>;
 }
 
 export const DEFAULT_OPTIONS: CompileOptions = {
@@ -63,6 +65,9 @@ export class TransformContext {
   /** Track imported modules for require path resolution */
   readonly importedModules = new Map<string, string>();
 
+  /** Track require paths already emitted → Luau variable name (deduplication) */
+  readonly requiredModulePaths = new Map<string, string>();
+
   /** CSS module imports: localName → style require path */
   readonly cssModuleImports = new Map<string, string>();
 
@@ -71,6 +76,9 @@ export class TransformContext {
 
   /** CSS manifest for cross-compiler collaboration */
   readonly cssManifest: CSSManifest | null;
+
+  /** Directory-to-Luau-path mappings for cross-boundary imports */
+  readonly pathAliases: Map<string, string>;
 
   /** Source file reference for line/column extraction */
   sourceFile?: ts.SourceFile;
@@ -83,6 +91,7 @@ export class TransformContext {
     this.options = options;
     this.filename = options.filename ?? "unknown";
     this.cssManifest = options.cssManifest ?? null;
+    this.pathAliases = options.pathAliases ?? new Map();
     this.isIndexFile =
       /(?:^|[\\/])index(?:\.(?:client|server))?\.[tj]sx?$/.test(this.filename);
   }
