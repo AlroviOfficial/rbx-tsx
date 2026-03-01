@@ -307,6 +307,9 @@
   .text-white {
     color: var(--color-white);
   }
+  .text-primary {
+    color: var(--color-primary);
+  }
   .hover\:bg-primary-hover {
     &:hover {
       @media (hover: hover) {
@@ -348,5 +351,48 @@
   }
   .gem-button:hover {
     background-color: var(--color-primary-hover);
+  }
+  .tab-active {
+    padding: 6px 16px;
+    background-color: var(--color-primary);
+    border-radius: 6px;
+    font-family: gotham;
+    font-weight: 600;
+    font-size: 14px;
+    color: white;
+  }
+  .tab-inactive {
+    padding: 6px 16px;
+    background-color: transparent;
+    border-radius: 6px;
+    font-family: gotham;
+    font-weight: 400;
+    font-size: 14px;
+    color: var(--color-text-dim);
+  }
+  .tab-inactive:hover {
+    color: var(--color-text);
+  }
+  .gem-card {
+    width: 100%;
+    height: auto;
+    background-color: var(--color-surface);
+    border-radius: 0.5rem;
+    padding: 12px;
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+  }
+  .gem-card-locked {
+    width: 100%;
+    height: auto;
+    background-color: var(--color-locked-bg);
+    border-radius: 0.5rem;
+    padding: 12px;
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
   }
 }

@@ -8,7 +8,7 @@ import "./game.css";
 const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui");
 
 const screenGui = new Instance("ScreenGui");
-screenGui.Name = "GemClicker";
+screenGui.Name = "GemMiner";
 screenGui.Parent = playerGui;
 screenGui.ResetOnSpawn = false;
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling;
