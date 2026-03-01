@@ -11,6 +11,7 @@ const screenGui = new Instance("ScreenGui");
 screenGui.Name = "GemMiner";
 screenGui.Parent = playerGui;
 screenGui.ResetOnSpawn = false;
+screenGui.IgnoreGuiInset = true;
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling;
 
 // Stylesheet is auto-attached to the createRoot container
