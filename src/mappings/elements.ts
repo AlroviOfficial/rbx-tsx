@@ -18,6 +18,40 @@ export const HTML_TO_ROBLOX: Record<string, string> = {
   textarea: "TextBox",
   video: "VideoFrame",
   scroll: "ScrollingFrame",
+
+  // Semantic containers
+  nav: "Frame",
+  header: "Frame",
+  footer: "Frame",
+  main: "Frame",
+  section: "Frame",
+  article: "Frame",
+  aside: "Frame",
+  form: "Frame",
+
+  // List elements
+  ul: "Frame",
+  ol: "Frame",
+  li: "Frame",
+
+  // Table elements
+  table: "Frame",
+  thead: "Frame",
+  tbody: "Frame",
+  tfoot: "Frame",
+  tr: "Frame",
+  td: "TextLabel",
+  th: "TextLabel",
+
+  // Interactive/overlay
+  dialog: "Frame",
+  details: "Frame",
+  summary: "TextButton",
+
+  // Form controls
+  select: "Frame",
+  option: "TextButton",
+  optgroup: "Frame",
 };
 
 /** Elements that can have a Text property */
@@ -51,30 +85,6 @@ export const ROBLOX_GUI_CLASSES = new Set([
 
 /** Unsupported HTML elements that should produce a warning */
 export const UNSUPPORTED_ELEMENTS = new Set([
-  "table",
-  "tr",
-  "td",
-  "th",
-  "thead",
-  "tbody",
-  "tfoot",
-  "form",
-  "select",
-  "option",
-  "optgroup",
-  "ul",
-  "ol",
-  "li",
-  "nav",
-  "header",
-  "footer",
-  "main",
-  "section",
-  "article",
-  "aside",
-  "details",
-  "summary",
-  "dialog",
   "iframe",
   "embed",
   "object",

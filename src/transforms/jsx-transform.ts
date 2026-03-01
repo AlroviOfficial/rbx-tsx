@@ -30,6 +30,10 @@ import {
 } from "../mappings/elements.ts";
 import { EVENT_MAP, UNSUPPORTED_EVENTS } from "../mappings/events.ts";
 import { ROBLOX_PROPERTIES } from "../mappings/roblox-properties.ts";
+import {
+  getDefaultProps,
+  getDefaultChildren,
+} from "../mappings/default-styles.ts";
 import type { TransformContext } from "./transform-context.ts";
 import { transformExpression } from "./expression-transform.ts";
 import { transformStatements } from "./statement-transform.ts";
@@ -92,7 +96,7 @@ function transformJSXElement(
   const staticClassName = extractStaticClassName(attributes);
 
   // Determine the element type
-  const { elementArg, robloxClass, isComponent } = resolveElementType(
+  const { elementArg, robloxClass, isComponent, htmlTag } = resolveElementType(
     tagName,
     ctx,
     staticClassName
@@ -113,6 +117,18 @@ function transformJSXElement(
 
   // Process children
   const childEntries = processJSXChildren(children, robloxClass, ctx);
+
+  // Inject default props and children for mapped HTML elements
+  if (htmlTag) {
+    const defaultProps = getDefaultProps(htmlTag);
+    if (defaultProps.length > 0) {
+      mergeDefaultProps(propsEntries, defaultProps);
+    }
+    const defaultChildren = getDefaultChildren(htmlTag);
+    if (defaultChildren.length > 0) {
+      childEntries.unshift(...defaultChildren);
+    }
+  }
 
   // For text-capable elements, extract text children as the Text property
   if (
@@ -167,6 +183,8 @@ interface ResolvedElement {
   robloxClass: string | null;
   /** Whether this is a user component (uppercase) */
   isComponent: boolean;
+  /** The original HTML tag name (null for components or Roblox passthrough) */
+  htmlTag: string | null;
 }
 
 function resolveElementType(
@@ -198,7 +216,7 @@ function resolveElementType(
           `HTML element '${name}' has no Roblox mapping`,
           tagName
         );
-        return { elementArg: str(name), robloxClass: name, isComponent: false };
+        return { elementArg: str(name), robloxClass: name, isComponent: false, htmlTag: null };
       }
 
       const className = robloxClass ?? name;
@@ -206,11 +224,12 @@ function resolveElementType(
         elementArg: str(className),
         robloxClass: className,
         isComponent: false,
+        htmlTag: robloxClass ? name : null,
       };
     }
 
     // Uppercase = Component
-    return { elementArg: ident(name), robloxClass: null, isComponent: true };
+    return { elementArg: ident(name), robloxClass: null, isComponent: true, htmlTag: null };
   }
 
   // Property access: e.g., ThemeContext.Provider
@@ -219,10 +238,11 @@ function resolveElementType(
       elementArg: transformExpression(tagName, ctx),
       robloxClass: null,
       isComponent: true,
+      htmlTag: null,
     };
   }
 
-  return { elementArg: str("Frame"), robloxClass: "Frame", isComponent: false };
+  return { elementArg: str("Frame"), robloxClass: "Frame", isComponent: false, htmlTag: null };
 }
 
 // ── Portal ──
@@ -1041,6 +1061,29 @@ function extractStaticClassName(attributes: ts.JsxAttributes): string | null {
     }
   }
   return null;
+}
+
+/**
+ * Merge default props into the user props array.
+ * User-provided props take precedence — defaults are only added for missing keys.
+ */
+function mergeDefaultProps(
+  userProps: LuauTableEntry[],
+  defaultProps: LuauTableEntry[]
+): void {
+  const userKeys = new Set<string>();
+  for (const entry of userProps) {
+    if (entry.key && entry.key.type === "string") {
+      userKeys.add(entry.key.value);
+    }
+  }
+  for (const defaultEntry of defaultProps) {
+    if (defaultEntry.key && defaultEntry.key.type === "string") {
+      if (!userKeys.has(defaultEntry.key.value)) {
+        userProps.push(defaultEntry);
+      }
+    }
+  }
 }
 
 function getChildName(
