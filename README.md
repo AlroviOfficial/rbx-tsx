@@ -53,16 +53,33 @@ Runs the compiler without emitting files. Reports warnings and errors.
 
 ## Element Mapping
 
-| TSX | Luau |
-|-----|------|
-| `<div>` | `Frame` |
-| `<span>`, `<p>`, `<h1>`–`<h6>`, `<label>` | `TextLabel` |
-| `<button>`, `<a>` | `TextButton` |
-| `<input>`, `<textarea>` | `TextBox` |
-| `<img>` | `ImageLabel` |
-| `<canvas>` | `ViewportFrame` |
-| `<video>` | `VideoFrame` |
-| `<scroll>` | `ScrollingFrame` |
+| TSX | Luau | Default behavior |
+|-----|------|------------------|
+| `<div>` | `Frame` | |
+| `<span>`, `<p>`, `<h1>`–`<h6>`, `<label>` | `TextLabel` | |
+| `<button>`, `<a>` | `TextButton` | |
+| `<input>`, `<textarea>` | `TextBox` | |
+| `<img>` | `ImageLabel` | |
+| `<canvas>` | `ViewportFrame` | |
+| `<video>` | `VideoFrame` | |
+| `<scroll>` | `ScrollingFrame` | |
+| `<nav>`, `<header>`, `<footer>`, `<main>`, `<section>`, `<article>`, `<aside>`, `<form>` | `Frame` | Transparent, auto-height, full-width |
+| `<ul>`, `<ol>` | `Frame` | Vertical `UIListLayout` auto-injected |
+| `<li>` | `Frame` | Transparent, auto-height, full-width |
+| `<table>`, `<thead>`, `<tbody>`, `<tfoot>` | `Frame` | Vertical `UIListLayout` auto-injected |
+| `<tr>` | `Frame` | Horizontal `UIListLayout` auto-injected |
+| `<td>` | `TextLabel` | Transparent, auto-sized |
+| `<th>` | `TextLabel` | Transparent, auto-sized, bold font |
+| `<dialog>` | `Frame` | Centered (`AnchorPoint` + `Position`) |
+| `<details>` | `Frame` | Transparent, auto-height |
+| `<summary>` | `TextButton` | |
+| `<select>` | `Frame` | Vertical `UIListLayout` auto-injected |
+| `<option>` | `TextButton` | |
+| `<optgroup>` | `Frame` | Transparent, auto-height |
+
+Default props are only applied when you don't specify them yourself — your props always take precedence.
+
+Unsupported elements (`iframe`, `embed`, `object`, `audio`, `source`, `track`, `map`, `area`, `svg` and SVG shapes) have no Roblox equivalent and produce a compiler warning.
 
 ## Props Mapping
 
