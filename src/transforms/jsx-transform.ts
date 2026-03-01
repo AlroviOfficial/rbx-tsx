@@ -84,6 +84,7 @@ function transformJSXFragment(
 
   return call(index(ident("React"), "createElement"), [
     index(ident("React"), "Fragment"),
+    raw("nil"),
     table(children),
   ]);
 }
@@ -903,6 +904,7 @@ function transformJSXMap(
           type: "return",
           value: call(index(ident("React"), "createElement"), [
             index(ident("React"), "Fragment"),
+            raw("nil"),
             ident(tempVar),
           ]),
         },
@@ -1128,7 +1130,7 @@ function getChildName(
     const name = tag.text;
     const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
 
-    // Try to derive a unique name from className
+    // Try to derive a unique name from className (use first class token only)
     for (const attr of attrs.properties) {
       if (
         ts.isJsxAttribute(attr) &&
@@ -1137,11 +1139,14 @@ function getChildName(
         ts.isStringLiteral(attr.initializer)
       ) {
         const className = attr.initializer.text;
-        const pascalClassName = className
+        const firstClass = className.split(/\s+/)[0] ?? "";
+        const pascalClassName = firstClass
           .split("-")
           .map((s: string) => s.charAt(0).toUpperCase() + s.slice(1))
           .join("");
-        return `${pascalClassName}${capitalized}`;
+        return pascalClassName
+          ? `${pascalClassName}${capitalized}`
+          : capitalized;
       }
     }
 

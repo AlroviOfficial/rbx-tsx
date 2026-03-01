@@ -379,7 +379,7 @@ describe("Inventory: component instantiation", () => {
   });
 
   test("uses React.createElement(React.Fragment) for map results", () => {
-    expect(luau).toContain("return React.createElement(React.Fragment, _map_result)");
+    expect(luau).toContain("return React.createElement(React.Fragment, nil, _map_result)");
   });
 
   test("compiles ternary conditional rendering in children", () => {
