@@ -3,7 +3,7 @@ import { generateLuau } from "../../src/codegen/luau-codegen.ts";
 import type { LuauStatement } from "../../src/ast/luau-ast.ts";
 import {
   ident, str, num, bool, nil, call, methodCall, index, bracketIndex,
-  table, binary, unary, ifExpr, funcExpr, concat,
+  table, binary, unary, ifExpr, funcExpr, concat, templateLiteral,
 } from "../../src/ast/luau-ast.ts";
 
 function gen(stmts: LuauStatement[]): string {
@@ -171,6 +171,14 @@ describe("expressions", () => {
       value: concat([str("hello "), call(ident("tostring"), [ident("x")])]),
     }]);
     expect(result).toContain('return "hello " .. tostring(x)');
+  });
+
+  test("template literal", () => {
+    const result = gen([{
+      type: "return",
+      value: templateLiteral("hello ", [{ expr: ident("x"), text: " world" }]),
+    }]);
+    expect(result).toContain("return `hello {x} world`");
   });
 
   test("table constructor", () => {

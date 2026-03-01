@@ -153,6 +153,7 @@ export type LuauExpression =
   | LuauIfExpr
   | LuauFunctionExpr
   | LuauConcat
+  | LuauTemplateLiteral
   | LuauVarargs
   | LuauRaw
   | LuauTypeAssertion;
@@ -246,6 +247,17 @@ export interface LuauFunctionExpr {
 export interface LuauConcat {
   type: "concat";
   parts: LuauExpression[];
+}
+
+export interface LuauTemplateLiteralSpan {
+  expr: LuauExpression;
+  text: string; // literal text after this expression
+}
+
+export interface LuauTemplateLiteral {
+  type: "template-literal";
+  head: string; // literal text before the first expression
+  spans: LuauTemplateLiteralSpan[];
 }
 
 export interface LuauVarargs {
@@ -351,6 +363,13 @@ export function concat(parts: LuauExpression[]): LuauExpression {
   if (parts.length === 0) return str("");
   if (parts.length === 1) return parts[0]!;
   return { type: "concat", parts };
+}
+
+export function templateLiteral(
+  head: string,
+  spans: LuauTemplateLiteralSpan[]
+): LuauTemplateLiteral {
+  return { type: "template-literal", head, spans };
 }
 
 export function raw(code: string): LuauRaw {

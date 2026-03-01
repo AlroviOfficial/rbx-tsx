@@ -339,6 +339,18 @@ function emitExpr(
         .join(" .. ");
     }
 
+    case "template-literal": {
+      const escape = (s: string) =>
+        s.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\{/g, "\\{");
+      let result = "`" + escape(expr.head);
+      for (const span of expr.spans) {
+        result += `{${emitExpr(span.expr, ctx, depth)}}`;
+        result += escape(span.text);
+      }
+      result += "`";
+      return result;
+    }
+
     case "varargs":
       return "...";
 

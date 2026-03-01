@@ -21,6 +21,7 @@ import {
   ifExpr,
   funcExpr,
   concat,
+  templateLiteral,
   raw,
 } from "../ast/luau-ast.ts";
 import { ROBLOX_METHODS } from "../mappings/roblox-methods.ts";
@@ -290,24 +291,13 @@ function transformTemplateLiteral(
   node: ts.TemplateExpression,
   ctx: TransformContext
 ): LuauExpression {
-  const parts: LuauExpression[] = [];
+  const head = node.head.text;
+  const spans = node.templateSpans.map((span) => ({
+    expr: transformExpression(span.expression, ctx),
+    text: span.literal.text,
+  }));
 
-  if (node.head.text) {
-    parts.push(str(node.head.text));
-  }
-
-  for (const span of node.templateSpans) {
-    const expr = transformExpression(span.expression, ctx);
-    // Wrap in tostring() for safety
-    parts.push(call(ident("tostring"), [expr]));
-
-    if (span.literal.text) {
-      parts.push(str(span.literal.text));
-    }
-  }
-
-  if (parts.length === 0) return str("");
-  return concat(parts);
+  return templateLiteral(head, spans);
 }
 
 // ── Binary Expression ──
@@ -950,6 +940,7 @@ function transformArrayMethod(
 function isLikelyStringResult(expr: LuauExpression): boolean {
   if (expr.type === "string") return true;
   if (expr.type === "concat") return true;
+  if (expr.type === "template-literal") return true;
   // Result of a string.* call (e.g., string.lower, string.upper)
   if (
     expr.type === "call" &&

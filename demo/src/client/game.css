@@ -298,6 +298,9 @@
   .text-locked-text {
     color: var(--color-locked-text);
   }
+  .text-primary {
+    color: var(--color-primary);
+  }
   .text-text {
     color: var(--color-text);
   }
@@ -306,9 +309,6 @@
   }
   .text-white {
     color: var(--color-white);
-  }
-  .text-primary {
-    color: var(--color-primary);
   }
   .hover\:bg-primary-hover {
     &:hover {

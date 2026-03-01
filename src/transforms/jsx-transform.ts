@@ -3,6 +3,8 @@ import type {
   LuauExpression,
   LuauStatement,
   LuauTableEntry,
+  LuauStringLiteral,
+  LuauTemplateLiteralSpan,
 } from "../ast/luau-ast.ts";
 import {
   ident,
@@ -19,7 +21,7 @@ import {
   unary,
   ifExpr,
   funcExpr,
-  concat,
+  templateLiteral,
   raw,
 } from "../ast/luau-ast.ts";
 import {
@@ -692,9 +694,7 @@ function processJSXChildren(
           });
           hasElements = true;
         } else if (isTextExpression(child.expression)) {
-          textParts.push(
-            wrapToString(transformExpression(child.expression, ctx))
-          );
+          textParts.push(transformExpression(child.expression, ctx));
           hasText = true;
         } else {
           // Could be text or element — treat as expression child
@@ -739,7 +739,7 @@ function processJSXChildren(
       "text-in-container",
       `Text inside <${robloxClass}> will be wrapped in TextLabel`
     );
-    const textExpr = textParts.length === 1 ? textParts[0]! : concat(textParts);
+    const textExpr = textParts.length === 1 ? textParts[0]! : buildTextTemplateLiteral(textParts);
     entries.push({
       key: str("_text"),
       value: call(index(ident("React"), "createElement"), [
@@ -757,7 +757,7 @@ function processJSXChildren(
       `Mixed text and element children in <${robloxClass ?? "component"}>`
     );
     // Wrap text in TextLabel
-    const textExpr = textParts.length === 1 ? textParts[0]! : concat(textParts);
+    const textExpr = textParts.length === 1 ? textParts[0]! : buildTextTemplateLiteral(textParts);
     entries.push({
       key: str("_text"),
       value: call(index(ident("React"), "createElement"), [
@@ -803,7 +803,7 @@ export function extractTextFromChildren(
       if (text) parts.push(str(text));
     } else if (ts.isJsxExpression(child) && child.expression) {
       if (isTextExpression(child.expression)) {
-        parts.push(wrapToString(transformExpression(child.expression, ctx)));
+        parts.push(transformExpression(child.expression, ctx));
       } else {
         return null; // Not pure text
       }
@@ -814,7 +814,7 @@ export function extractTextFromChildren(
 
   if (parts.length === 0) return null;
   if (parts.length === 1) return parts[0]!;
-  return concat(parts);
+  return buildTextTemplateLiteral(parts);
 }
 
 // ── JSX .map() transform ──
@@ -1010,10 +1010,31 @@ function normalizeJSXText(text: string): string {
   return processed.join(" ");
 }
 
-function wrapToString(expr: LuauExpression): LuauExpression {
-  // If already a string literal, no need to wrap
-  if (expr.type === "string") return expr;
-  return call(ident("tostring"), [expr]);
+/** Convert a mix of string literals and expressions into a Luau template literal. */
+function buildTextTemplateLiteral(parts: LuauExpression[]): LuauExpression {
+  let head = "";
+  const spans: LuauTemplateLiteralSpan[] = [];
+  let i = 0;
+
+  // Collect leading text into head
+  while (i < parts.length && parts[i]!.type === "string") {
+    head += (parts[i] as LuauStringLiteral).value;
+    i++;
+  }
+
+  // Collect remaining parts as spans
+  while (i < parts.length) {
+    const expr = parts[i]!;
+    i++;
+    let text = "";
+    while (i < parts.length && parts[i]!.type === "string") {
+      text += (parts[i] as LuauStringLiteral).value;
+      i++;
+    }
+    spans.push({ expr, text });
+  }
+
+  return templateLiteral(head, spans);
 }
 
 function extractKeyFromJSXBody(

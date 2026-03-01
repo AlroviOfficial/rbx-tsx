@@ -72,8 +72,7 @@ describe("operators", () => {
 describe("template literals", () => {
   test("simple template", () => {
     const result = compileStmt("const x = `hello ${name}`;");
-    expect(result).toContain("tostring(name)");
-    expect(result).toContain("..");
+    expect(result).toContain("`hello {name}`");
   });
 });
 

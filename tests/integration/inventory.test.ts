@@ -400,10 +400,10 @@ describe("Inventory: component instantiation", () => {
 // ── Template Literals & String Operations ──
 
 describe("Inventory: template literals and strings", () => {
-  test("compiles template literal to concatenation", () => {
+  test("compiles template literal to interpolated string", () => {
     // `${items.length} items | ${equippedCount} equipped`
     expect(luau).toContain(
-      'tostring(#items) .. " items | " .. tostring(equippedCount) .. " equipped"'
+      "`{#items} items | {equippedCount} equipped`"
     );
   });
 
@@ -512,14 +512,14 @@ describe("Inventory: e.target.value transform", () => {
 
 describe("Inventory: property access text children", () => {
   test("extracts property access as Text prop", () => {
-    expect(luau).toContain("Text = tostring(item.name)");
-    expect(luau).toContain("Text = tostring(item.rarity)");
+    expect(luau).toContain("Text = item.name");
+    expect(luau).toContain("Text = item.rarity");
   });
 
   test("concatenates mixed text + property access", () => {
-    expect(luau).toContain('Text = "DMG: " .. tostring(item.stats.damage)');
-    expect(luau).toContain('Text = "DEF: " .. tostring(item.stats.defense)');
-    expect(luau).toContain('Text = "SPD: " .. tostring(item.stats.speed)');
+    expect(luau).toContain("Text = `DMG: {item.stats.damage}`");
+    expect(luau).toContain("Text = `DEF: {item.stats.defense}`");
+    expect(luau).toContain("Text = `SPD: {item.stats.speed}`");
   });
 
   test("no mixed-children warnings for text elements", () => {

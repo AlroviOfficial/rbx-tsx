@@ -12,7 +12,8 @@ export function useAutoClicker(rate: number, onTick: () => void) {
 
     const interval = 1 / rate;
 
-    const connection = RunService.Heartbeat.Connect((dt: number) => {
+    const connection = RunService.Heartbeat.Connect((dt?: number) => {
+      if (!dt) return;
       elapsed.current += dt;
       while (elapsed.current >= interval) {
         elapsed.current -= interval;
