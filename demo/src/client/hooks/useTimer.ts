@@ -7,8 +7,7 @@ export function useTimer(): number {
   const total = useRef(0);
 
   useEffect(() => {
-    const connection = RunService.Heartbeat.Connect((dt?: number) => {
-      if (!dt) return;
+    const connection = RunService.Heartbeat.Connect((dt: number) => {
       total.current += dt;
       const floored = Math.floor(total.current);
       if (floored !== elapsed) {

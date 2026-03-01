@@ -42,7 +42,6 @@ declare module "@rbx-services" {
 	export const ChangeHistoryService: ChangeHistoryService;
 	export const ChangeHistoryStreamingService: ChangeHistoryStreamingService;
 	export const Chat: Chat;
-	export const ChatbotUIService: ChatbotUIService;
 	export const CloudCRUDService: CloudCRUDService;
 	export const ClusterPacketCache: ClusterPacketCache;
 	export const CollaboratorsService: CollaboratorsService;
@@ -203,6 +202,7 @@ declare module "@rbx-services" {
 	export const RobloxPluginGuiService: RobloxPluginGuiService;
 	export const RobloxReplicatedStorage: RobloxReplicatedStorage;
 	export const RobloxServerStorage: RobloxServerStorage;
+	export const RolloutValidationService: RolloutValidationService;
 	export const RomarkRbxAnalyticsService: RomarkRbxAnalyticsService;
 	export const RomarkService: RomarkService;
 	export const RtMessagingService: RtMessagingService;
@@ -243,7 +243,6 @@ declare module "@rbx-services" {
 	export const StartupMessageService: StartupMessageService;
 	export const Stats: Stats;
 	export const StopWatchReporter: StopWatchReporter;
-	export const StreamingService: StreamingService;
 	export const Studio: Studio;
 	export const StudioAssetService: StudioAssetService;
 	export const StudioCameraService: StudioCameraService;

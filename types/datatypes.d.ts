@@ -820,6 +820,37 @@ interface Secret {
 	AddSuffix(suffix?: string): Secret;
 }
 
+/**
+ * A set of `Enum.SecurityCapability` items. See [script capabilities](../../../scripting/capabilities.md).
+ */
+interface SecurityCapabilities {
+	/** Returns a new set of capabilities with zero or more additions. */
+	Add(_param?: Enum.SecurityCapability): SecurityCapabilities;
+	/** Returns a new set of capabilities with the provided set added. */
+	Add(capabilities?: SecurityCapabilities): SecurityCapabilities;
+	/** Returns a new set of capabilities with zero or more deletions. */
+	Remove(_param?: Enum.SecurityCapability): SecurityCapabilities;
+	/** Returns a new set of capabilities with the provided set deleted. */
+	Remove(capabilities?: SecurityCapabilities): SecurityCapabilities;
+	/**
+	 * Returns whether a set of capabilities contains the specified `Enum.SecurityCapability` items.
+	 */
+	Contains(_param?: Enum.SecurityCapability): boolean;
+	/** Returns whether a set of capabilities contains another set of capabilities. */
+	Contains(capabilities?: SecurityCapabilities): boolean;
+}
+
+declare const SecurityCapabilities: {
+	/**
+	 * Returns a new set of capabilities from zero or more `Enum.SecurityCapability` items.
+	 */
+	new (_param?: Enum.SecurityCapability): SecurityCapabilities;
+	/**
+	 * Returns a new set of capabilities from the capabilities of the calling function.
+	 */
+	fromCurrent(): SecurityCapabilities;
+};
+
 /** Provides sharable, table-like storage for key/value pairs. */
 interface SharedTable {
 }

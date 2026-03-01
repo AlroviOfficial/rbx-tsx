@@ -40,7 +40,7 @@ Players.PlayerRemoving.Connect((player) => {
 });
 
 // Handle save requests from client
-saveEvent.OnServerEvent.Connect((player?: Player, args?: unknown) => {
+saveEvent.OnServerEvent.Connect((player: Player, args: unknown) => {
   if (!player) {
     return;
   }
@@ -50,13 +50,15 @@ saveEvent.OnServerEvent.Connect((player?: Player, args?: unknown) => {
     const gemsVal = leaderstats.FindFirstChild("Gems");
     const clicksVal = leaderstats.FindFirstChild("Clicks");
     if (gemsVal) {
-      (gemsVal as IntValue).Value = data.gems;
+      (gemsVal as unknown as IntValue).Value = data.gems;
     }
     if (clicksVal) {
-      (clicksVal as IntValue).Value = data.clicks;
+      (clicksVal as unknown as IntValue).Value = data.clicks;
     }
   }
-  print(`Saved data for ${player.Name}: ${data.gems} gems, ${data.clicks} clicks`);
+  print(
+    `Saved data for ${player.Name}: ${data.gems} gems, ${data.clicks} clicks`
+  );
 });
 
 print("Gem Miner server started!");

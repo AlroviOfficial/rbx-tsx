@@ -562,7 +562,8 @@ function generateInstances(classes: ApiClass[], docs: ClassDocsMap): string {
           break;
         }
         case "Event": {
-          const params = formatParams(member.Parameters ?? [], yamlOptional);
+          // Event callback params are always provided by the engine — never optional
+          const params = formatParams(member.Parameters ?? []);
           lines.push(
             `${doc}\treadonly ${name}: RBXScriptSignal<(${params}) => void>;`
           );

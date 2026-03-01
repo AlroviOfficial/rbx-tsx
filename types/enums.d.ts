@@ -3870,26 +3870,26 @@ declare namespace Enum {
 	const RigLabel: {
 		readonly Invalid: Enum.RigLabel;
 		readonly Root: Enum.RigLabel;
-		readonly Pelvis: Enum.RigLabel;
-		readonly Waist: Enum.RigLabel;
-		readonly Chest: Enum.RigLabel;
-		readonly Neck: Enum.RigLabel;
-		readonly HeadBase: Enum.RigLabel;
-		readonly LeftClavicle: Enum.RigLabel;
-		readonly LeftShoulder: Enum.RigLabel;
-		readonly LeftElbow: Enum.RigLabel;
-		readonly LeftWrist: Enum.RigLabel;
-		readonly RightClavicle: Enum.RigLabel;
-		readonly RightShoulder: Enum.RigLabel;
-		readonly RightElbow: Enum.RigLabel;
-		readonly RightWrist: Enum.RigLabel;
 		readonly LeftHip: Enum.RigLabel;
 		readonly LeftKnee: Enum.RigLabel;
 		readonly LeftAnkle: Enum.RigLabel;
-		readonly LeftToes: Enum.RigLabel;
 		readonly RightHip: Enum.RigLabel;
 		readonly RightKnee: Enum.RigLabel;
 		readonly RightAnkle: Enum.RigLabel;
+		readonly Waist: Enum.RigLabel;
+		readonly LeftShoulder: Enum.RigLabel;
+		readonly LeftElbow: Enum.RigLabel;
+		readonly LeftWrist: Enum.RigLabel;
+		readonly RightShoulder: Enum.RigLabel;
+		readonly RightElbow: Enum.RigLabel;
+		readonly RightWrist: Enum.RigLabel;
+		readonly Neck: Enum.RigLabel;
+		readonly Pelvis: Enum.RigLabel;
+		readonly Chest: Enum.RigLabel;
+		readonly HeadBase: Enum.RigLabel;
+		readonly LeftClavicle: Enum.RigLabel;
+		readonly RightClavicle: Enum.RigLabel;
+		readonly LeftToes: Enum.RigLabel;
 		readonly RightToes: Enum.RigLabel;
 	};
 
@@ -4752,6 +4752,28 @@ declare namespace Enum {
 		readonly Bottom: Enum.TerrainFace;
 	};
 
+	interface TerrainLiquidMergeOperation extends EnumItem {}
+	const TerrainLiquidMergeOperation: {
+		readonly None: Enum.TerrainLiquidMergeOperation;
+		readonly Source: Enum.TerrainLiquidMergeOperation;
+		readonly Union: Enum.TerrainLiquidMergeOperation;
+		readonly Difference: Enum.TerrainLiquidMergeOperation;
+		readonly Intersect: Enum.TerrainLiquidMergeOperation;
+	};
+
+	interface TerrainSolidMergeOperation extends EnumItem {}
+	const TerrainSolidMergeOperation: {
+		readonly None: Enum.TerrainSolidMergeOperation;
+		readonly Paint: Enum.TerrainSolidMergeOperation;
+		readonly Source: Enum.TerrainSolidMergeOperation;
+		readonly Union: Enum.TerrainSolidMergeOperation;
+		readonly Dig: Enum.TerrainSolidMergeOperation;
+		readonly Difference: Enum.TerrainSolidMergeOperation;
+		readonly Intersect: Enum.TerrainSolidMergeOperation;
+		readonly Cut: Enum.TerrainSolidMergeOperation;
+		readonly Place: Enum.TerrainSolidMergeOperation;
+	};
+
 	interface TextChatMessageStatus extends EnumItem {}
 	const TextChatMessageStatus: {
 		readonly Unknown: Enum.TextChatMessageStatus;
@@ -5342,6 +5364,13 @@ declare namespace Enum {
 		readonly Publish: Enum.VoiceControlPath;
 		readonly Subscribe: Enum.VoiceControlPath;
 		readonly Join: Enum.VoiceControlPath;
+	};
+
+	interface VoiceRccReconnectReason extends EnumItem {}
+	const VoiceRccReconnectReason: {
+		readonly Unknown: Enum.VoiceRccReconnectReason;
+		readonly Migration: Enum.VoiceRccReconnectReason;
+		readonly CloseRoom: Enum.VoiceRccReconnectReason;
 	};
 
 	interface VolumetricAudio extends EnumItem {}

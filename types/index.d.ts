@@ -4,5 +4,3 @@
 /// <reference path="instances.d.ts" />
 /// <reference path="globals.d.ts" />
 /// <reference path="services.d.ts" />
-/// <reference path="react.d.ts" />
-/// <reference path="react-roblox.d.ts" />

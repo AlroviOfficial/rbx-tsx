@@ -16,7 +16,7 @@ interface Object {
 	/**
 	 * Fires immediately after a property of the object changes, with some limitations.
 	 */
-	readonly Changed: RBXScriptSignal<(property?: string) => void>;
+	readonly Changed: RBXScriptSignal<(property: string) => void>;
 }
 
 interface AnimationNode extends Object {
@@ -405,17 +405,17 @@ interface Instance extends Object {
 	/**
 	 * Fires when the `Instance.Parent` property of the object or one of its ancestors is changed.
 	 */
-	readonly AncestryChanged: RBXScriptSignal<(child?: Instance, parent?: Instance) => void>;
+	readonly AncestryChanged: RBXScriptSignal<(child: Instance, parent: Instance) => void>;
 	/** Fires whenever an attribute is changed on the `Instance`. */
-	readonly AttributeChanged: RBXScriptSignal<(attribute?: string) => void>;
+	readonly AttributeChanged: RBXScriptSignal<(attribute: string) => void>;
 	/** Fires after an object is parented to this `Instance`. */
-	readonly ChildAdded: RBXScriptSignal<(child?: Instance) => void>;
+	readonly ChildAdded: RBXScriptSignal<(child: Instance) => void>;
 	/** Fires after a child is removed from this `Instance`. */
-	readonly ChildRemoved: RBXScriptSignal<(child?: Instance) => void>;
+	readonly ChildRemoved: RBXScriptSignal<(child: Instance) => void>;
 	/** Fires after a descendant is added to the `Instance`. */
-	readonly DescendantAdded: RBXScriptSignal<(descendant?: Instance) => void>;
+	readonly DescendantAdded: RBXScriptSignal<(descendant: Instance) => void>;
 	/** Fires immediately before a descendant of the `Instance` is removed. */
-	readonly DescendantRemoving: RBXScriptSignal<(descendant?: Instance) => void>;
+	readonly DescendantRemoving: RBXScriptSignal<(descendant: Instance) => void>;
 	/**
 	 * Fires immediately before (or is deferred until after) the instance is destroyed via `Instance:Destroy()`.
 	 */
@@ -425,7 +425,7 @@ interface Instance extends Object {
 	 */
 	readonly StyledPropertiesChanged: RBXScriptSignal<() => void>;
 	/** @deprecated Deprecated. */
-	readonly childAdded: RBXScriptSignal<(child?: Instance) => void>;
+	readonly childAdded: RBXScriptSignal<(child: Instance) => void>;
 }
 
 /** Describes the appearance of an `Accessory` for the `HumanoidDescription`. */
@@ -507,7 +507,7 @@ interface AdService extends Instance {
 	 * Fires when an `AdService` video closes.
 	 * @deprecated Deprecated.
 	 */
-	readonly VideoAdClosed: RBXScriptSignal<(adShown?: boolean) => void>;
+	readonly VideoAdClosed: RBXScriptSignal<(adShown: boolean) => void>;
 }
 
 /** An unfinished advanced variant of the `Dragger` class. */
@@ -661,7 +661,7 @@ interface AnimationController extends Instance {
 	 * Fires whenever the `AnimationController` begins playing an animation. It returns the `AnimationTrack` playing.
 	 * @deprecated Deprecated.
 	 */
-	readonly AnimationPlayed: RBXScriptSignal<(animationTrack?: AnimationTrack) => void>;
+	readonly AnimationPlayed: RBXScriptSignal<(animationTrack: AnimationTrack) => void>;
 }
 
 interface AnimationFromVideoCreatorService extends Instance {
@@ -750,7 +750,7 @@ interface AnimationTrack extends Instance {
 	/**
 	 * Fires every time playback of an `AnimationTrack` reaches a `Keyframe` that does not have the default name of `Keyframe`.
 	 */
-	readonly KeyframeReached: RBXScriptSignal<(keyframeName?: string) => void>;
+	readonly KeyframeReached: RBXScriptSignal<(keyframeName: string) => void>;
 	/**
 	 * Fires when the `AnimationTrack` finishes playing. The AnimationTrack might still animate the subject while the animation "fades out". To catch when the AnimationTrack is completely done moving anything in the world, use the `AnimationTrack.Ended` event.
 	 */
@@ -777,7 +777,7 @@ interface Animator extends Instance {
 	 */
 	StepAnimations(deltaTime?: number): undefined;
 	/** Fires when the Animator starts playing an AnimationTrack. */
-	readonly AnimationPlayed: RBXScriptSignal<(animationTrack?: AnimationTrack) => void>;
+	readonly AnimationPlayed: RBXScriptSignal<(animationTrack: AnimationTrack) => void>;
 }
 
 interface Annotation extends Instance {
@@ -831,9 +831,9 @@ interface AssetService extends Instance {
 	/** Creates a new, empty `EditableMesh`. */
 	CreateEditableMesh(editableMeshOptions?: unknown): EditableMesh;
 	/**
-	 * Creates a Decal instance that uses composite PBR textures created by layering the provided textures in the order they are provided in the `layers` array. Textures layer based on the alpha value of the ColorMap.
+	 * Modifies an existing `Decal` to contain a composite PBR textures created by layering the provided textures in the order they are provided in the `layers` array. Textures layer based on the alpha value of the color map.
 	 */
-	ComposeDecalAsync(layers?: unknown): Decal;
+	ComposeDecalAsync(decal?: Decal, layers?: unknown): undefined;
 	/** Uploads a new asset to Roblox from the given object. */
 	CreateAssetAsync(object?: Object, assetType?: Enum.AssetType, requestParameters?: unknown): unknown;
 	/** Uploads a new version for an existing asset from the given object. */
@@ -1002,7 +1002,7 @@ interface AudioAnalyzer extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioAnalyzer` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Combines multiple audio streams into a single, multichannel audio stream. */
@@ -1022,7 +1022,7 @@ interface AudioChannelMixer extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioChannelMixer` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /**
@@ -1044,7 +1044,7 @@ interface AudioChannelSplitter extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioChannelSplitter` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /**
@@ -1072,7 +1072,7 @@ interface AudioChorus extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioChorus` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Adjusts the dynamic range of input streams. */
@@ -1108,7 +1108,7 @@ interface AudioCompressor extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioCompressor` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Produces audio streams from physical devices, such as microphones. */
@@ -1146,7 +1146,7 @@ interface AudioDeviceInput extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioDeviceInput` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /**
@@ -1168,7 +1168,7 @@ interface AudioDeviceOutput extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioDeviceOutput` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Distorts audio streams, making them sound fuzzier, grittier, and louder. */
@@ -1190,7 +1190,7 @@ interface AudioDistortion extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioDistortion` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Overlays delayed copies of audio streams. */
@@ -1219,7 +1219,7 @@ interface AudioEcho extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioEcho` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Emits audio streams into the world. */
@@ -1265,7 +1265,7 @@ interface AudioEmitter extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioEmitter` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Adjusts the frequency content of audio streams. */
@@ -1299,7 +1299,7 @@ interface AudioEqualizer extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioEqualizer` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Adjusts the volume of audio streams. */
@@ -1321,7 +1321,7 @@ interface AudioFader extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioFader` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Adjusts the frequency content of audio streams. */
@@ -1353,7 +1353,7 @@ interface AudioFilter extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioFilter` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Imparts a whooshing or sweeping sound on audio streams. */
@@ -1379,7 +1379,7 @@ interface AudioFlanger extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioFlanger` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 interface AudioFocusService extends Instance {
@@ -1403,7 +1403,7 @@ interface AudioGate extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioAnalyzer` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Limits how loud audio streams are allowed to be. */
@@ -1429,7 +1429,7 @@ interface AudioLimiter extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioLimiter` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Records an audio stream from its surrounding `AudioEmitters` in the 3D world. */
@@ -1475,7 +1475,7 @@ interface AudioListener extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioListener` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Adjusts the perceived pitch of audio streams. */
@@ -1498,7 +1498,7 @@ interface AudioPitchShifter extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioPitchShifter` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Used to play audio assets. */
@@ -1555,7 +1555,7 @@ interface AudioPlayer extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioPlayer` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Records audio streams in-experience. */
@@ -1581,7 +1581,7 @@ interface AudioRecorder extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioAnalyzer` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Reverberates audio streams. */
@@ -1629,7 +1629,7 @@ interface AudioReverb extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioReverb` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /**
@@ -1675,7 +1675,7 @@ interface AudioSpeechToText extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioSpeechToText` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** Plays text as speech audio. */
@@ -1726,7 +1726,7 @@ interface AudioTextToSpeech extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioTextToSpeech` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /**
@@ -1759,7 +1759,7 @@ interface AudioTremolo extends Instance {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioAnalyzer` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /** @deprecated This class is deprecated. */
@@ -1826,11 +1826,11 @@ interface AvatarCreationService extends Instance {
 	/**
 	 * Fires when an in-experience-created avatar asset's moderation status has been updated from pending.
 	 */
-	readonly AvatarAssetModerationCompleted: RBXScriptSignal<(assetId?: number, moderationStatus?: Enum.ModerationStatus) => void>;
+	readonly AvatarAssetModerationCompleted: RBXScriptSignal<(assetId: number, moderationStatus: Enum.ModerationStatus) => void>;
 	/**
 	 * Fires when an in-experience-created avatar's moderation status has been updated from pending.
 	 */
-	readonly AvatarModerationCompleted: RBXScriptSignal<(outfitId?: number, moderationStatus?: Enum.ModerationStatus) => void>;
+	readonly AvatarModerationCompleted: RBXScriptSignal<(outfitId: number, moderationStatus: Enum.ModerationStatus) => void>;
 }
 
 /** A service to support developer Avatar Editors. */
@@ -1948,23 +1948,23 @@ interface AvatarEditorService extends Instance {
 	/**
 	 * Fires when the `AvatarEditorService:PromptAllowInventoryReadAccess()` prompt is responded to by the user.
 	 */
-	readonly PromptAllowInventoryReadAccessCompleted: RBXScriptSignal<(result?: Enum.AvatarPromptResult) => void>;
+	readonly PromptAllowInventoryReadAccessCompleted: RBXScriptSignal<(result: Enum.AvatarPromptResult) => void>;
 	/** Fires when the PromptSaveOutfit operation is completed. */
-	readonly PromptCreateOutfitCompleted: RBXScriptSignal<(result?: Enum.AvatarPromptResult, failureType?: unknown) => void>;
+	readonly PromptCreateOutfitCompleted: RBXScriptSignal<(result: Enum.AvatarPromptResult, failureType: unknown) => void>;
 	/** Fires when the PromptDeleteOutfit operation is completed. */
-	readonly PromptDeleteOutfitCompleted: RBXScriptSignal<(result?: Enum.AvatarPromptResult) => void>;
+	readonly PromptDeleteOutfitCompleted: RBXScriptSignal<(result: Enum.AvatarPromptResult) => void>;
 	/** Fires when the PromptRenameOutfit operation is completed. */
-	readonly PromptRenameOutfitCompleted: RBXScriptSignal<(result?: Enum.AvatarPromptResult) => void>;
+	readonly PromptRenameOutfitCompleted: RBXScriptSignal<(result: Enum.AvatarPromptResult) => void>;
 	/** Fires when the `AvatarEditorService:PromptSaveAvatar()` operation is completed. */
-	readonly PromptSaveAvatarCompleted: RBXScriptSignal<(result?: Enum.AvatarPromptResult, humanoidDescription?: HumanoidDescription) => void>;
+	readonly PromptSaveAvatarCompleted: RBXScriptSignal<(result: Enum.AvatarPromptResult, humanoidDescription: HumanoidDescription) => void>;
 	/**
 	 * Fires when the `AvatarEditorService:PromptSetFavorite()` operation is completed.
 	 */
-	readonly PromptSetFavoriteCompleted: RBXScriptSignal<(result?: Enum.AvatarPromptResult) => void>;
+	readonly PromptSetFavoriteCompleted: RBXScriptSignal<(result: Enum.AvatarPromptResult) => void>;
 	/**
 	 * Fires when the `AvatarEditorService:PromptUpdateOutfit()` operation is completed.
 	 */
-	readonly PromptUpdateOutfitCompleted: RBXScriptSignal<(result?: Enum.AvatarPromptResult) => void>;
+	readonly PromptUpdateOutfitCompleted: RBXScriptSignal<(result: Enum.AvatarPromptResult) => void>;
 }
 
 interface AvatarImportService extends Instance {
@@ -2160,7 +2160,7 @@ interface PlayerGui extends BasePlayerGui {
 	 * Fires when the transparency of the Topbar CoreGui changes.
 	 * @deprecated Deprecated.
 	 */
-	readonly TopbarTransparencyChangedSignal: RBXScriptSignal<(transparency?: number) => void>;
+	readonly TopbarTransparencyChangedSignal: RBXScriptSignal<(transparency: number) => void>;
 }
 
 /**
@@ -2206,11 +2206,11 @@ interface RemoteEvent extends BaseRemoteEvent {
 	/**
 	 * Fires from a `LocalScript` when either `FireClient()` or `FireAllClients()` is called on the same `RemoteEvent` instance from a `Script`.
 	 */
-	readonly OnClientEvent: RBXScriptSignal<(arguments?: unknown) => void>;
+	readonly OnClientEvent: RBXScriptSignal<(arguments: unknown) => void>;
 	/**
 	 * Fires from a `Script` when `FireServer()` is called on the same `RemoteEvent` instance from a `LocalScript`.
 	 */
-	readonly OnServerEvent: RBXScriptSignal<(player?: Player, arguments?: unknown) => void>;
+	readonly OnServerEvent: RBXScriptSignal<(player: Player, arguments: unknown) => void>;
 }
 
 /**
@@ -2232,11 +2232,11 @@ interface UnreliableRemoteEvent extends BaseRemoteEvent {
 	/**
 	 * Fires from a `LocalScript` when either `FireClient()` or `FireAllClients()` is called on the same `UnreliableRemoteEvent` instance from a `Script`, although this firing is not guaranteed even if one of the above methods are called. This can occur due to packet loss or to maintain optimal engine performance.
 	 */
-	readonly OnClientEvent: RBXScriptSignal<(arguments?: unknown) => void>;
+	readonly OnClientEvent: RBXScriptSignal<(arguments: unknown) => void>;
 	/**
 	 * Fires from a `Script` when `FireServer()` is called on the same `UnreliableRemoteEvent` instance from a `LocalScript`, although this firing is not guaranteed even if the above methods is called. This can occur due to packet loss or to maintain optimal engine performance.
 	 */
-	readonly OnServerEvent: RBXScriptSignal<(player?: Player, arguments?: unknown) => void>;
+	readonly OnServerEvent: RBXScriptSignal<(player: Player, arguments: unknown) => void>;
 }
 
 interface BaseWrap extends Instance {
@@ -2374,7 +2374,7 @@ interface BindableEvent extends Instance {
 	/**
 	 * Fires when any script calls the `Fire()` method on the same `BindableEvent` instance.
 	 */
-	readonly Event: RBXScriptSignal<(arguments?: unknown) => void>;
+	readonly Event: RBXScriptSignal<(arguments: unknown) => void>;
 }
 
 /**
@@ -2646,13 +2646,13 @@ interface CaptureService extends Instance {
 	StartVideoCaptureAsync(onCaptureReady?: Function, captureParams?: unknown): Enum.VideoCaptureStartedResult;
 	UploadCaptureAsync(capture?: Capture): unknown;
 	/** Fires immediately before a capture begins. */
-	readonly CaptureBegan: RBXScriptSignal<(captureType?: Enum.CaptureType) => void>;
+	readonly CaptureBegan: RBXScriptSignal<(captureType: Enum.CaptureType) => void>;
 	/** Fires after a capture finishes. */
-	readonly CaptureEnded: RBXScriptSignal<(captureType?: Enum.CaptureType) => void>;
+	readonly CaptureEnded: RBXScriptSignal<(captureType: Enum.CaptureType) => void>;
 	/** @deprecated Deprecated. */
-	readonly CaptureSaved: RBXScriptSignal<(captureInfo?: unknown) => void>;
+	readonly CaptureSaved: RBXScriptSignal<(captureInfo: unknown) => void>;
 	/** Fires when the user saves a capture. */
-	readonly UserCaptureSaved: RBXScriptSignal<(captureContentId?: ContentId) => void>;
+	readonly UserCaptureSaved: RBXScriptSignal<(captureContentId: ContentId) => void>;
 }
 
 /**
@@ -2687,19 +2687,19 @@ interface ChangeHistoryService extends Instance {
 	/**
 	 * Fired when the user completes an action. Parameters come from `TryBeginRecording()` and `FinishRecording()`.
 	 */
-	readonly OnRecordingFinished: RBXScriptSignal<(name?: string, displayName?: unknown, identifier?: unknown, operation?: Enum.FinishRecordingOperation, finalOptions?: unknown) => void>;
+	readonly OnRecordingFinished: RBXScriptSignal<(name: string, displayName: unknown, identifier: unknown, operation: Enum.FinishRecordingOperation, finalOptions: unknown) => void>;
 	/**
 	 * Fired when the user begins an action. Parameters come from `TryBeginRecording()`.
 	 */
-	readonly OnRecordingStarted: RBXScriptSignal<(name?: string, displayName?: unknown) => void>;
+	readonly OnRecordingStarted: RBXScriptSignal<(name: string, displayName: unknown) => void>;
 	/**
 	 * Fired when the user reverses the undo command. Waypoint describes the type action that has been redone.
 	 */
-	readonly OnRedo: RBXScriptSignal<(waypoint?: string) => void>;
+	readonly OnRedo: RBXScriptSignal<(waypoint: string) => void>;
 	/**
 	 * Fired when the user undoes an action in studio. Waypoint describes the type action that has been undone.
 	 */
-	readonly OnUndo: RBXScriptSignal<(waypoint?: string) => void>;
+	readonly OnUndo: RBXScriptSignal<(waypoint: string) => void>;
 }
 
 interface ChangeHistoryStreamingService extends Instance {
@@ -2844,10 +2844,7 @@ interface Chat extends Instance {
 	 */
 	FilterStringForPlayerAsync(stringToFilter?: string, playerToFilterFor?: Player): string;
 	/** Fires when `Chat:Chat()` is called. */
-	readonly Chatted: RBXScriptSignal<(part?: Instance, message?: string, color?: Enum.ChatColor) => void>;
-}
-
-interface ChatbotUIService extends Instance {
+	readonly Chatted: RBXScriptSignal<(part: Instance, message: string, color: Enum.ChatColor) => void>;
 }
 
 /** An object that provides user input on in-experience `BaseParts` and `Models`. */
@@ -2867,21 +2864,21 @@ interface ClickDetector extends Instance {
 	/**
 	 * Fires when a player interacts with the parent of a `ClickDetector` or `DragDetector`.
 	 */
-	readonly MouseClick: RBXScriptSignal<(playerWhoClicked?: Player) => void>;
+	readonly MouseClick: RBXScriptSignal<(playerWhoClicked: Player) => void>;
 	/**
 	 * Fires when the parent of a `ClickDetector` or `DragDetector` is hovered over by a player.
 	 */
-	readonly MouseHoverEnter: RBXScriptSignal<(playerWhoHovered?: Player) => void>;
+	readonly MouseHoverEnter: RBXScriptSignal<(playerWhoHovered: Player) => void>;
 	/**
 	 * Fires when a player's cursor hovers off the parent of a `ClickDetector` or `DragDetector`.
 	 */
-	readonly MouseHoverLeave: RBXScriptSignal<(playerWhoHovered?: Player) => void>;
+	readonly MouseHoverLeave: RBXScriptSignal<(playerWhoHovered: Player) => void>;
 	/**
 	 * Fires when a player right clicks their mouse cursor on a `ClickDetector` or `DragDetector`.
 	 */
-	readonly RightMouseClick: RBXScriptSignal<(playerWhoClicked?: Player) => void>;
+	readonly RightMouseClick: RBXScriptSignal<(playerWhoClicked: Player) => void>;
 	/** @deprecated Deprecated. */
-	readonly mouseClick: RBXScriptSignal<(playerWhoClicked?: Player) => void>;
+	readonly mouseClick: RBXScriptSignal<(playerWhoClicked: Player) => void>;
 }
 
 /**
@@ -2989,11 +2986,11 @@ interface DragDetector extends ClickDetector {
 	/**
 	 * Fires when a user continues dragging the object after `DragStart` has been initiated.
 	 */
-	readonly DragContinue: RBXScriptSignal<(playerWhoDragged?: Player, cursorRay?: Ray, viewFrame?: CFrame, vrInputFrame?: OptionalCoordinateFrame, isModeSwitchKeyDown?: boolean) => void>;
+	readonly DragContinue: RBXScriptSignal<(playerWhoDragged: Player, cursorRay: Ray, viewFrame: CFrame, vrInputFrame: OptionalCoordinateFrame, isModeSwitchKeyDown: boolean) => void>;
 	/** Fires when a user stops dragging the object. */
-	readonly DragEnd: RBXScriptSignal<(playerWhoDragged?: Player) => void>;
+	readonly DragEnd: RBXScriptSignal<(playerWhoDragged: Player) => void>;
 	/** Fires when a user starts dragging the object. */
-	readonly DragStart: RBXScriptSignal<(playerWhoDragged?: Player, cursorRay?: Ray, viewFrame?: CFrame, hitFrame?: CFrame, clickedPart?: BasePart, vrInputFrame?: OptionalCoordinateFrame, isModeSwitchKeyDown?: boolean) => void>;
+	readonly DragStart: RBXScriptSignal<(playerWhoDragged: Player, cursorRay: Ray, viewFrame: CFrame, hitFrame: CFrame, clickedPart: BasePart, vrInputFrame: OptionalCoordinateFrame, isModeSwitchKeyDown: boolean) => void>;
 }
 
 interface CloudCRUDService extends Instance {
@@ -3048,20 +3045,20 @@ interface CollectionService extends Instance {
 	 * Fires when a `Configuration`, `CustomEvent`, `CustomEventReceiver`, `Dialog`, or `VehicleSeat` is added to the `DataModel`.
 	 * @deprecated Deprecated.
 	 */
-	readonly ItemAdded: RBXScriptSignal<(instance?: Instance) => void>;
+	readonly ItemAdded: RBXScriptSignal<(instance: Instance) => void>;
 	/**
 	 * Fires when a `Configuration`, `CustomEvent`, `CustomEventReceiver`, `Dialog`, or `VehicleSeat` is removed from the `DataModel`.
 	 * @deprecated Deprecated.
 	 */
-	readonly ItemRemoved: RBXScriptSignal<(instance?: Instance) => void>;
+	readonly ItemRemoved: RBXScriptSignal<(instance: Instance) => void>;
 	/**
 	 * Fires when a tag is added to an instance and the added tag is the only occurrence of that tag in the place.
 	 */
-	readonly TagAdded: RBXScriptSignal<(tag?: string) => void>;
+	readonly TagAdded: RBXScriptSignal<(tag: string) => void>;
 	/**
 	 * Fires when a tag is removed from an instance and the removed tag is no longer used anywhere in the place.
 	 */
-	readonly TagRemoved: RBXScriptSignal<(tag?: string) => void>;
+	readonly TagRemoved: RBXScriptSignal<(tag: string) => void>;
 }
 
 /** Supports real-world purchases that you can bundle with digital benefits. */
@@ -3079,7 +3076,7 @@ interface CommerceService extends Instance {
 	/**
 	 * Fires when commerce purchase webview has closed - not an indicator that a purchase was successful.
 	 */
-	readonly PromptCommerceProductPurchaseFinished: RBXScriptSignal<(user?: Player, productId?: string) => void>;
+	readonly PromptCommerceProductPurchaseFinished: RBXScriptSignal<(user: Player, productId: string) => void>;
 }
 
 /**
@@ -3695,7 +3692,7 @@ interface ContentProvider extends Instance {
 	 * Yields until all of the assets associated with the given `Instances` have loaded.
 	 */
 	PreloadAsync(contentIdList?: unknown, callbackFunction?: Function): undefined;
-	readonly AssetFetchFailed: RBXScriptSignal<(assetId?: ContentId) => void>;
+	readonly AssetFetchFailed: RBXScriptSignal<(assetId: ContentId) => void>;
 }
 
 /** A service used to bind user input to contextual actions. */
@@ -3758,9 +3755,9 @@ interface ContextActionService extends Instance {
 	 */
 	GetButton(actionName?: string): Instance;
 	/** Fires when the current player equips a `Tool`. */
-	readonly LocalToolEquipped: RBXScriptSignal<(toolEquipped?: Instance) => void>;
+	readonly LocalToolEquipped: RBXScriptSignal<(toolEquipped: Instance) => void>;
 	/** Fires when the current player unequips a `Tool`. */
-	readonly LocalToolUnequipped: RBXScriptSignal<(toolUnequipped?: Instance) => void>;
+	readonly LocalToolUnequipped: RBXScriptSignal<(toolUnequipped: Instance) => void>;
 }
 
 /** The base class for controller objects, such as the `HumanoidController` object. */
@@ -3778,7 +3775,7 @@ interface Controller extends Instance {
 	/**
 	 * Fired when the pressed state of a bound button is changed. This event can be used in conjunction with `Controller:GetButton()` to see whether a bound button is being pressed down or not.
 	 */
-	readonly ButtonChanged: RBXScriptSignal<(button?: Enum.Button) => void>;
+	readonly ButtonChanged: RBXScriptSignal<(button: Enum.Button) => void>;
 }
 
 interface HumanoidController extends Controller {
@@ -3794,7 +3791,7 @@ interface SkateboardController extends Controller {
 	 */
 	Throttle: number;
 	/** Fired when any input state of the skateboard controller is updated. */
-	readonly AxisChanged: RBXScriptSignal<(axis?: string) => void>;
+	readonly AxisChanged: RBXScriptSignal<(axis: string) => void>;
 }
 
 interface VehicleController extends Controller {
@@ -3958,9 +3955,9 @@ interface CustomEvent extends Instance {
 	 */
 	SetValue(newValue?: number): undefined;
 	/** Fires when a receiver is connected to the `CustomEvent`. */
-	readonly ReceiverConnected: RBXScriptSignal<(receiver?: Instance) => void>;
+	readonly ReceiverConnected: RBXScriptSignal<(receiver: Instance) => void>;
 	/** Fires when a receiver is disconnected from the `CustomEvent`. */
-	readonly ReceiverDisconnected: RBXScriptSignal<(receiver?: Instance) => void>;
+	readonly ReceiverDisconnected: RBXScriptSignal<(receiver: Instance) => void>;
 }
 
 /** @deprecated This class is deprecated. */
@@ -3974,15 +3971,15 @@ interface CustomEventReceiver extends Instance {
 	/**
 	 * Fires when the receiver is attached to a different `CustomEvent`, when the `CustomEventReceiver.Source` property is changed.
 	 */
-	readonly EventConnected: RBXScriptSignal<(event?: Instance) => void>;
+	readonly EventConnected: RBXScriptSignal<(event: Instance) => void>;
 	/**
 	 * Fires when the receiver is attached to a different `CustomEvent` instance when the `CustomEventReceiver.Source` property is changed.
 	 */
-	readonly EventDisconnected: RBXScriptSignal<(event?: Instance) => void>;
+	readonly EventDisconnected: RBXScriptSignal<(event: Instance) => void>;
 	/**
 	 * Fires when the value of the CustomEvent's source is changed, passing the CustomEvent's new value.
 	 */
-	readonly SourceValueChanged: RBXScriptSignal<(newValue?: number) => void>;
+	readonly SourceValueChanged: RBXScriptSignal<(newValue: number) => void>;
 }
 
 interface CustomLog extends Instance {
@@ -4127,7 +4124,7 @@ interface DataStoreService extends Instance {
 	GetOrderedDataStore(name?: string, scope?: string): OrderedDataStore;
 	/** Returns the number of requests that can be made by the given request type. */
 	GetRequestBudgetForRequestType(requestType?: Enum.DataStoreRequestType): number;
-	SetRateLimitForRequestType(requestType: Enum.DataStoreRequestType, baseLimit: number, perPlayerLimit: number): undefined;
+	SetRateLimitForRequestType(requestType?: Enum.DataStoreRequestType, baseLimit?: number, perPlayerLimit?: number): undefined;
 	/**
 	 * Returns a `DataStoreListingPages` object for enumerating through all of the experience's data stores.
 	 */
@@ -4262,7 +4259,7 @@ interface Dialog extends Instance {
 	/** Returns a list of players currently using the Dialog. */
 	GetCurrentPlayers(): Instances;
 	/** Fired when a player chooses something to say, through a `Dialog` instance. */
-	readonly DialogChoiceSelected: RBXScriptSignal<(player?: Instance, dialogChoice?: Instance) => void>;
+	readonly DialogChoiceSelected: RBXScriptSignal<(player: Instance, dialogChoice: Instance) => void>;
 }
 
 /**
@@ -4435,7 +4432,7 @@ interface Explosion extends Instance {
 	/**
 	 * Fires when the `Explosion` hits a `BasePart` within its `Explosion.BlastRadius`. Returns the part hit along with the distance of the part from `Explosion.Position`.
 	 */
-	readonly Hit: RBXScriptSignal<(part?: BasePart, distance?: number) => void>;
+	readonly Hit: RBXScriptSignal<(part: BasePart, distance: number) => void>;
 }
 
 interface FaceAnimatorService extends Instance {
@@ -4583,6 +4580,7 @@ interface Decal extends FaceInstance {
 	ColorMapContent: Content;
 	MetalnessMapContent: Content;
 	NormalMapContent: Content;
+	Rotation: number;
 	RoughnessMapContent: Content;
 	/** @deprecated Deprecated. */
 	Shiny: number;
@@ -4819,7 +4817,10 @@ interface GeometryService extends Instance {
 	 * Returns a table of `Constraints` and `Attachments` which you may choose to preserve, along with their respective parents.
 	 */
 	CalculateConstraintsToPreserve(source?: Instance, destination?: unknown, options?: unknown): unknown;
-	FragmentAsync(part: BasePart, fragmentSites: unknown, options?: unknown, mainPartSites?: unknown): unknown;
+	/** This API has not been released. */
+	GenerateFragmentSites(part?: BasePart, options?: unknown): unknown;
+	/** This API has not been released. */
+	FragmentAsync(part?: BasePart, sites?: unknown, options?: unknown): unknown;
 	/**
 	 * Creates one or more `PartOperations` from the intersecting geometry of one part and other parts.
 	 */
@@ -4828,7 +4829,8 @@ interface GeometryService extends Instance {
 	 * Creates one or more `PartOperations` from one part minus the geometry occupied by other parts.
 	 */
 	SubtractAsync(part?: Instance, parts?: unknown, options?: unknown): unknown;
-	SweepPartAsync(part: BasePart, cframes: unknown, options?: unknown): MeshPart;
+	/** This API has not been released. */
+	SweepPartAsync(part?: BasePart, cframes?: unknown, options?: unknown): MeshPart;
 	/**
 	 * Creates one or more `PartOperations` from one part plus the geometry occupied by other parts.
 	 */
@@ -4947,7 +4949,7 @@ interface GuiBase2d extends GuiBase {
 	/**
 	 * Fires when the gamepad selection moves to, leaves, or changes within the connected `GuiBase2d` or any descendant `GuiObjects`.
 	 */
-	readonly SelectionChanged: RBXScriptSignal<(amISelected?: boolean, previousSelection?: GuiObject, newSelection?: GuiObject) => void>;
+	readonly SelectionChanged: RBXScriptSignal<(amISelected: boolean, previousSelection: GuiObject, newSelection: GuiObject) => void>;
 }
 
 /** An abstract class for all 2D user interface objects. */
@@ -5037,58 +5039,58 @@ interface GuiObject extends GuiBase2d {
 	 * Fired when a player begins dragging the object.
 	 * @deprecated Deprecated.
 	 */
-	readonly DragBegin: RBXScriptSignal<(initialPosition?: UDim2) => void>;
+	readonly DragBegin: RBXScriptSignal<(initialPosition: UDim2) => void>;
 	/**
 	 * Fired when a player stops dragging the object.
 	 * @deprecated Deprecated.
 	 */
-	readonly DragStopped: RBXScriptSignal<(x?: number, y?: number) => void>;
+	readonly DragStopped: RBXScriptSignal<(x: number, y: number) => void>;
 	/**
 	 * Fired when a user begins interacting via a Human-Computer Interface device (Mouse button down, touch begin, keyboard button down, etc).
 	 */
-	readonly InputBegan: RBXScriptSignal<(input?: InputObject) => void>;
+	readonly InputBegan: RBXScriptSignal<(input: InputObject) => void>;
 	/**
 	 * Fired when a user changes how they're interacting via a Human-Computer Interface device (Mouse button down, touch begin, keyboard button down, etc).
 	 */
-	readonly InputChanged: RBXScriptSignal<(input?: InputObject) => void>;
+	readonly InputChanged: RBXScriptSignal<(input: InputObject) => void>;
 	/**
 	 * Fired when a user stops interacting via a Human-Computer Interface device (Mouse button down, touch begin, keyboard button down, etc).
 	 */
-	readonly InputEnded: RBXScriptSignal<(input?: InputObject) => void>;
+	readonly InputEnded: RBXScriptSignal<(input: InputObject) => void>;
 	/** Fires when a user moves their mouse into a GUI element. */
-	readonly MouseEnter: RBXScriptSignal<(x?: number, y?: number) => void>;
+	readonly MouseEnter: RBXScriptSignal<(x: number, y: number) => void>;
 	/** Fires when a user moves their mouse out of a GUI element. */
-	readonly MouseLeave: RBXScriptSignal<(x?: number, y?: number) => void>;
+	readonly MouseLeave: RBXScriptSignal<(x: number, y: number) => void>;
 	/** Fires whenever a user moves their mouse while it is inside a GUI element. */
-	readonly MouseMoved: RBXScriptSignal<(x?: number, y?: number) => void>;
+	readonly MouseMoved: RBXScriptSignal<(x: number, y: number) => void>;
 	/**
 	 * Fires when a user scrolls their mouse wheel back when the mouse is over a GUI element.
 	 */
-	readonly MouseWheelBackward: RBXScriptSignal<(x?: number, y?: number) => void>;
+	readonly MouseWheelBackward: RBXScriptSignal<(x: number, y: number) => void>;
 	/**
 	 * Fires when a user scrolls their mouse wheel forward when the mouse is over a GUI element.
 	 */
-	readonly MouseWheelForward: RBXScriptSignal<(x?: number, y?: number) => void>;
+	readonly MouseWheelForward: RBXScriptSignal<(x: number, y: number) => void>;
 	/** Fired when the GuiObject is being focused on with the Gamepad selector. */
 	readonly SelectionGained: RBXScriptSignal<() => void>;
 	/** Fired when the Gamepad selector stops focusing on the GuiObject. */
 	readonly SelectionLost: RBXScriptSignal<() => void>;
 	/** Fires when the player starts, continues and stops long-pressing the UI element. */
-	readonly TouchLongPress: RBXScriptSignal<(touchPositions?: unknown, state?: Enum.UserInputState) => void>;
+	readonly TouchLongPress: RBXScriptSignal<(touchPositions: unknown, state: Enum.UserInputState) => void>;
 	/** Fires when the player moves their finger on the UI element. */
-	readonly TouchPan: RBXScriptSignal<(touchPositions?: unknown, totalTranslation?: Vector2, velocity?: Vector2, state?: Enum.UserInputState) => void>;
+	readonly TouchPan: RBXScriptSignal<(touchPositions: unknown, totalTranslation: Vector2, velocity: Vector2, state: Enum.UserInputState) => void>;
 	/**
 	 * Fires when the player performs a pinch or pull gesture using two fingers on the UI element.
 	 */
-	readonly TouchPinch: RBXScriptSignal<(touchPositions?: unknown, scale?: number, velocity?: number, state?: Enum.UserInputState) => void>;
+	readonly TouchPinch: RBXScriptSignal<(touchPositions: unknown, scale: number, velocity: number, state: Enum.UserInputState) => void>;
 	/**
 	 * Fires when the player performs a rotation gesture using two fingers on the UI element.
 	 */
-	readonly TouchRotate: RBXScriptSignal<(touchPositions?: unknown, rotation?: number, velocity?: number, state?: Enum.UserInputState) => void>;
+	readonly TouchRotate: RBXScriptSignal<(touchPositions: unknown, rotation: number, velocity: number, state: Enum.UserInputState) => void>;
 	/** Fires when the player performs a swipe gesture on the UI element. */
-	readonly TouchSwipe: RBXScriptSignal<(swipeDirection?: Enum.SwipeDirection, numberOfTouches?: number) => void>;
+	readonly TouchSwipe: RBXScriptSignal<(swipeDirection: Enum.SwipeDirection, numberOfTouches: number) => void>;
 	/** Fires when the player performs a tap gesture on the UI element. */
-	readonly TouchTap: RBXScriptSignal<(touchPositions?: unknown) => void>;
+	readonly TouchTap: RBXScriptSignal<(touchPositions: unknown) => void>;
 }
 
 /** Blends descendants as a group with color/transparency. */
@@ -5124,20 +5126,20 @@ interface GuiButton extends GuiObject {
 	/** Sets the style of the `GuiButton` based on a list of pre-determined styles. */
 	Style: Enum.ButtonStyle;
 	/** Fires when the button is activated. */
-	readonly Activated: RBXScriptSignal<(inputObject?: InputObject, clickCount?: number) => void>;
+	readonly Activated: RBXScriptSignal<(inputObject: InputObject, clickCount: number) => void>;
 	/** Fires when the user's mouse fully left clicks the `GuiButton`. */
 	readonly MouseButton1Click: RBXScriptSignal<() => void>;
 	/** Fires when the user presses their left mouse button down on the `GuiButton`. */
-	readonly MouseButton1Down: RBXScriptSignal<(x?: number, y?: number) => void>;
+	readonly MouseButton1Down: RBXScriptSignal<(x: number, y: number) => void>;
 	/** Fires when the user releases their left mouse button off of the `GuiButton`. */
-	readonly MouseButton1Up: RBXScriptSignal<(x?: number, y?: number) => void>;
+	readonly MouseButton1Up: RBXScriptSignal<(x: number, y: number) => void>;
 	/** Fires when the user's mouse fully right clicks the `GuiButton`. */
 	readonly MouseButton2Click: RBXScriptSignal<() => void>;
 	/** Fires when the user presses their right mouse button down on the `GuiButton`. */
-	readonly MouseButton2Down: RBXScriptSignal<(x?: number, y?: number) => void>;
+	readonly MouseButton2Down: RBXScriptSignal<(x: number, y: number) => void>;
 	/** Fires when the user releases their right mouse button off of the `GuiButton`. */
-	readonly MouseButton2Up: RBXScriptSignal<(x?: number, y?: number) => void>;
-	readonly SecondaryActivated: RBXScriptSignal<(inputObject?: InputObject) => void>;
+	readonly MouseButton2Up: RBXScriptSignal<(x: number, y: number) => void>;
+	readonly SecondaryActivated: RBXScriptSignal<(inputObject: InputObject) => void>;
 }
 
 /** A 2D user interface element that displays an interactive image. */
@@ -5510,7 +5512,7 @@ interface TextBox extends GuiObject {
 	/** Forces the client to unfocus the TextBox. */
 	ReleaseFocus(submitted?: boolean): undefined;
 	/** Fires when the client lets their focus leave the `TextBox`. */
-	readonly FocusLost: RBXScriptSignal<(enterPressed?: boolean, inputThatCausedFocusLoss?: InputObject) => void>;
+	readonly FocusLost: RBXScriptSignal<(enterPressed: boolean, inputThatCausedFocusLoss: InputObject) => void>;
 	/** Fires when the `TextBox` gains focus. */
 	readonly Focused: RBXScriptSignal<() => void>;
 	readonly ReturnPressedFromOnScreenKeyboard: RBXScriptSignal<() => void>;
@@ -5546,7 +5548,7 @@ interface VideoDisplay extends GuiObject {
 	/**
 	 * Fires when another instance is connected to or disconnected from the `VideoDisplay` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 /**
@@ -5585,19 +5587,19 @@ interface VideoFrame extends GuiObject {
 	 */
 	Play(): undefined;
 	/** Fires whenever the `VideoFrame.Video` loops. */
-	readonly DidLoop: RBXScriptSignal<(video?: string) => void>;
+	readonly DidLoop: RBXScriptSignal<(video: string) => void>;
 	/** Fires when the `VideoFrame.Video` has completed playback and stopped. */
-	readonly Ended: RBXScriptSignal<(video?: string) => void>;
+	readonly Ended: RBXScriptSignal<(video: string) => void>;
 	/** Fires when the `VideoFrame.Video` is loaded. */
-	readonly Loaded: RBXScriptSignal<(video?: string) => void>;
+	readonly Loaded: RBXScriptSignal<(video: string) => void>;
 	/**
 	 * This event fires whenever the `VideoFrame.Video` is paused using `VideoFrame:Pause()` or by setting `VideoFrame.Playing` to false.
 	 */
-	readonly Paused: RBXScriptSignal<(video?: string) => void>;
+	readonly Paused: RBXScriptSignal<(video: string) => void>;
 	/**
 	 * Fires whenever the `VideoFrame.Video` is played using the `VideoFrame:Play()` function or by setting `VideoFrame.Playing` to true.
 	 */
-	readonly Played: RBXScriptSignal<(video?: string) => void>;
+	readonly Played: RBXScriptSignal<(video: string) => void>;
 }
 
 /** `GuiObject` that renders 3D objects inside its bounds. */
@@ -5712,19 +5714,19 @@ interface PluginGui extends LayerCollector {
 	/**
 	 * Fires when the user releases their mouse when hovering over a PluginGui during a drag operation started by `Plugin:StartDrag()`.
 	 */
-	readonly PluginDragDropped: RBXScriptSignal<(dragData?: unknown) => void>;
+	readonly PluginDragDropped: RBXScriptSignal<(dragData: unknown) => void>;
 	/**
 	 * Fires when the user's mouse enters a PluginGui during a drag operation started by `Plugin:StartDrag()`.
 	 */
-	readonly PluginDragEntered: RBXScriptSignal<(dragData?: unknown) => void>;
+	readonly PluginDragEntered: RBXScriptSignal<(dragData: unknown) => void>;
 	/**
 	 * Fires when the user's mouse leaves a PluginGui during a drag operation started by `Plugin:StartDrag()`.
 	 */
-	readonly PluginDragLeft: RBXScriptSignal<(dragData?: unknown) => void>;
+	readonly PluginDragLeft: RBXScriptSignal<(dragData: unknown) => void>;
 	/**
 	 * Fires when the user's mouse moves within a PluginGui during a drag operation started by `Plugin:StartDrag()`.
 	 */
-	readonly PluginDragMoved: RBXScriptSignal<(dragData?: unknown) => void>;
+	readonly PluginDragMoved: RBXScriptSignal<(dragData: unknown) => void>;
 	/** Fires when the user stops interacting with the window of the PluginGui. */
 	readonly WindowFocusReleased: RBXScriptSignal<() => void>;
 	/** Fires when the user begins interacting with the window of the PluginGui. */
@@ -6035,17 +6037,17 @@ interface ArcHandles extends HandlesBase {
 	/** Sets the current Axes ArcHandles will show. */
 	Axes: Axes;
 	/** Fired when the left mouse button goes down on one of the GUI handles. */
-	readonly MouseButton1Down: RBXScriptSignal<(axis?: Enum.Axis) => void>;
+	readonly MouseButton1Down: RBXScriptSignal<(axis: Enum.Axis) => void>;
 	/** Fired when the left mouse button is released on one of the GUI handles. */
-	readonly MouseButton1Up: RBXScriptSignal<(axis?: Enum.Axis) => void>;
+	readonly MouseButton1Up: RBXScriptSignal<(axis: Enum.Axis) => void>;
 	/**
 	 * Fired when the mouse moves while the MouseButton1Down event has fired, but the left mouse button has not been released yet.
 	 */
-	readonly MouseDrag: RBXScriptSignal<(axis?: Enum.Axis, relativeAngle?: number, deltaRadius?: number) => void>;
+	readonly MouseDrag: RBXScriptSignal<(axis: Enum.Axis, relativeAngle: number, deltaRadius: number) => void>;
 	/** Fired when a mouse "enters" the GUI handle. */
-	readonly MouseEnter: RBXScriptSignal<(axis?: Enum.Axis) => void>;
+	readonly MouseEnter: RBXScriptSignal<(axis: Enum.Axis) => void>;
 	/** Fired when the mouse leaves the GUI handle. */
-	readonly MouseLeave: RBXScriptSignal<(axis?: Enum.Axis) => void>;
+	readonly MouseLeave: RBXScriptSignal<(axis: Enum.Axis) => void>;
 }
 
 /** Places 3D handles around any object that its `Adornee` is set to. */
@@ -6055,17 +6057,17 @@ interface Handles extends HandlesBase {
 	/** Sets the GUI style of the handles. */
 	Style: Enum.HandlesStyle;
 	/** Fired when the left mouse button goes down on one of the GUI handles. */
-	readonly MouseButton1Down: RBXScriptSignal<(face?: Enum.NormalId) => void>;
+	readonly MouseButton1Down: RBXScriptSignal<(face: Enum.NormalId) => void>;
 	/** Fired when the left mouse button is released on one of the GUI handles. */
-	readonly MouseButton1Up: RBXScriptSignal<(face?: Enum.NormalId) => void>;
+	readonly MouseButton1Up: RBXScriptSignal<(face: Enum.NormalId) => void>;
 	/**
 	 * Fired when the mouse moves while the MouseButton1Down event has fired, but the left mouse button has not been released yet.
 	 */
-	readonly MouseDrag: RBXScriptSignal<(face?: Enum.NormalId, distance?: number) => void>;
+	readonly MouseDrag: RBXScriptSignal<(face: Enum.NormalId, distance: number) => void>;
 	/** Fired when a mouse "enters" the GUI handle. */
-	readonly MouseEnter: RBXScriptSignal<(face?: Enum.NormalId) => void>;
+	readonly MouseEnter: RBXScriptSignal<(face: Enum.NormalId) => void>;
 	/** Fired when the mouse leaves the GUI handle. */
-	readonly MouseLeave: RBXScriptSignal<(face?: Enum.NormalId) => void>;
+	readonly MouseLeave: RBXScriptSignal<(face: Enum.NormalId) => void>;
 }
 
 /** Highlights a face of a surface in a configurable color. */
@@ -6199,7 +6201,7 @@ interface GuiService extends Instance {
 	 * Returns two `Vector2` values representing the inset of user GUIs in pixels, from the top‑left corner of the screen and the bottom‑right corner of the screen respectively.
 	 */
 	GetGuiInset(): unknown;
-	GetInsetArea(screenInsets: Enum.ScreenInsets): Rect;
+	GetInsetArea(screenInsets?: Enum.ScreenInsets): Rect;
 	/** Returns whether the avatar inspection menu is enabled. */
 	GetInspectMenuEnabled(): boolean;
 	/**
@@ -6282,10 +6284,10 @@ interface HandRigDescription extends Instance {
 	Thumb3TposeAdjustment: CFrame;
 	ThumbRange: Vector3;
 	ThumbSize: number;
-	GetFingerControl(fingerIndex?: number): Vector3;
-	GetFingerTip(fingerIndex?: number): Vector3;
-	SetFingerControl(fingerIndex?: number, control?: Vector3): undefined;
-	SetFingerTip(fingerIndex?: number, point?: Vector3): undefined;
+	GetFingerControl(fingerIndex: number): Vector3;
+	GetFingerTip(fingerIndex: number): Vector3;
+	SetFingerControl(fingerIndex: number, control: Vector3): undefined;
+	SetFingerTip(fingerIndex: number, point: Vector3): undefined;
 }
 
 interface HapticEffect extends Instance {
@@ -6337,7 +6339,7 @@ interface HarmonyService extends Instance {
 interface HeapProfilerService extends Instance {
 	ClientRequestDataAsync(player?: Player): string;
 	ServerRequestDataAsync(): string;
-	readonly OnNewData: RBXScriptSignal<(player?: Player, jsonString?: buffer, id?: number, compressedLength?: number, uncompressedLength?: number) => void>;
+	readonly OnNewData: RBXScriptSignal<(player: Player, jsonString: buffer, id: number, compressedLength: number, uncompressedLength: number) => void>;
 }
 
 interface HeatmapService extends Instance {
@@ -6638,82 +6640,82 @@ interface Humanoid extends Instance {
 	 * Fires when an `AnimationTrack` begins playing on the `Humanoid`.
 	 * @deprecated Deprecated.
 	 */
-	readonly AnimationPlayed: RBXScriptSignal<(animationTrack?: AnimationTrack) => void>;
-	readonly ApplyDescriptionFinished: RBXScriptSignal<(description?: HumanoidDescription) => void>;
+	readonly AnimationPlayed: RBXScriptSignal<(animationTrack: AnimationTrack) => void>;
+	readonly ApplyDescriptionFinished: RBXScriptSignal<(description: HumanoidDescription) => void>;
 	/** Fires when the speed at which a `Humanoid` is climbing changes. */
-	readonly Climbing: RBXScriptSignal<(speed?: number) => void>;
+	readonly Climbing: RBXScriptSignal<(speed: number) => void>;
 	/**
 	 * Fired when a status is added to the Humanoid.
 	 * @deprecated Deprecated.
 	 */
-	readonly CustomStatusAdded: RBXScriptSignal<(status?: string) => void>;
+	readonly CustomStatusAdded: RBXScriptSignal<(status: string) => void>;
 	/**
 	 * Fired when a status is removed from the Humanoid.
 	 * @deprecated Deprecated.
 	 */
-	readonly CustomStatusRemoved: RBXScriptSignal<(status?: string) => void>;
+	readonly CustomStatusRemoved: RBXScriptSignal<(status: string) => void>;
 	/** Fires when the `Humanoid` dies. */
 	readonly Died: RBXScriptSignal<() => void>;
 	/**
 	 * Fires when the `Humanoid` enters or leaves the `FallingDown` `Enum.HumanoidStateType`.
 	 */
-	readonly FallingDown: RBXScriptSignal<(active?: boolean) => void>;
+	readonly FallingDown: RBXScriptSignal<(active: boolean) => void>;
 	/**
 	 * Fires when the `Humanoid` enters or leaves the `Freefall` `Enum.HumanoidStateType`.
 	 */
-	readonly FreeFalling: RBXScriptSignal<(active?: boolean) => void>;
+	readonly FreeFalling: RBXScriptSignal<(active: boolean) => void>;
 	/**
 	 * Fires when the `Humanoid` enters or leaves the `GettingUp` `Enum.HumanoidStateType`.
 	 */
-	readonly GettingUp: RBXScriptSignal<(active?: boolean) => void>;
+	readonly GettingUp: RBXScriptSignal<(active: boolean) => void>;
 	/**
 	 * Fires when the `Humanoid.Health` changes (or when the `Humanoid.MaxHealth` is set).
 	 */
-	readonly HealthChanged: RBXScriptSignal<(health?: number) => void>;
+	readonly HealthChanged: RBXScriptSignal<(health: number) => void>;
 	/**
 	 * Fires when the `Humanoid` enters and leaves the `Jumping` `Enum.HumanoidStateType`.
 	 */
-	readonly Jumping: RBXScriptSignal<(active?: boolean) => void>;
+	readonly Jumping: RBXScriptSignal<(active: boolean) => void>;
 	/**
 	 * Fires when the `Humanoid` finishes walking to a goal declared by `Humanoid:MoveTo()`.
 	 */
-	readonly MoveToFinished: RBXScriptSignal<(reached?: boolean) => void>;
+	readonly MoveToFinished: RBXScriptSignal<(reached: boolean) => void>;
 	/**
 	 * Fires when the `Humanoid` enters or leaves the `PlatformStanding` `Enum.HumanoidStateType`.
 	 */
-	readonly PlatformStanding: RBXScriptSignal<(active?: boolean) => void>;
+	readonly PlatformStanding: RBXScriptSignal<(active: boolean) => void>;
 	/**
 	 * Fires when the `Humanoid` enters or leaves the `Ragdoll` `Enum.HumanoidStateType`.
 	 */
-	readonly Ragdoll: RBXScriptSignal<(active?: boolean) => void>;
+	readonly Ragdoll: RBXScriptSignal<(active: boolean) => void>;
 	/** Fires when the speed at which a `Humanoid` is running changes. */
-	readonly Running: RBXScriptSignal<(speed?: number) => void>;
+	readonly Running: RBXScriptSignal<(speed: number) => void>;
 	/** Fired when a `Humanoid` either sits in a `Seat` or `VehicleSeat` or gets up. */
-	readonly Seated: RBXScriptSignal<(active?: boolean, currentSeatPart?: BasePart) => void>;
+	readonly Seated: RBXScriptSignal<(active: boolean, currentSeatPart: BasePart) => void>;
 	/** Fires when the state of the `Humanoid` is changed. */
-	readonly StateChanged: RBXScriptSignal<(old?: Enum.HumanoidStateType, _new?: Enum.HumanoidStateType) => void>;
+	readonly StateChanged: RBXScriptSignal<(old: Enum.HumanoidStateType, _new: Enum.HumanoidStateType) => void>;
 	/** Fires when `Humanoid:SetStateEnabled()` is called on the `Humanoid`. */
-	readonly StateEnabledChanged: RBXScriptSignal<(state?: Enum.HumanoidStateType, isEnabled?: boolean) => void>;
+	readonly StateEnabledChanged: RBXScriptSignal<(state: Enum.HumanoidStateType, isEnabled: boolean) => void>;
 	/**
 	 * Fired when a status is added to the Humanoid.
 	 * @deprecated Deprecated.
 	 */
-	readonly StatusAdded: RBXScriptSignal<(status?: Enum.Status) => void>;
+	readonly StatusAdded: RBXScriptSignal<(status: Enum.Status) => void>;
 	/**
 	 * Fired when a status is removed from the Humanoid.
 	 * @deprecated Deprecated.
 	 */
-	readonly StatusRemoved: RBXScriptSignal<(status?: Enum.Status) => void>;
+	readonly StatusRemoved: RBXScriptSignal<(status: Enum.Status) => void>;
 	/**
 	 * Fires when the `Humanoid` enters or leaves the `StrafingNoPhysics` `Enum.HumanoidStateType`.
 	 */
-	readonly Strafing: RBXScriptSignal<(active?: boolean) => void>;
+	readonly Strafing: RBXScriptSignal<(active: boolean) => void>;
 	/**
 	 * Fires when the speed at which a `Humanoid` is swimming in `Terrain` water changes.
 	 */
-	readonly Swimming: RBXScriptSignal<(speed?: number) => void>;
+	readonly Swimming: RBXScriptSignal<(speed: number) => void>;
 	/** Fires when one of the humanoid's limbs come in contact with another `BasePart`. */
-	readonly Touched: RBXScriptSignal<(touchingPart?: BasePart, humanoidPart?: BasePart) => void>;
+	readonly Touched: RBXScriptSignal<(touchingPart: BasePart, humanoidPart: BasePart) => void>;
 }
 
 /**
@@ -6868,9 +6870,9 @@ interface HumanoidDescription extends Instance {
 	/** Sets the currently equipped emotes given an array of emote names. */
 	SetEquippedEmotes(equippedEmotes?: unknown): undefined;
 	/** Fires when emotes are added, removed or set on this description. */
-	readonly EmotesChanged: RBXScriptSignal<(newEmotes?: unknown) => void>;
+	readonly EmotesChanged: RBXScriptSignal<(newEmotes: unknown) => void>;
 	/** Fires when the equipped emotes are `set` on this description. */
-	readonly EquippedEmotesChanged: RBXScriptSignal<(newEquippedEmotes?: unknown) => void>;
+	readonly EquippedEmotesChanged: RBXScriptSignal<(newEquippedEmotes: unknown) => void>;
 }
 
 interface HumanoidRigDescription extends Instance {
@@ -7089,7 +7091,7 @@ interface InputAction extends Instance {
 	/**
 	 * Fires for all `Enum.InputActionType` types whenever the state changes, except if the state attempts to transition to the same state.
 	 */
-	readonly StateChanged: RBXScriptSignal<(value?: unknown) => void>;
+	readonly StateChanged: RBXScriptSignal<(value: unknown) => void>;
 }
 
 /** Defines which hardware binding should trigger the parent `InputAction`. */
@@ -7256,7 +7258,7 @@ interface InstanceFileSyncService extends Instance {
 	/** Returns the instance corresponding to a given file path. */
 	GetSyncedInstance(filePath?: string): Instance;
 	/** Fires when the synchronization status of an instance changes. */
-	readonly StatusChanged: RBXScriptSignal<(instance?: Instance, status?: Enum.InstanceFileSyncStatus) => void>;
+	readonly StatusChanged: RBXScriptSignal<(instance: Instance, status: Enum.InstanceFileSyncStatus) => void>;
 }
 
 /** The base class for joints. */
@@ -7597,7 +7599,7 @@ interface Lighting extends Instance {
 	/**
 	 * This event fires when a `Lighting` property is changed or a `Sky` is added or removed from `Lighting`.
 	 */
-	readonly LightingChanged: RBXScriptSignal<(skyChanged?: boolean) => void>;
+	readonly LightingChanged: RBXScriptSignal<(skyChanged: boolean) => void>;
 }
 
 interface LinkingService extends Instance {
@@ -7737,7 +7739,7 @@ interface LogService extends Instance {
 	 */
 	GetLogHistory(): unknown;
 	/** Fires when the client outputs text. */
-	readonly MessageOut: RBXScriptSignal<(message?: string, messageType?: Enum.MessageType) => void>;
+	readonly MessageOut: RBXScriptSignal<(message: string, messageType: Enum.MessageType) => void>;
 }
 
 /** An internal service whose functionality is not available to developers. */
@@ -7912,22 +7914,22 @@ interface MarketplaceService extends Instance {
 	 */
 	UserOwnsGamePassAsync(userId?: number, gamePassId?: number): boolean;
 	/** Fires when a purchase prompt for bulk avatar items is closed. */
-	readonly PromptBulkPurchaseFinished: RBXScriptSignal<(player?: Instance, status?: Enum.MarketplaceBulkPurchasePromptStatus, results?: unknown) => void>;
-	readonly PromptBundlePurchaseFinished: RBXScriptSignal<(player?: Instance, bundleId?: number, wasPurchased?: boolean) => void>;
+	readonly PromptBulkPurchaseFinished: RBXScriptSignal<(player: Instance, status: Enum.MarketplaceBulkPurchasePromptStatus, results: unknown) => void>;
+	readonly PromptBundlePurchaseFinished: RBXScriptSignal<(player: Instance, bundleId: number, wasPurchased: boolean) => void>;
 	/** Fires when a purchase prompt for a pass is closed. */
-	readonly PromptGamePassPurchaseFinished: RBXScriptSignal<(player?: Instance, gamePassId?: number, wasPurchased?: boolean) => void>;
+	readonly PromptGamePassPurchaseFinished: RBXScriptSignal<(player: Instance, gamePassId: number, wasPurchased: boolean) => void>;
 	/** Fires when a purchase prompt for Roblox Premium is closed. */
 	readonly PromptPremiumPurchaseFinished: RBXScriptSignal<() => void>;
 	/**
 	 * Fires when a purchase prompt for a developer product is closed. Do not use this event to process purchases.
 	 */
-	readonly PromptProductPurchaseFinished: RBXScriptSignal<(userId?: number, productId?: number, isPurchased?: boolean) => void>;
+	readonly PromptProductPurchaseFinished: RBXScriptSignal<(userId: number, productId: number, isPurchased: boolean) => void>;
 	/**
 	 * Fires when a purchase prompt for an affiliate gear sale or other asset is closed. Does **not** fire for developer product or pass prompts.
 	 */
-	readonly PromptPurchaseFinished: RBXScriptSignal<(player?: Instance, assetId?: number, isPurchased?: boolean) => void>;
+	readonly PromptPurchaseFinished: RBXScriptSignal<(player: Instance, assetId: number, isPurchased: boolean) => void>;
 	/** Fires when a purchase prompt for a subscription is closed. */
-	readonly PromptSubscriptionPurchaseFinished: RBXScriptSignal<(user?: Player, subscriptionId?: string, didTryPurchasing?: boolean) => void>;
+	readonly PromptSubscriptionPurchaseFinished: RBXScriptSignal<(user: Player, subscriptionId: string, didTryPurchasing: boolean) => void>;
 	/** A callback to process receipts of developer product purchases. */
 	ProcessReceipt?: (receiptInfo?: unknown) => Enum.ProductPurchaseDecision;
 }
@@ -8164,12 +8166,12 @@ interface Mouse extends Instance {
 	 * Fires when a Key is pressed.
 	 * @deprecated Deprecated.
 	 */
-	readonly KeyDown: RBXScriptSignal<(key?: string) => void>;
+	readonly KeyDown: RBXScriptSignal<(key: string) => void>;
 	/**
 	 * Fires when a Key is released.
 	 * @deprecated Deprecated.
 	 */
-	readonly KeyUp: RBXScriptSignal<(key?: string) => void>;
+	readonly KeyUp: RBXScriptSignal<(key: string) => void>;
 	/** Fired when the mouse is moved. */
 	readonly Move: RBXScriptSignal<() => void>;
 	/** Fires when the mouse wheel is scrolled backwards. */
@@ -8177,7 +8179,7 @@ interface Mouse extends Instance {
 	/** Fires when the mouse wheel is scrolled forwards. */
 	readonly WheelForward: RBXScriptSignal<() => void>;
 	/** @deprecated Deprecated. */
-	readonly keyDown: RBXScriptSignal<(key?: string) => void>;
+	readonly keyDown: RBXScriptSignal<(key: string) => void>;
 }
 
 /**
@@ -8191,7 +8193,7 @@ interface PlayerMouse extends Mouse {
  */
 interface PluginMouse extends Mouse {
 	/** Fired when Instances are being selected while the mouse is dragging. */
-	readonly DragEnter: RBXScriptSignal<(instances?: Instances) => void>;
+	readonly DragEnter: RBXScriptSignal<(instances: Instances) => void>;
 }
 
 interface MouseService extends Instance {
@@ -8218,9 +8220,9 @@ interface NetworkClient extends NetworkPeer {
 	/**
 	 * Fired when the client successfully connects to a server. Returns a string showing the server's IP and port, and the client's `ClientReplicator`.
 	 */
-	readonly ConnectionAccepted: RBXScriptSignal<(peer?: string, replicator?: Instance) => void>;
+	readonly ConnectionAccepted: RBXScriptSignal<(peer: string, replicator: Instance) => void>;
 	/** Fired if the client fails to connect to the server. */
-	readonly ConnectionFailed: RBXScriptSignal<(peer?: string, code?: number) => void>;
+	readonly ConnectionFailed: RBXScriptSignal<(peer: string, code: number) => void>;
 }
 
 interface NetworkServer extends NetworkPeer {
@@ -8284,8 +8286,8 @@ interface Noise extends Instance {
 
 /** An internal service which cannot be used by developers. */
 interface NotificationService extends Instance {
-	readonly Roblox17sConnectionChanged: RBXScriptSignal<(connectionName?: string, connectionState?: Enum.ConnectionState, namespaceSequenceNumbers?: string) => void>;
-	readonly Roblox17sEventReceived: RBXScriptSignal<(eventData?: unknown) => void>;
+	readonly Roblox17sConnectionChanged: RBXScriptSignal<(connectionName: string, connectionState: Enum.ConnectionState, namespaceSequenceNumbers: string) => void>;
+	readonly Roblox17sEventReceived: RBXScriptSignal<(eventData: unknown) => void>;
 }
 
 interface OmniRecommendationsService extends Instance {
@@ -8507,15 +8509,15 @@ interface BasePart extends PVInstance {
 	 */
 	UnionAsync(parts?: Instances, collisionfidelity?: Enum.CollisionFidelity, renderFidelity?: Enum.RenderFidelity): Instance;
 	/** @deprecated Deprecated. */
-	readonly LocalSimulationTouched: RBXScriptSignal<(part?: BasePart) => void>;
+	readonly LocalSimulationTouched: RBXScriptSignal<(part: BasePart) => void>;
 	/** @deprecated Deprecated. */
 	readonly OutfitChanged: RBXScriptSignal<() => void>;
 	/** @deprecated Deprecated. */
-	readonly StoppedTouching: RBXScriptSignal<(otherPart?: BasePart) => void>;
+	readonly StoppedTouching: RBXScriptSignal<(otherPart: BasePart) => void>;
 	/** Fires when a part stops touching another part as a result of physical movement. */
-	readonly TouchEnded: RBXScriptSignal<(otherPart?: BasePart) => void>;
+	readonly TouchEnded: RBXScriptSignal<(otherPart: BasePart) => void>;
 	/** Fires when a part touches another part as a result of physical movement. */
-	readonly Touched: RBXScriptSignal<(otherPart?: BasePart) => void>;
+	readonly Touched: RBXScriptSignal<(otherPart: BasePart) => void>;
 }
 
 interface CornerWedgePart extends BasePart {
@@ -8547,7 +8549,7 @@ interface FlagStand extends Part {
 	/**
 	 * Fires when a player bearing an opposing flag, and having the same `Player.TeamColor` as the stand, touches the `FlagStand`.
 	 */
-	readonly FlagCaptured: RBXScriptSignal<(player?: Instance) => void>;
+	readonly FlagCaptured: RBXScriptSignal<(player: Instance) => void>;
 }
 
 /**
@@ -8592,17 +8594,17 @@ interface SkateboardPlatform extends Part {
 	/** Adds ''impulseWorld'' to the SkateboardPlatform's `BasePart.Velocity`. */
 	ApplySpecificImpulse(impulseWorld?: Vector3): undefined;
 	/** Fired when the skateboard is equipped. */
-	readonly Equipped: RBXScriptSignal<(humanoid?: Instance, skateboardController?: Instance) => void>;
+	readonly Equipped: RBXScriptSignal<(humanoid: Instance, skateboardController: Instance) => void>;
 	/**
 	 * Fired when the SkateboardPlatform's `SkateboardPlatform.ControllingHumanoid` changes the force being used on the SkateboardPlatform.
 	 */
-	readonly MoveStateChanged: RBXScriptSignal<(newState?: Enum.MoveState, oldState?: Enum.MoveState) => void>;
+	readonly MoveStateChanged: RBXScriptSignal<(newState: Enum.MoveState, oldState: Enum.MoveState) => void>;
 	/** Fired whenever the skateboard is unequipped. */
-	readonly Unequipped: RBXScriptSignal<(humanoid?: Instance) => void>;
+	readonly Unequipped: RBXScriptSignal<(humanoid: Instance) => void>;
 	/** @deprecated Deprecated. */
-	readonly equipped: RBXScriptSignal<(humanoid?: Instance, skateboardController?: Instance) => void>;
+	readonly equipped: RBXScriptSignal<(humanoid: Instance, skateboardController: Instance) => void>;
 	/** @deprecated Deprecated. */
-	readonly unequipped: RBXScriptSignal<(humanoid?: Instance) => void>;
+	readonly unequipped: RBXScriptSignal<(humanoid: Instance) => void>;
 }
 
 /**
@@ -9122,7 +9124,7 @@ interface HopperBin extends BackpackItem {
 	Active: boolean;
 	BinType: Enum.BinType;
 	readonly Deselected: RBXScriptSignal<() => void>;
-	readonly Selected: RBXScriptSignal<(mouse?: Instance) => void>;
+	readonly Selected: RBXScriptSignal<(mouse: Instance) => void>;
 }
 
 /** An object, such as a weapon, that can be equipped by a `Humanoid`. */
@@ -9154,7 +9156,7 @@ interface Tool extends BackpackItem {
 	 */
 	readonly Deactivated: RBXScriptSignal<() => void>;
 	/** Fires when the tool is equipped. */
-	readonly Equipped: RBXScriptSignal<(mouse?: Mouse) => void>;
+	readonly Equipped: RBXScriptSignal<(mouse: Mouse) => void>;
 	/** Fires when the tool is unequipped. */
 	readonly Unequipped: RBXScriptSignal<() => void>;
 }
@@ -9329,7 +9331,7 @@ interface Workspace extends WorldRoot {
 	 */
 	ZoomToExtents(): undefined;
 	/** Fires when persistent models have been sent to the specified player. */
-	readonly PersistentLoaded: RBXScriptSignal<(player?: Player) => void>;
+	readonly PersistentLoaded: RBXScriptSignal<(player: Player) => void>;
 }
 
 /** Extends limited physics for its children on to a parent `ViewportFrame`. */
@@ -9577,9 +9579,9 @@ interface Path extends Instance {
 	/** Computes a `Path` from a start position to an end position. */
 	ComputeAsync(start?: Vector3, finish?: Vector3): undefined;
 	/** Fires when the computed path becomes blocked. */
-	readonly Blocked: RBXScriptSignal<(blockedWaypointIdx?: number) => void>;
+	readonly Blocked: RBXScriptSignal<(blockedWaypointIdx: number) => void>;
 	/** Fires when a computed path that was blocked becomes unblocked. */
-	readonly Unblocked: RBXScriptSignal<(unblockedWaypointIdx?: number) => void>;
+	readonly Unblocked: RBXScriptSignal<(unblockedWaypointIdx: number) => void>;
 }
 
 /** Connects two locations which otherwise by default are unconnected. */
@@ -10057,19 +10059,19 @@ interface Player extends Instance {
 	/** @deprecated Deprecated. */
 	waitForDataReady(): boolean;
 	/** Fires when a player's character spawns or respawns. */
-	readonly CharacterAdded: RBXScriptSignal<(character?: Model) => void>;
+	readonly CharacterAdded: RBXScriptSignal<(character: Model) => void>;
 	/** Fires when the full appearance of a `Character` has been inserted. */
-	readonly CharacterAppearanceLoaded: RBXScriptSignal<(character?: Model) => void>;
+	readonly CharacterAppearanceLoaded: RBXScriptSignal<(character: Model) => void>;
 	/** Fires right before a player's character is removed. */
-	readonly CharacterRemoving: RBXScriptSignal<(character?: Model) => void>;
+	readonly CharacterRemoving: RBXScriptSignal<(character: Model) => void>;
 	/** Fires when a player chats in experience using Roblox's provided chat bar. */
-	readonly Chatted: RBXScriptSignal<(message?: string, recipient?: Player) => void>;
+	readonly Chatted: RBXScriptSignal<(message: string, recipient: Player) => void>;
 	/**
 	 * This event fires approximately two minutes after the engine classifies the player as idle. Time is the number of seconds that have elapsed since that point.
 	 */
-	readonly Idled: RBXScriptSignal<(time?: number) => void>;
+	readonly Idled: RBXScriptSignal<(time: number) => void>;
 	/** Fires when the teleport state of a player changes. */
-	readonly OnTeleport: RBXScriptSignal<(teleportState?: Enum.TeleportState, placeId?: number, spawnName?: string) => void>;
+	readonly OnTeleport: RBXScriptSignal<(teleportState: Enum.TeleportState, placeId: number, spawnName: string) => void>;
 }
 
 interface PlayerData extends Instance {
@@ -10280,17 +10282,17 @@ interface Players extends Instance {
 	 */
 	UnbanAsync(config?: unknown): undefined;
 	/** Fires when a player enters the experience. */
-	readonly PlayerAdded: RBXScriptSignal<(player?: Player) => void>;
+	readonly PlayerAdded: RBXScriptSignal<(player: Player) => void>;
 	/**
 	 * Fires when the experience server recognizes that a player's membership has changed.
 	 */
-	readonly PlayerMembershipChanged: RBXScriptSignal<(player?: Player) => void>;
+	readonly PlayerMembershipChanged: RBXScriptSignal<(player: Player) => void>;
 	/** Fires when a player is about to leave the experience. */
-	readonly PlayerRemoving: RBXScriptSignal<(player?: Player, reason?: Enum.PlayerExitReason) => void>;
+	readonly PlayerRemoving: RBXScriptSignal<(player: Player, reason: Enum.PlayerExitReason) => void>;
 	/**
 	 * Fires when the experience server recognizes that the user's status for a certain subscription has changed.
 	 */
-	readonly UserSubscriptionStatusChanged: RBXScriptSignal<(user?: Player, subscriptionId?: string) => void>;
+	readonly UserSubscriptionStatusChanged: RBXScriptSignal<(user: Player, subscriptionId: string) => void>;
 }
 
 interface Plugin extends Instance {
@@ -10536,7 +10538,7 @@ interface PointsService extends Instance {
 	/**
 	 * Fires when points have been successfully awarded to a player, while also passing along the updated balance of points the player has in the current game and all games.
 	 */
-	readonly PointsAwarded: RBXScriptSignal<(userId?: number, pointsAwarded?: number, userBalanceInGame?: number, userTotalBalance?: number) => void>;
+	readonly PointsAwarded: RBXScriptSignal<(userId: number, pointsAwarded: number, userBalanceInGame: number, userTotalBalance: number) => void>;
 }
 
 /**
@@ -10705,23 +10707,23 @@ interface ProximityPrompt extends Instance {
 	/**
 	 * Triggered when a player begins holding down the `key`/button connected to a prompt with a non-zero `ProximityPrompt.HoldDuration`.
 	 */
-	readonly PromptButtonHoldBegan: RBXScriptSignal<(playerWhoTriggered?: Player) => void>;
+	readonly PromptButtonHoldBegan: RBXScriptSignal<(playerWhoTriggered: Player) => void>;
 	/**
 	 * Triggers when the player ends holding down the button on a prompt with a non-zero `ProximityPrompt.HoldDuration`.
 	 */
-	readonly PromptButtonHoldEnded: RBXScriptSignal<(playerWhoTriggered?: Player) => void>;
+	readonly PromptButtonHoldEnded: RBXScriptSignal<(playerWhoTriggered: Player) => void>;
 	/** Triggers when the `prompt` becomes hidden. */
 	readonly PromptHidden: RBXScriptSignal<() => void>;
 	/** Triggers when the `prompt` becomes visible. */
-	readonly PromptShown: RBXScriptSignal<(inputType?: Enum.ProximityPromptInputType) => void>;
+	readonly PromptShown: RBXScriptSignal<(inputType: Enum.ProximityPromptInputType) => void>;
 	/**
 	 * Triggers when `key`/button is released, for longer events where the user is required to hold down the button.
 	 */
-	readonly TriggerEnded: RBXScriptSignal<(playerWhoTriggered?: Player) => void>;
+	readonly TriggerEnded: RBXScriptSignal<(playerWhoTriggered: Player) => void>;
 	/**
 	 * Triggered when the prompt `key`/button is pressed, or after a specified amount of time holding the button, if `ProximityPrompt.HoldDuration` is used.
 	 */
-	readonly Triggered: RBXScriptSignal<(playerWhoTriggered?: Player) => void>;
+	readonly Triggered: RBXScriptSignal<(playerWhoTriggered: Player) => void>;
 }
 
 /** Allows developers to interact with `ProximityPrompt` objects in a global way. */
@@ -10731,26 +10733,26 @@ interface ProximityPromptService extends Instance {
 	MaxIndicatorsVisible: number;
 	/** Maximum number of `ProximityPrompts` that will be shown to the player. */
 	MaxPromptsVisible: number;
-	readonly IndicatorHidden: RBXScriptSignal<(prompt?: ProximityPrompt) => void>;
-	readonly IndicatorShown: RBXScriptSignal<(prompt?: ProximityPrompt) => void>;
+	readonly IndicatorHidden: RBXScriptSignal<(prompt: ProximityPrompt) => void>;
+	readonly IndicatorShown: RBXScriptSignal<(prompt: ProximityPrompt) => void>;
 	/**
 	 * Triggers when the player begins holding down the `KeyboardKeyCode` key/button on a prompt with a non-zero `HoldDuration`.
 	 */
-	readonly PromptButtonHoldBegan: RBXScriptSignal<(prompt?: ProximityPrompt, playerWhoTriggered?: Player) => void>;
+	readonly PromptButtonHoldBegan: RBXScriptSignal<(prompt: ProximityPrompt, playerWhoTriggered: Player) => void>;
 	/**
 	 * Triggers when the player stops holding down the `KeyboardKeyCode` key/button on a prompt with a non-zero `HoldDuration`.
 	 */
-	readonly PromptButtonHoldEnded: RBXScriptSignal<(prompt?: ProximityPrompt, playerWhoTriggered?: Player) => void>;
+	readonly PromptButtonHoldEnded: RBXScriptSignal<(prompt: ProximityPrompt, playerWhoTriggered: Player) => void>;
 	/** Triggers client-side when a prompt becomes hidden. */
-	readonly PromptHidden: RBXScriptSignal<(prompt?: ProximityPrompt) => void>;
+	readonly PromptHidden: RBXScriptSignal<(prompt: ProximityPrompt) => void>;
 	/** Triggers client-side when a prompt becomes visible. */
-	readonly PromptShown: RBXScriptSignal<(prompt?: ProximityPrompt, inputType?: Enum.ProximityPromptInputType) => void>;
+	readonly PromptShown: RBXScriptSignal<(prompt: ProximityPrompt, inputType: Enum.ProximityPromptInputType) => void>;
 	/**
 	 * Triggers when the player stops holding down the `KeyboardKeyCode` key/button while triggering a prompt.
 	 */
-	readonly PromptTriggerEnded: RBXScriptSignal<(prompt?: ProximityPrompt, playerWhoTriggered?: Player) => void>;
+	readonly PromptTriggerEnded: RBXScriptSignal<(prompt: ProximityPrompt, playerWhoTriggered: Player) => void>;
 	/** Triggers when the user interacts with this prompt. */
-	readonly PromptTriggered: RBXScriptSignal<(prompt?: ProximityPrompt, playerWhoTriggered?: Player) => void>;
+	readonly PromptTriggered: RBXScriptSignal<(prompt: ProximityPrompt, playerWhoTriggered: Player) => void>;
 }
 
 interface PublishService extends Instance {
@@ -10910,7 +10912,7 @@ interface RemoteCommandService extends Instance {
 	GetExecutingPlayer(): Player;
 	GetReceivedUpdateSignal(): RBXScriptSignal;
 	GetStoppingSignal(): RBXScriptSignal;
-	SendUpdate(args: unknown): undefined;
+	SendUpdate(args?: unknown): undefined;
 }
 
 interface RemoteCursorService extends Instance {
@@ -11023,6 +11025,9 @@ interface RobloxServerStorage extends Instance {
 interface RolloutValidation extends Instance {
 }
 
+interface RolloutValidationService extends Instance {
+}
+
 interface RomarkRbxAnalyticsService extends Instance {
 }
 
@@ -11109,20 +11114,20 @@ interface RunService extends Instance {
 	 */
 	UnbindFromRenderStep(name?: string): undefined;
 	/** Fires every frame, after the physics simulation has completed. */
-	readonly Heartbeat: RBXScriptSignal<(deltaTime?: number) => void>;
+	readonly Heartbeat: RBXScriptSignal<(deltaTime: number) => void>;
 	readonly Misprediction: RBXScriptSignal<(remoteWorldStepId: number, mispredictedInstances: unknown) => void>;
 	/** Fires every frame, after the physics simulation has completed. */
-	readonly PostSimulation: RBXScriptSignal<(deltaTimeSim?: number) => void>;
+	readonly PostSimulation: RBXScriptSignal<(deltaTimeSim: number) => void>;
 	/** Fires every frame, prior to the physics simulation but after rendering. */
-	readonly PreAnimation: RBXScriptSignal<(deltaTimeSim?: number) => void>;
+	readonly PreAnimation: RBXScriptSignal<(deltaTimeSim: number) => void>;
 	/** Fires every frame, prior to the frame being rendered. */
-	readonly PreRender: RBXScriptSignal<(deltaTimeRender?: number) => void>;
+	readonly PreRender: RBXScriptSignal<(deltaTimeRender: number) => void>;
 	/** Fires every frame, prior to the physics simulation. */
-	readonly PreSimulation: RBXScriptSignal<(deltaTimeSim?: number) => void>;
+	readonly PreSimulation: RBXScriptSignal<(deltaTimeSim: number) => void>;
 	/** Fires every frame, prior to the frame being rendered. */
-	readonly RenderStepped: RBXScriptSignal<(deltaTime?: number) => void>;
+	readonly RenderStepped: RBXScriptSignal<(deltaTime: number) => void>;
 	/** Fires every frame, prior to the physics simulation. */
-	readonly Stepped: RBXScriptSignal<(time?: number, deltaTime?: number) => void>;
+	readonly Stepped: RBXScriptSignal<(time: number, deltaTime: number) => void>;
 }
 
 interface RuntimeContentService extends Instance {
@@ -11184,7 +11189,7 @@ interface ScriptContext extends Instance {
 	/** Limits how long a script is allowed to run without yielding. */
 	SetTimeout(seconds?: number): undefined;
 	/** Fired when an error occurs. */
-	readonly Error: RBXScriptSignal<(message?: string, stackTrace?: string, script?: Instance) => void>;
+	readonly Error: RBXScriptSignal<(message: string, stackTrace: string, script: Instance) => void>;
 }
 
 interface ScriptDebugger extends Instance {
@@ -11263,9 +11268,9 @@ interface ScriptDocument extends Instance {
 	/**
 	 * Fires when the ScriptDocument changes, including immediately after a text change.
 	 */
-	readonly SelectionChanged: RBXScriptSignal<(positionLine?: number, positionCharacter?: number, anchorLine?: number, anchorCharacter?: number) => void>;
+	readonly SelectionChanged: RBXScriptSignal<(positionLine: number, positionCharacter: number, anchorLine: number, anchorCharacter: number) => void>;
 	/** Fires when the displayed line numbers in the editor change. */
-	readonly ViewportChanged: RBXScriptSignal<(startLine?: number, endLine?: number) => void>;
+	readonly ViewportChanged: RBXScriptSignal<(startLine: number, endLine: number) => void>;
 }
 
 /** This service is used for interacting with `ScriptDocument` instances. */
@@ -11301,15 +11306,15 @@ interface ScriptEditorService extends Instance {
 	 */
 	UpdateSourceAsync(script?: LuaSourceContainer, callback?: Function): undefined;
 	/** Fires just after a `ScriptDocument` changes. */
-	readonly TextDocumentDidChange: RBXScriptSignal<(document?: ScriptDocument, changesArray?: unknown) => void>;
+	readonly TextDocumentDidChange: RBXScriptSignal<(document: ScriptDocument, changesArray: unknown) => void>;
 	/**
 	 * Fires just before a `ScriptDocument` object is destroyed, which happens right after the script editor closes.
 	 */
-	readonly TextDocumentDidClose: RBXScriptSignal<(oldDocument?: ScriptDocument) => void>;
+	readonly TextDocumentDidClose: RBXScriptSignal<(oldDocument: ScriptDocument) => void>;
 	/**
 	 * Fires just after a `ScriptDocument` object is created and parented to the service, which happens right after the script editor opens.
 	 */
-	readonly TextDocumentDidOpen: RBXScriptSignal<(newDocument?: ScriptDocument) => void>;
+	readonly TextDocumentDidOpen: RBXScriptSignal<(newDocument: ScriptDocument) => void>;
 }
 
 interface ScriptProfilerService extends Instance {
@@ -11320,7 +11325,7 @@ interface ScriptProfilerService extends Instance {
 	ServerRequestData(): undefined;
 	ServerStart(frequency?: unknown): undefined;
 	ServerStop(): undefined;
-	readonly OnNewData: RBXScriptSignal<(player?: Player, jsonString?: string) => void>;
+	readonly OnNewData: RBXScriptSignal<(player: Player, jsonString: string) => void>;
 }
 
 interface ScriptRegistrationService extends Instance {
@@ -11467,9 +11472,9 @@ interface ServiceProvider extends Instance {
 	/** Fires when the current place is exited. */
 	readonly Close: RBXScriptSignal<() => void>;
 	/** Fired when a service is created. */
-	readonly ServiceAdded: RBXScriptSignal<(service?: Instance) => void>;
+	readonly ServiceAdded: RBXScriptSignal<(service: Instance) => void>;
 	/** Fired when a service is about to be removed. */
-	readonly ServiceRemoving: RBXScriptSignal<(service?: Instance) => void>;
+	readonly ServiceRemoving: RBXScriptSignal<(service: Instance) => void>;
 }
 
 /**
@@ -11565,12 +11570,12 @@ interface DataModel extends ServiceProvider {
 	/**
 	 * Fires when the user prompts and increase or decrease in graphics quality using the hotkeys.
 	 */
-	readonly GraphicsQualityChangeRequest: RBXScriptSignal<(betterQuality?: boolean) => void>;
+	readonly GraphicsQualityChangeRequest: RBXScriptSignal<(betterQuality: boolean) => void>;
 	/**
 	 * Fires when a property of any object in the `DataModel` is changed.
 	 * @deprecated Deprecated.
 	 */
-	readonly ItemChanged: RBXScriptSignal<(object?: Instance, descriptor?: string) => void>;
+	readonly ItemChanged: RBXScriptSignal<(object: Instance, descriptor: string) => void>;
 	/** Fires on the client when the game finishes loading for the first time. */
 	readonly Loaded: RBXScriptSignal<() => void>;
 	/**
@@ -11735,12 +11740,12 @@ interface SocialService extends Instance {
 	 */
 	PromptRsvpToEventAsync(eventId?: string): Enum.RsvpStatus;
 	/** Fires when a player's call invite state changes. */
-	readonly CallInviteStateChanged: RBXScriptSignal<(player?: Instance, inviteState?: Enum.InviteState) => void>;
+	readonly CallInviteStateChanged: RBXScriptSignal<(player: Instance, inviteState: Enum.InviteState) => void>;
 	/** Fires when a player closes an invite prompt. */
-	readonly GameInvitePromptClosed: RBXScriptSignal<(player?: Instance, recipientIds?: unknown) => void>;
+	readonly GameInvitePromptClosed: RBXScriptSignal<(player: Instance, recipientIds: unknown) => void>;
 	/** Fires when a player closes the phone book prompt. */
-	readonly PhoneBookPromptClosed: RBXScriptSignal<(player?: Instance) => void>;
-	readonly ShareSheetClosed: RBXScriptSignal<(player?: Player) => void>;
+	readonly PhoneBookPromptClosed: RBXScriptSignal<(player: Instance) => void>;
+	readonly ShareSheetClosed: RBXScriptSignal<(player: Player) => void>;
 	/** Callback for when a call is placed from the phone book. */
 	OnCallInviteInvoked?: (tag?: string, callParticipantIds?: unknown) => Instance;
 }
@@ -11841,19 +11846,19 @@ interface Sound extends Instance {
 	/** @deprecated Deprecated. */
 	stop(): undefined;
 	/** Fires whenever the `Sound` loops. */
-	readonly DidLoop: RBXScriptSignal<(soundId?: string, numOfTimesLooped?: number) => void>;
+	readonly DidLoop: RBXScriptSignal<(soundId: string, numOfTimesLooped: number) => void>;
 	/** Fires when the `Sound` has completed playback and stopped. */
-	readonly Ended: RBXScriptSignal<(soundId?: string) => void>;
+	readonly Ended: RBXScriptSignal<(soundId: string) => void>;
 	/** Fires when the `Sound` is loaded. */
-	readonly Loaded: RBXScriptSignal<(soundId?: string) => void>;
+	readonly Loaded: RBXScriptSignal<(soundId: string) => void>;
 	/** Fires whenever the `Sound` is paused using `Pause()`. */
-	readonly Paused: RBXScriptSignal<(soundId?: string) => void>;
+	readonly Paused: RBXScriptSignal<(soundId: string) => void>;
 	/** Fires whenever the `Sound` is played using `Play()`. */
-	readonly Played: RBXScriptSignal<(soundId?: string) => void>;
+	readonly Played: RBXScriptSignal<(soundId: string) => void>;
 	/** Fires when the `Sound` is resumed using `Resume()`. */
-	readonly Resumed: RBXScriptSignal<(soundId?: string) => void>;
+	readonly Resumed: RBXScriptSignal<(soundId: string) => void>;
 	/** Fires when the `Sound` is stopped through using `Stop()`. */
-	readonly Stopped: RBXScriptSignal<(soundId?: string) => void>;
+	readonly Stopped: RBXScriptSignal<(soundId: string) => void>;
 }
 
 /**
@@ -12289,10 +12294,6 @@ interface TotalCountTimeIntervalItem extends StatsItem {
 interface StopWatchReporter extends Instance {
 }
 
-interface StreamingService extends Instance {
-	ExecuteCommandAsync(requestId: string, commandName: string, arg: unknown): unknown;
-}
-
 interface Studio extends Instance {
 	ActionOnStopSync: Enum.ActionOnStopSync;
 	["Active Color"]: Color3;
@@ -12469,7 +12470,7 @@ interface Studio extends Instance {
 	["Skip Closing Brackets and Quotes"]: boolean;
 	/** Specifies the color of strings in the script editor. */
 	["String Color"]: Color3;
-	["\u201CTODO\u201D Color"]: Color3;
+	[""TODO" Color"]: Color3;
 	/** Specifies how many spaces are used to represent a tab in the script editor. */
 	["Tab Width"]: number;
 	/** Specifies the color of normal text in the script editor. */
@@ -12483,10 +12484,10 @@ interface Studio extends Instance {
 	 */
 	["Warning Color"]: Color3;
 	["Whitespace Color"]: Color3;
-	["\u201Cfunction\u201D Color"]: Color3;
-	["\u201Clocal\u201D Color"]: Color3;
-	["\u201Cnil\u201D Color"]: Color3;
-	["\u201Cself\u201D Color"]: Color3;
+	[""function" Color"]: Color3;
+	[""local" Color"]: Color3;
+	[""nil" Color"]: Color3;
+	[""self" Color"]: Color3;
 	/** Returns a list of `themes` available in Studio. */
 	GetAvailableThemes(): unknown;
 	/** Event called when Studio's `theme` changes. */
@@ -12633,7 +12634,7 @@ interface StyleRule extends StyleBase {
 	/** Lets you declare and set multiple properties of the `StyleRule` at once. */
 	SetProperties(styleProperties?: unknown): undefined;
 	SetProperty(name?: string, value?: unknown): undefined;
-	SetPropertyTransitions(properties: unknown): undefined;
+	SetPropertyTransitions(properties?: unknown): undefined;
 }
 
 /**
@@ -12757,11 +12758,11 @@ interface Team extends Instance {
 	/**
 	 * Fires whenever a `Player` is assigned to the `Team`. A player is considered assigned if their `Player.Team` property is equal to the `Team` and `Player.Neutral` is false.
 	 */
-	readonly PlayerAdded: RBXScriptSignal<(player?: Player) => void>;
+	readonly PlayerAdded: RBXScriptSignal<(player: Player) => void>;
 	/**
 	 * Fires whenever a `Player` is removed from a `Team`. This can be due to the `Player` leaving the game, `Player.Neutral` being set to true or the `Player` joining a different team.
 	 */
-	readonly PlayerRemoved: RBXScriptSignal<(player?: Player) => void>;
+	readonly PlayerRemoved: RBXScriptSignal<(player: Player) => void>;
 }
 
 interface TeamCreateData extends Instance {
@@ -12892,11 +12893,11 @@ interface TeleportService extends Instance {
 	 */
 	TeleportPartyAsync(placeId?: number, players?: Instances, teleportData?: unknown, customLoadingScreen?: Instance): string;
 	/** Fires when the `LocalPlayer` enters the place following a teleport. */
-	readonly LocalPlayerArrivedFromTeleport: RBXScriptSignal<(loadingGui?: Instance, dataTable?: unknown) => void>;
+	readonly LocalPlayerArrivedFromTeleport: RBXScriptSignal<(loadingGui: Instance, dataTable: unknown) => void>;
 	/**
 	 * Fires when a teleport fails to start, leaving the player in their current server.
 	 */
-	readonly TeleportInitFailed: RBXScriptSignal<(player?: Instance, teleportResult?: Enum.TeleportResult, errorMessage?: string, placeId?: number, teleportOptions?: Instance) => void>;
+	readonly TeleportInitFailed: RBXScriptSignal<(player: Instance, teleportResult: Enum.TeleportResult, errorMessage: string, placeId: number, teleportOptions: Instance) => void>;
 }
 
 interface TemporaryCageMeshProvider extends Instance {
@@ -13035,9 +13036,9 @@ interface TestService extends Instance {
 	/** Runs scripts which are parented to `TestService`. */
 	RunAsync(): undefined;
 	/** Fires when the server should collect a conditional test result. */
-	readonly ServerCollectConditionalResult: RBXScriptSignal<(condition?: boolean, text?: string, script?: Instance, line?: number) => void>;
+	readonly ServerCollectConditionalResult: RBXScriptSignal<(condition: boolean, text: string, script: Instance, line: number) => void>;
 	/** Fires when the server should collect a test result. */
-	readonly ServerCollectResult: RBXScriptSignal<(text?: string, script?: Instance, line?: number) => void>;
+	readonly ServerCollectResult: RBXScriptSignal<(text: string, script: Instance, line: number) => void>;
 }
 
 interface TextBoxService extends Instance {
@@ -13062,7 +13063,7 @@ interface TextChannel extends Instance {
 	/**
 	 * Fires when `TextChannel:DisplaySystemMessage()` is invoked on the client, or when the client receives a valid `TextChannel:SendAsync()` response from the server.
 	 */
-	readonly MessageReceived: RBXScriptSignal<(incomingMessage?: TextChatMessage) => void>;
+	readonly MessageReceived: RBXScriptSignal<(incomingMessage: TextChatMessage) => void>;
 	/** Called when `TextChannel` is receiving an incoming message. */
 	OnIncomingMessage?: (message?: TextChatMessage) => unknown;
 	/**
@@ -13081,7 +13082,7 @@ interface TextChatCommand extends Instance {
 	/** A secondary alias used to trigger the `TextChatCommand`. */
 	SecondaryAlias: string;
 	/** An event that developers can bind to execute commands. */
-	readonly Triggered: RBXScriptSignal<(originTextSource?: TextSource, unfilteredText?: string) => void>;
+	readonly Triggered: RBXScriptSignal<(originTextSource: TextSource, unfilteredText: string) => void>;
 }
 
 /** The parental class of all text chat configurations. */
@@ -13324,13 +13325,13 @@ interface TextChatService extends Instance {
 	 */
 	GetChatGroupsAsync(players?: Instances): unknown;
 	/** Fires when `TextChatService:DisplayBubble()` is called. */
-	readonly BubbleDisplayed: RBXScriptSignal<(partOrCharacter?: Instance, textChatMessage?: TextChatMessage) => void>;
+	readonly BubbleDisplayed: RBXScriptSignal<(partOrCharacter: Instance, textChatMessage: TextChatMessage) => void>;
 	/**
 	 * Fires when `TextChannel:DisplaySystemMessage()` is invoked on the client, or when the client receives a valid `TextChannel:SendAsync()` response from the server.
 	 */
-	readonly MessageReceived: RBXScriptSignal<(textChatMessage?: TextChatMessage) => void>;
+	readonly MessageReceived: RBXScriptSignal<(textChatMessage: TextChatMessage) => void>;
 	/** Fires when `TextChannel:SendAsync()` is called by the sending client. */
-	readonly SendingMessage: RBXScriptSignal<(textChatMessage?: TextChatMessage) => void>;
+	readonly SendingMessage: RBXScriptSignal<(textChatMessage: TextChatMessage) => void>;
 	/** Called when a bubble chat is about to be displayed. */
 	OnBubbleAdded?: (message?: TextChatMessage, adornee?: Instance) => unknown;
 	/**
@@ -13554,7 +13555,7 @@ interface TweenBase extends Instance {
 	/**
 	 * Fires when the tween finishes playing or when stopped with `TweenBase:Cancel()`.
 	 */
-	readonly Completed: RBXScriptSignal<(playbackState?: Enum.PlaybackState) => void>;
+	readonly Completed: RBXScriptSignal<(playbackState: Enum.PlaybackState) => void>;
 }
 
 /** The `Tween` object controls the playback of an interpolation. */
@@ -13713,7 +13714,9 @@ interface UIDragDetector extends UIComponent {
 	SelectionModeDragSpeed: UDim2;
 	/** Maximum angle per second the `UIDragDetector` can rotate at. */
 	SelectionModeRotateSpeed: number;
-	/** `Enum.UIDragSpeedAxisMapping` value that determines the X/Y dimension dragging speeds. */
+	/**
+	 * `Enum.UIDragSpeedAxisMapping` value that determines the **X**/**Y** dimension dragging speeds.
+	 */
 	UIDragSpeedAxisMapping: Enum.UIDragSpeedAxisMapping;
 	/** Adds a function to modify or constrain proposed motion. */
 	AddConstraintFunction(priority?: number, _function?: Function): RBXScriptConnection;
@@ -13728,11 +13731,11 @@ interface UIDragDetector extends UIComponent {
 	/**
 	 * Fires when a user continues dragging the UI element after `DragStart` has been initiated.
 	 */
-	readonly DragContinue: RBXScriptSignal<(inputPosition?: Vector2) => void>;
+	readonly DragContinue: RBXScriptSignal<(inputPosition: Vector2) => void>;
 	/** Fires when a user stops dragging the UI element. */
-	readonly DragEnd: RBXScriptSignal<(inputPosition?: Vector2) => void>;
+	readonly DragEnd: RBXScriptSignal<(inputPosition: Vector2) => void>;
 	/** Fires when a user starts dragging the UI element. */
-	readonly DragStart: RBXScriptSignal<(inputPosition?: Vector2) => void>;
+	readonly DragStart: RBXScriptSignal<(inputPosition: Vector2) => void>;
 }
 
 /** Defines flex behavior for a `GuiObject` within a `UIListLayout`. */
@@ -13889,13 +13892,13 @@ interface UIPageLayout extends UIGridStyleLayout {
 	 */
 	Previous(): undefined;
 	/** Fires when a page comes into view, and is going to be rendered. */
-	readonly PageEnter: RBXScriptSignal<(page?: Instance) => void>;
+	readonly PageEnter: RBXScriptSignal<(page: Instance) => void>;
 	/** Fires when a page leaves view, and will not be rendered. */
-	readonly PageLeave: RBXScriptSignal<(page?: Instance) => void>;
+	readonly PageLeave: RBXScriptSignal<(page: Instance) => void>;
 	/**
 	 * Fires when an animation to `UIPageLayout.CurrentPage` is completed without being canceled, and the view stops scrolling.
 	 */
-	readonly Stopped: RBXScriptSignal<(currentPage?: Instance) => void>;
+	readonly Stopped: RBXScriptSignal<(currentPage: Instance) => void>;
 }
 
 /**
@@ -13974,7 +13977,7 @@ interface UIDragDetectorService extends Instance {
 }
 
 interface UniqueIdLookupService extends Instance {
-	GetOrCreateUniqueIdRemoteCommand(instance: Instance): string;
+	GetOrCreateUniqueIdRemoteCommand(instance?: Instance): string;
 }
 
 interface UnvalidatedAssetService extends Instance {
@@ -14025,11 +14028,11 @@ interface UserGameSettings extends Instance {
 	/** Sets onboarding as completed. */
 	SetOnboardingCompleted(onboardingId?: string): undefined;
 	/** Fires if the user's full screen mode is changed. */
-	readonly FullscreenChanged: RBXScriptSignal<(isFullscreen?: boolean) => void>;
+	readonly FullscreenChanged: RBXScriptSignal<(isFullscreen: boolean) => void>;
 	/**
 	 * Fired when the user's client switches between Studio mode and in-game mode. This gets fired periodically in Roblox Studio when a session starts.
 	 */
-	readonly StudioModeChanged: RBXScriptSignal<(isStudioMode?: boolean) => void>;
+	readonly StudioModeChanged: RBXScriptSignal<(isStudioMode: boolean) => void>;
 }
 
 /**
@@ -14160,78 +14163,78 @@ interface UserInputService extends Instance {
 	/** Sets whether or not the specified gamepad can move the `GuiObject` navigator. */
 	SetNavigationGamepad(gamepadEnum?: Enum.UserInputType, enabled?: boolean): undefined;
 	/** Fires when a user moves a device that has an accelerometer. */
-	readonly DeviceAccelerationChanged: RBXScriptSignal<(acceleration?: InputObject) => void>;
+	readonly DeviceAccelerationChanged: RBXScriptSignal<(acceleration: InputObject) => void>;
 	/**
 	 * Fires when the force of gravity changes on a device that has an enabled accelerometer.
 	 */
-	readonly DeviceGravityChanged: RBXScriptSignal<(gravity?: InputObject) => void>;
+	readonly DeviceGravityChanged: RBXScriptSignal<(gravity: InputObject) => void>;
 	/** Fires when a user rotates a device that has a gyroscope. */
-	readonly DeviceRotationChanged: RBXScriptSignal<(rotation?: InputObject, cframe?: CFrame) => void>;
+	readonly DeviceRotationChanged: RBXScriptSignal<(rotation: InputObject, cframe: CFrame) => void>;
 	/** Fires when a gamepad is connected to the client. */
-	readonly GamepadConnected: RBXScriptSignal<(gamepadNum?: Enum.UserInputType) => void>;
+	readonly GamepadConnected: RBXScriptSignal<(gamepadNum: Enum.UserInputType) => void>;
 	/** Fires when a gamepad is disconnected from the client. */
-	readonly GamepadDisconnected: RBXScriptSignal<(gamepadNum?: Enum.UserInputType) => void>;
+	readonly GamepadDisconnected: RBXScriptSignal<(gamepadNum: Enum.UserInputType) => void>;
 	/**
 	 * Fires when a user begins interacting with an input device such as a mouse or gamepad.
 	 */
-	readonly InputBegan: RBXScriptSignal<(input?: InputObject, gameProcessedEvent?: boolean) => void>;
+	readonly InputBegan: RBXScriptSignal<(input: InputObject, gameProcessedEvent: boolean) => void>;
 	/**
 	 * Fires when a user changes how they're interacting with an input device such as a mouse or gamepad.
 	 */
-	readonly InputChanged: RBXScriptSignal<(input?: InputObject, gameProcessedEvent?: boolean) => void>;
+	readonly InputChanged: RBXScriptSignal<(input: InputObject, gameProcessedEvent: boolean) => void>;
 	/**
 	 * Fires when a user stops interacting with an input device such as a mouse or gamepad.
 	 */
-	readonly InputEnded: RBXScriptSignal<(input?: InputObject, gameProcessedEvent?: boolean) => void>;
+	readonly InputEnded: RBXScriptSignal<(input: InputObject, gameProcessedEvent: boolean) => void>;
 	/** Fires whenever the client makes a request for their character to jump. */
 	readonly JumpRequest: RBXScriptSignal<() => void>;
 	/** Fires whenever the client's `Enum.UserInputType` is changed. */
-	readonly LastInputTypeChanged: RBXScriptSignal<(lastInputType?: Enum.UserInputType) => void>;
+	readonly LastInputTypeChanged: RBXScriptSignal<(lastInputType: Enum.UserInputType) => void>;
 	/** Fires when the user performs a specific pointer action. */
-	readonly PointerAction: RBXScriptSignal<(wheel?: number, pan?: Vector2, pinch?: number, gameProcessedEvent?: boolean) => void>;
+	readonly PointerAction: RBXScriptSignal<(wheel: number, pan: Vector2, pinch: number, gameProcessedEvent: boolean) => void>;
 	/** Fires when the client loses focus on a `TextBox`. */
-	readonly TextBoxFocusReleased: RBXScriptSignal<(textboxReleased?: TextBox) => void>;
+	readonly TextBoxFocusReleased: RBXScriptSignal<(textboxReleased: TextBox) => void>;
 	/** Fires when the client focuses on a `TextBox`. */
-	readonly TextBoxFocused: RBXScriptSignal<(textboxFocused?: TextBox) => void>;
+	readonly TextBoxFocused: RBXScriptSignal<(textboxFocused: TextBox) => void>;
 	/** Fires when the user drags on the screen of a `TouchEnabled` device. */
-	readonly TouchDrag: RBXScriptSignal<(dragDirection?: Enum.SwipeDirection, numberOfTouches?: number, gameProcessedEvent?: boolean) => void>;
+	readonly TouchDrag: RBXScriptSignal<(dragDirection: Enum.SwipeDirection, numberOfTouches: number, gameProcessedEvent: boolean) => void>;
 	/**
 	 * Fires when a user releases their finger from the screen of a `TouchEnabled` device.
 	 */
-	readonly TouchEnded: RBXScriptSignal<(touch?: InputObject, gameProcessedEvent?: boolean) => void>;
+	readonly TouchEnded: RBXScriptSignal<(touch: InputObject, gameProcessedEvent: boolean) => void>;
 	/**
 	 * Fires when a user holds at least one finger for a short amount of time on the screen of a `TouchEnabled` device.
 	 */
-	readonly TouchLongPress: RBXScriptSignal<(touchPositions?: unknown, state?: Enum.UserInputState, gameProcessedEvent?: boolean) => void>;
+	readonly TouchLongPress: RBXScriptSignal<(touchPositions: unknown, state: Enum.UserInputState, gameProcessedEvent: boolean) => void>;
 	/** Fires when a user moves their finger on the screen of a `TouchEnabled` device. */
-	readonly TouchMoved: RBXScriptSignal<(touch?: InputObject, gameProcessedEvent?: boolean) => void>;
+	readonly TouchMoved: RBXScriptSignal<(touch: InputObject, gameProcessedEvent: boolean) => void>;
 	/**
 	 * Fires when the user drags at least one finger on the screen of a `TouchEnabled` device.
 	 */
-	readonly TouchPan: RBXScriptSignal<(touchPositions?: unknown, totalTranslation?: Vector2, velocity?: Vector2, state?: Enum.UserInputState, gameProcessedEvent?: boolean) => void>;
+	readonly TouchPan: RBXScriptSignal<(touchPositions: unknown, totalTranslation: Vector2, velocity: Vector2, state: Enum.UserInputState, gameProcessedEvent: boolean) => void>;
 	/**
 	 * Fires when a user performs a pinch gesture on the screen of a `TouchEnabled` device.
 	 */
-	readonly TouchPinch: RBXScriptSignal<(touchPositions?: unknown, scale?: number, velocity?: number, state?: Enum.UserInputState, gameProcessedEvent?: boolean) => void>;
+	readonly TouchPinch: RBXScriptSignal<(touchPositions: unknown, scale: number, velocity: number, state: Enum.UserInputState, gameProcessedEvent: boolean) => void>;
 	/** Fires when a user rotates two fingers on the screen of a `TouchEnabled` device. */
-	readonly TouchRotate: RBXScriptSignal<(touchPositions?: unknown, rotation?: number, velocity?: number, state?: Enum.UserInputState, gameProcessedEvent?: boolean) => void>;
+	readonly TouchRotate: RBXScriptSignal<(touchPositions: unknown, rotation: number, velocity: number, state: Enum.UserInputState, gameProcessedEvent: boolean) => void>;
 	/** Fires when a user places their finger on the screen of a `TouchEnabled` device. */
-	readonly TouchStarted: RBXScriptSignal<(touch?: InputObject, gameProcessedEvent?: boolean) => void>;
+	readonly TouchStarted: RBXScriptSignal<(touch: InputObject, gameProcessedEvent: boolean) => void>;
 	/**
 	 * Fires on a `TouchEnabled` device when a user places their finger(s) down on the screen, pans across the screen, and lifts their finger(s) off with a certain speed of movement.
 	 */
-	readonly TouchSwipe: RBXScriptSignal<(swipeDirection?: Enum.SwipeDirection, numberOfTouches?: number, gameProcessedEvent?: boolean) => void>;
+	readonly TouchSwipe: RBXScriptSignal<(swipeDirection: Enum.SwipeDirection, numberOfTouches: number, gameProcessedEvent: boolean) => void>;
 	/** Fires when a user taps their finger on the screen of a `TouchEnabled` device. */
-	readonly TouchTap: RBXScriptSignal<(touchPositions?: unknown, gameProcessedEvent?: boolean) => void>;
+	readonly TouchTap: RBXScriptSignal<(touchPositions: unknown, gameProcessedEvent: boolean) => void>;
 	/**
 	 * Fires when a user taps their finger on the screen of a `TouchEnabled` device and the tap location is in the 3D world.
 	 */
-	readonly TouchTapInWorld: RBXScriptSignal<(position?: Vector2, processedByUI?: boolean) => void>;
+	readonly TouchTapInWorld: RBXScriptSignal<(position: Vector2, processedByUI: boolean) => void>;
 	/**
 	 * Fires when the `CFrame` of a specified Virtual Reality device changes.
 	 * @deprecated Deprecated.
 	 */
-	readonly UserCFrameChanged: RBXScriptSignal<(type?: Enum.UserCFrame, value?: CFrame) => void>;
+	readonly UserCFrameChanged: RBXScriptSignal<(type: Enum.UserCFrame, value: CFrame) => void>;
 	/** Fires when the window of the Roblox client loses focus on the user's screen. */
 	readonly WindowFocusReleased: RBXScriptSignal<() => void>;
 	/** Fires when the window of the Roblox client gains focus on the user's screen. */
@@ -14286,13 +14289,13 @@ interface VRService extends Instance {
 	 */
 	SetTouchpadMode(pad?: Enum.VRTouchpad, mode?: Enum.VRTouchpadMode): undefined;
 	/** Fired when navigation is requested from `VRService`. */
-	readonly NavigationRequested: RBXScriptSignal<(cframe?: CFrame, inputUserCFrame?: Enum.UserCFrame) => void>;
+	readonly NavigationRequested: RBXScriptSignal<(cframe: CFrame, inputUserCFrame: Enum.UserCFrame) => void>;
 	/** Fires if the `Enum.VRTouchpadMode` of a `Enum.VRTouchpad` is changed. */
-	readonly TouchpadModeChanged: RBXScriptSignal<(pad?: Enum.VRTouchpad, mode?: Enum.VRTouchpadMode) => void>;
+	readonly TouchpadModeChanged: RBXScriptSignal<(pad: Enum.VRTouchpad, mode: Enum.VRTouchpadMode) => void>;
 	/** Fires when a `Enum.UserCFrame` is changed. */
-	readonly UserCFrameChanged: RBXScriptSignal<(type?: Enum.UserCFrame, value?: CFrame) => void>;
+	readonly UserCFrameChanged: RBXScriptSignal<(type: Enum.UserCFrame, value: CFrame) => void>;
 	/** Fires when a `Enum.UserCFrame` is enabled or disabled. */
-	readonly UserCFrameEnabled: RBXScriptSignal<(type?: Enum.UserCFrame, enabled?: boolean) => void>;
+	readonly UserCFrameEnabled: RBXScriptSignal<(type: Enum.UserCFrame, enabled: boolean) => void>;
 }
 
 interface VRStatusService extends Instance {
@@ -14305,7 +14308,7 @@ interface ValueBase extends Instance {
 /** An internal type of `StringValue` object, that stores a `BinaryString` value. */
 interface BinaryStringValue extends ValueBase {
 	/** Fires if the BinaryStringValue's value is changed. */
-	readonly Changed: RBXScriptSignal<(value?: string) => void>;
+	readonly Changed: RBXScriptSignal<(value: string) => void>;
 }
 
 /** A container object for a single boolean value. */
@@ -14313,9 +14316,9 @@ interface BoolValue extends ValueBase {
 	/** Used to hold a boolean value. */
 	Value: boolean;
 	/** Fires whenever the `BoolValue.Value` is changed. */
-	readonly Changed: RBXScriptSignal<(value?: boolean) => void>;
+	readonly Changed: RBXScriptSignal<(value: boolean) => void>;
 	/** @deprecated Deprecated. */
-	readonly changed: RBXScriptSignal<(value?: boolean) => void>;
+	readonly changed: RBXScriptSignal<(value: boolean) => void>;
 }
 
 /** A container object for a single BrickColor value. */
@@ -14323,9 +14326,9 @@ interface BrickColorValue extends ValueBase {
 	/** Used to hold a `BrickColor` value. */
 	Value: BrickColor;
 	/** Fired whenever the `BrickColorValue.Value` of the BrickColorValue is changed. */
-	readonly Changed: RBXScriptSignal<(value?: BrickColor) => void>;
+	readonly Changed: RBXScriptSignal<(value: BrickColor) => void>;
 	/** @deprecated Deprecated. */
-	readonly changed: RBXScriptSignal<(value?: BrickColor) => void>;
+	readonly changed: RBXScriptSignal<(value: BrickColor) => void>;
 }
 
 /** A container object for a single CFrame value. */
@@ -14333,9 +14336,9 @@ interface CFrameValue extends ValueBase {
 	/** Used to hold a `CFrame` value. */
 	Value: CFrame;
 	/** Fired whenever the `CFrameValue.Value` of the CFrameValue is changed. */
-	readonly Changed: RBXScriptSignal<(value?: CFrame) => void>;
+	readonly Changed: RBXScriptSignal<(value: CFrame) => void>;
 	/** @deprecated Deprecated. */
-	readonly changed: RBXScriptSignal<(value?: CFrame) => void>;
+	readonly changed: RBXScriptSignal<(value: CFrame) => void>;
 }
 
 /** A container object for a single Color3 value. */
@@ -14343,9 +14346,9 @@ interface Color3Value extends ValueBase {
 	/** The stored `Color3`. */
 	Value: Color3;
 	/** Fired whenever the `Color3Value.Value` is changed. */
-	readonly Changed: RBXScriptSignal<(value?: Color3) => void>;
+	readonly Changed: RBXScriptSignal<(value: Color3) => void>;
 	/** @deprecated Deprecated. */
-	readonly changed: RBXScriptSignal<(value?: Color3) => void>;
+	readonly changed: RBXScriptSignal<(value: Color3) => void>;
 }
 
 /**
@@ -14364,9 +14367,9 @@ interface DoubleConstrainedValue extends ValueBase {
 	/**
 	 * Fired whenever the `DoubleConstrainedValue.Value` of the `DoubleConstrainedValue` is changed.
 	 */
-	readonly Changed: RBXScriptSignal<(value?: number) => void>;
+	readonly Changed: RBXScriptSignal<(value: number) => void>;
 	/** @deprecated Deprecated. */
-	readonly changed: RBXScriptSignal<(value?: number) => void>;
+	readonly changed: RBXScriptSignal<(value: number) => void>;
 }
 
 /**
@@ -14383,9 +14386,9 @@ interface IntConstrainedValue extends ValueBase {
 	 */
 	Value: number;
 	/** Fired whenever the Value of the IntConstrainedValue is changed. */
-	readonly Changed: RBXScriptSignal<(value?: number) => void>;
+	readonly Changed: RBXScriptSignal<(value: number) => void>;
 	/** @deprecated Deprecated. */
-	readonly changed: RBXScriptSignal<(value?: number) => void>;
+	readonly changed: RBXScriptSignal<(value: number) => void>;
 }
 
 /** A container object for a single integer. */
@@ -14393,9 +14396,9 @@ interface IntValue extends ValueBase {
 	/** Used to hold an integer. */
 	Value: number;
 	/** Fires whenever the `IntValue.Value` is changed. */
-	readonly Changed: RBXScriptSignal<(value?: number) => void>;
+	readonly Changed: RBXScriptSignal<(value: number) => void>;
 	/** @deprecated Deprecated. */
-	readonly changed: RBXScriptSignal<(value?: number) => void>;
+	readonly changed: RBXScriptSignal<(value: number) => void>;
 }
 
 /** A container object for a single double-precision floating point number. */
@@ -14403,9 +14406,9 @@ interface NumberValue extends ValueBase {
 	/** Used to hold a double value. */
 	Value: number;
 	/** Fires whenever the `NumberValue.Value` is changed. */
-	readonly Changed: RBXScriptSignal<(value?: number) => void>;
+	readonly Changed: RBXScriptSignal<(value: number) => void>;
 	/** @deprecated Deprecated. */
-	readonly changed: RBXScriptSignal<(value?: number) => void>;
+	readonly changed: RBXScriptSignal<(value: number) => void>;
 }
 
 /** A container object for a reference to another instance. */
@@ -14413,9 +14416,9 @@ interface ObjectValue extends ValueBase {
 	/** Holds a reference to an instance. */
 	Value: Instance;
 	/** Fires whenever the `ObjectValue.Value` is changed. */
-	readonly Changed: RBXScriptSignal<(value?: Instance) => void>;
+	readonly Changed: RBXScriptSignal<(value: Instance) => void>;
 	/** @deprecated Deprecated. */
-	readonly changed: RBXScriptSignal<(value?: Instance) => void>;
+	readonly changed: RBXScriptSignal<(value: Instance) => void>;
 }
 
 /** A container object for a single Ray. */
@@ -14423,9 +14426,9 @@ interface RayValue extends ValueBase {
 	/** The stored Ray. */
 	Value: Ray;
 	/** Fired when `RayValue.Value` is changed. */
-	readonly Changed: RBXScriptSignal<(value?: Ray) => void>;
+	readonly Changed: RBXScriptSignal<(value: Ray) => void>;
 	/** @deprecated Deprecated. */
-	readonly changed: RBXScriptSignal<(value?: Ray) => void>;
+	readonly changed: RBXScriptSignal<(value: Ray) => void>;
 }
 
 /** A container object for a single string. */
@@ -14433,9 +14436,9 @@ interface StringValue extends ValueBase {
 	/** The stored string. */
 	Value: string;
 	/** Fires whenever `StringValue.Value` is changed. */
-	readonly Changed: RBXScriptSignal<(value?: string) => void>;
+	readonly Changed: RBXScriptSignal<(value: string) => void>;
 	/** @deprecated Deprecated. */
-	readonly changed: RBXScriptSignal<(value?: string) => void>;
+	readonly changed: RBXScriptSignal<(value: string) => void>;
 }
 
 /** A container object for a single Vector3 value. */
@@ -14443,9 +14446,9 @@ interface Vector3Value extends ValueBase {
 	/** The stored `Vector3`. */
 	Value: Vector3;
 	/** Fired whenever `Vector3Value.Value` is changed. */
-	readonly Changed: RBXScriptSignal<(value?: Vector3) => void>;
+	readonly Changed: RBXScriptSignal<(value: Vector3) => void>;
 	/** @deprecated Deprecated. */
-	readonly changed: RBXScriptSignal<(value?: Vector3) => void>;
+	readonly changed: RBXScriptSignal<(value: Vector3) => void>;
 }
 
 /**
@@ -14553,11 +14556,11 @@ interface VideoPlayer extends Instance {
 	readonly DidEnd: RBXScriptSignal<() => void>;
 	/** Fires when the `VideoContent` loops. */
 	readonly DidLoop: RBXScriptSignal<() => void>;
-	readonly PlayFailed: RBXScriptSignal<(error?: Enum.AssetFetchStatus) => void>;
+	readonly PlayFailed: RBXScriptSignal<(error: Enum.AssetFetchStatus) => void>;
 	/**
 	 * Fires when another instance is connected to or disconnected from the `VideoPlayer` via a `Wire`.
 	 */
-	readonly WiringChanged: RBXScriptSignal<(connected?: boolean, pin?: string, wire?: Wire, instance?: Instance) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
 
 interface VideoScreenCaptureService extends Instance {
@@ -14722,16 +14725,16 @@ interface MLSession extends Object {
 
 interface TerrainIterateOperation extends Object {
 	CommitBlock(block?: unknown): RBXScriptSignal;
-	readonly Ready: RBXScriptSignal<(block?: unknown) => void>;
+	readonly Ready: RBXScriptSignal<(block: unknown) => void>;
 }
 
 interface TerrainModifyOperation extends Object {
 	CommitBlock(block?: unknown): RBXScriptSignal;
-	readonly Ready: RBXScriptSignal<(block?: unknown) => void>;
+	readonly Ready: RBXScriptSignal<(block: unknown) => void>;
 }
 
 interface TerrainReadOperation extends Object {
-	readonly Ready: RBXScriptSignal<(block?: unknown) => void>;
+	readonly Ready: RBXScriptSignal<(block: unknown) => void>;
 }
 
 interface TerrainWriteOperation extends Object {
@@ -14749,6 +14752,9 @@ interface VideoSampler extends Object {
 	GetSamplesAtTimesAsync(times?: unknown): unknown;
 }
 
+interface VoxelBuffer extends Object {
+}
+
 /** Maintains a streaming connection. */
 interface WebStreamClient extends Object {
 	/** The current `Enum.WebStreamClientState` of the client. */
@@ -14761,13 +14767,13 @@ interface WebStreamClient extends Object {
 	/**
 	 * Fires if an error is received while establishing the connection or during the connection lifetime.
 	 */
-	readonly Error: RBXScriptSignal<(responseStatusCode?: number, errorMessage?: string) => void>;
+	readonly Error: RBXScriptSignal<(responseStatusCode: number, errorMessage: string) => void>;
 	/** Fires each time a message is received from the server. */
-	readonly MessageReceived: RBXScriptSignal<(message?: string) => void>;
+	readonly MessageReceived: RBXScriptSignal<(message: string) => void>;
 	/**
 	 * Fires when the a connection is successfully established between the client and server, allowing for events to begin streaming.
 	 */
-	readonly Opened: RBXScriptSignal<(responseStatusCode?: number, headers?: string) => void>;
+	readonly Opened: RBXScriptSignal<(responseStatusCode: number, headers: string) => void>;
 }
 
 interface CreatableInstances {
@@ -15126,7 +15132,6 @@ interface CheckableServices {
 	ChangeHistoryService: ChangeHistoryService;
 	ChangeHistoryStreamingService: ChangeHistoryStreamingService;
 	Chat: Chat;
-	ChatbotUIService: ChatbotUIService;
 	CloudCRUDService: CloudCRUDService;
 	ClusterPacketCache: ClusterPacketCache;
 	CollaboratorsService: CollaboratorsService;
@@ -15287,6 +15292,7 @@ interface CheckableServices {
 	RobloxPluginGuiService: RobloxPluginGuiService;
 	RobloxReplicatedStorage: RobloxReplicatedStorage;
 	RobloxServerStorage: RobloxServerStorage;
+	RolloutValidationService: RolloutValidationService;
 	RomarkRbxAnalyticsService: RomarkRbxAnalyticsService;
 	RomarkService: RomarkService;
 	RtMessagingService: RtMessagingService;
@@ -15327,7 +15333,6 @@ interface CheckableServices {
 	StartupMessageService: StartupMessageService;
 	Stats: Stats;
 	StopWatchReporter: StopWatchReporter;
-	StreamingService: StreamingService;
 	Studio: Studio;
 	StudioAssetService: StudioAssetService;
 	StudioCameraService: StudioCameraService;
