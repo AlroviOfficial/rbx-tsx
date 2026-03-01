@@ -1,8 +1,27 @@
 import ts from "typescript";
-import type { LuauExpression, LuauStatement, LuauParam, LuauTableEntry } from "../ast/luau-ast.ts";
+import type {
+  LuauExpression,
+  LuauStatement,
+  LuauParam,
+  LuauTableEntry,
+} from "../ast/luau-ast.ts";
 import {
-  ident, str, num, bool, nil, call, methodCall, index, bracketIndex,
-  table, binary, unary, ifExpr, funcExpr, concat, raw,
+  ident,
+  str,
+  num,
+  bool,
+  nil,
+  call,
+  methodCall,
+  index,
+  bracketIndex,
+  table,
+  binary,
+  unary,
+  ifExpr,
+  funcExpr,
+  concat,
+  raw,
 } from "../ast/luau-ast.ts";
 import { ROBLOX_METHODS } from "../mappings/roblox-methods.ts";
 import { ROBLOX_SERVICES } from "../mappings/roblox-services.ts";
@@ -14,7 +33,7 @@ import { transformStatements } from "./statement-transform.ts";
 
 export function transformExpression(
   node: ts.Expression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   // String literal
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
@@ -31,7 +50,10 @@ export function transformExpression(
   if (node.kind === ts.SyntaxKind.FalseKeyword) return bool(false);
 
   // null / undefined → nil
-  if (node.kind === ts.SyntaxKind.NullKeyword || node.kind === ts.SyntaxKind.UndefinedKeyword) {
+  if (
+    node.kind === ts.SyntaxKind.NullKeyword ||
+    node.kind === ts.SyntaxKind.UndefinedKeyword
+  ) {
     return nil();
   }
 
@@ -115,7 +137,10 @@ export function transformExpression(
     // "as const" → table.freeze
     if (node.type.kind === ts.SyntaxKind.TypeReference) {
       const typeRef = node.type as ts.TypeReferenceNode;
-      if (ts.isIdentifier(typeRef.typeName) && typeRef.typeName.text === "const") {
+      if (
+        ts.isIdentifier(typeRef.typeName) &&
+        typeRef.typeName.text === "const"
+      ) {
         // Actually TS uses a different node for `as const`
       }
     }
@@ -146,7 +171,11 @@ export function transformExpression(
   }
 
   // JSX
-  if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) {
+  if (
+    ts.isJsxElement(node) ||
+    ts.isJsxSelfClosingElement(node) ||
+    ts.isJsxFragment(node)
+  ) {
     return transformJSX(node, ctx);
   }
 
@@ -160,19 +189,31 @@ export function transformExpression(
 
   // Regular expression literal — unsupported
   if (ts.isRegularExpressionLiteral(node)) {
-    ctx.warnAtNode("unsupported-syntax", "Regular expressions are not supported in Luau; use string.match patterns instead", node);
+    ctx.warnAtNode(
+      "unsupported-syntax",
+      "Regular expressions are not supported in Luau; use string.match patterns instead",
+      node
+    );
     return raw(`nil --[[ regex not supported ]]`);
   }
 
   // Tagged template literal — unsupported
   if (ts.isTaggedTemplateExpression(node)) {
-    ctx.warnAtNode("unsupported-syntax", "Tagged template literals are not supported", node);
+    ctx.warnAtNode(
+      "unsupported-syntax",
+      "Tagged template literals are not supported",
+      node
+    );
     return raw(`--[[ unsupported: tagged template ]] nil`);
   }
 
   // Await expression
   if (ts.isAwaitExpression(node)) {
-    ctx.warnAtNode("complex-async", "Async transform may need manual review", node);
+    ctx.warnAtNode(
+      "complex-async",
+      "Async transform may need manual review",
+      node
+    );
     ctx.needsPromise = true;
     // Simple transform: await expr → expr:expect()
     const inner = transformExpression(node.expression, ctx);
@@ -181,7 +222,11 @@ export function transformExpression(
 
   // Yield — not supported
   if (ts.isYieldExpression(node)) {
-    ctx.warnAtNode("unsupported-syntax", "Yield expressions are not supported", node);
+    ctx.warnAtNode(
+      "unsupported-syntax",
+      "Yield expressions are not supported",
+      node
+    );
     return raw("--[[ unsupported: yield ]] nil");
   }
 
@@ -192,7 +237,10 @@ export function transformExpression(
   }
 
   // Comma expression
-  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.CommaToken) {
+  if (
+    ts.isBinaryExpression(node) &&
+    node.operatorToken.kind === ts.SyntaxKind.CommaToken
+  ) {
     // Take the last value
     return transformExpression(node.right, ctx);
   }
@@ -203,13 +251,20 @@ export function transformExpression(
   }
 
   // Fallback
-  ctx.warnAtNode("unsupported-syntax", `Unsupported expression kind: ${ts.SyntaxKind[node.kind]}`, node);
+  ctx.warnAtNode(
+    "unsupported-syntax",
+    `Unsupported expression kind: ${ts.SyntaxKind[node.kind]}`,
+    node
+  );
   return raw(`--[[ unsupported: ${ts.SyntaxKind[node.kind]} ]] nil`);
 }
 
 // ── Identifier ──
 
-function transformIdentifier(node: ts.Identifier, ctx: TransformContext): LuauExpression {
+function transformIdentifier(
+  node: ts.Identifier,
+  ctx: TransformContext
+): LuauExpression {
   const name = node.text;
 
   // Check for Roblox service references
@@ -233,7 +288,7 @@ function transformIdentifier(node: ts.Identifier, ctx: TransformContext): LuauEx
 
 function transformTemplateLiteral(
   node: ts.TemplateExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   const parts: LuauExpression[] = [];
 
@@ -259,7 +314,7 @@ function transformTemplateLiteral(
 
 function transformBinaryExpression(
   node: ts.BinaryExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   const op = node.operatorToken.kind;
 
@@ -277,7 +332,7 @@ function transformBinaryExpression(
     return binary(
       transformExpression(node.left, ctx),
       "and",
-      transformExpression(node.right, ctx),
+      transformExpression(node.right, ctx)
     );
   }
 
@@ -286,7 +341,7 @@ function transformBinaryExpression(
     return binary(
       transformExpression(node.left, ctx),
       "or",
-      transformExpression(node.right, ctx),
+      transformExpression(node.right, ctx)
     );
   }
 
@@ -295,7 +350,7 @@ function transformBinaryExpression(
     return binary(
       transformExpression(node.left, ctx),
       "==",
-      transformExpression(node.right, ctx),
+      transformExpression(node.right, ctx)
     );
   }
 
@@ -304,7 +359,7 @@ function transformBinaryExpression(
     return binary(
       transformExpression(node.left, ctx),
       "~=",
-      transformExpression(node.right, ctx),
+      transformExpression(node.right, ctx)
     );
   }
 
@@ -313,7 +368,7 @@ function transformBinaryExpression(
     return binary(
       transformExpression(node.left, ctx),
       "==",
-      transformExpression(node.right, ctx),
+      transformExpression(node.right, ctx)
     );
   }
 
@@ -322,7 +377,7 @@ function transformBinaryExpression(
     return binary(
       transformExpression(node.left, ctx),
       "~=",
-      transformExpression(node.right, ctx),
+      transformExpression(node.right, ctx)
     );
   }
 
@@ -359,7 +414,7 @@ function transformBinaryExpression(
     return binary(
       transformExpression(node.left, ctx),
       luauOp,
-      transformExpression(node.right, ctx),
+      transformExpression(node.right, ctx)
     );
   }
 
@@ -371,7 +426,10 @@ function transformBinaryExpression(
     return transformExpression(node.right, ctx);
   }
 
-  ctx.warn("unsupported-syntax", `Unsupported binary operator: ${ts.SyntaxKind[op]}`);
+  ctx.warn(
+    "unsupported-syntax",
+    `Unsupported binary operator: ${ts.SyntaxKind[op]}`
+  );
   return raw(`--[[ unsupported op: ${ts.SyntaxKind[op]} ]] nil`);
 }
 
@@ -379,7 +437,7 @@ function transformBinaryExpression(
 
 function transformPrefixUnary(
   node: ts.PrefixUnaryExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   const operand = transformExpression(node.operand, ctx);
 
@@ -409,7 +467,7 @@ function transformPrefixUnary(
 
 function transformPostfixUnary(
   node: ts.PostfixUnaryExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   // x++, x-- → returns old value, but in Luau we just return x
   // The side effect (increment) is handled at statement level
@@ -420,12 +478,12 @@ function transformPostfixUnary(
 
 function transformConditional(
   node: ts.ConditionalExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   return ifExpr(
     transformExpression(node.condition, ctx),
     transformExpression(node.whenTrue, ctx),
-    transformExpression(node.whenFalse, ctx),
+    transformExpression(node.whenFalse, ctx)
   );
 }
 
@@ -433,7 +491,7 @@ function transformConditional(
 
 export function transformFunctionExpression(
   node: ts.ArrowFunction | ts.FunctionExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   const params = transformParameters(node.parameters, ctx);
   let returnType: string | undefined;
@@ -456,7 +514,7 @@ export function transformFunctionExpression(
 
 export function transformParameters(
   params: ts.NodeArray<ts.ParameterDeclaration>,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauParam[] {
   const result: LuauParam[] = [];
 
@@ -470,7 +528,10 @@ export function transformParameters(
       const paramType = param.type ? transformType(param.type, ctx) : undefined;
       result.push({ name: "_arr", type: paramType });
     } else if (param.dotDotDotToken) {
-      result.push({ name: "...", type: param.type ? transformType(param.type, ctx) : undefined });
+      result.push({
+        name: "...",
+        type: param.type ? transformType(param.type, ctx) : undefined,
+      });
     } else {
       const name = param.name.getText();
       const paramType = param.type ? transformType(param.type, ctx) : undefined;
@@ -485,23 +546,24 @@ export function transformParameters(
 
 function transformCallExpression(
   node: ts.CallExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   const args = node.arguments.map((a) => transformExpression(a, ctx));
 
   // Optional call: a?.()
   if (node.questionDotToken) {
     const callee = transformExpression(node.expression, ctx);
-    return ifExpr(
-      binary(callee, "~=", nil()),
-      call(callee, args),
-      nil(),
-    );
+    return ifExpr(binary(callee, "~=", nil()), call(callee, args), nil());
   }
 
   // Special built-in transforms
   if (ts.isPropertyAccessExpression(node.expression)) {
-    const special = transformSpecialCallExpression(node, node.expression, args, ctx);
+    const special = transformSpecialCallExpression(
+      node,
+      node.expression,
+      args,
+      ctx
+    );
     if (special) return special;
   }
 
@@ -537,7 +599,7 @@ function transformCallExpression(
 function transformSimpleCallExpression(
   name: string,
   args: LuauExpression[],
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   switch (name) {
     case "parseInt":
@@ -562,7 +624,7 @@ function transformSimpleCallExpression(
       return binary(
         binary(args[0] ?? nil(), "==", args[0] ?? nil()),
         "and",
-        binary(args[0] ?? nil(), "~=", index(ident("math"), "huge")),
+        binary(args[0] ?? nil(), "~=", index(ident("math"), "huge"))
       );
 
     case "setTimeout":
@@ -594,7 +656,7 @@ function transformSimpleCallExpression(
 
 function transformClsxCall(
   node: ts.CallExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   ctx.requireHelper("joinClasses");
   const joinArgs: LuauExpression[] = [];
@@ -624,7 +686,7 @@ function transformSpecialCallExpression(
   node: ts.CallExpression,
   propAccess: ts.PropertyAccessExpression,
   args: LuauExpression[],
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression | null {
   const methodName = propAccess.name.text;
   const objText = propAccess.expression.getText();
@@ -646,11 +708,27 @@ function transformSpecialCallExpression(
   // Math.*
   if (objText === "Math") {
     const mathMap: Record<string, string> = {
-      floor: "floor", ceil: "ceil", round: "round", random: "random",
-      min: "min", max: "max", abs: "abs", sqrt: "sqrt", pow: "pow",
-      sin: "sin", cos: "cos", tan: "tan", asin: "asin", acos: "acos",
-      atan: "atan", atan2: "atan2", exp: "exp", log: "log", log10: "log",
-      sign: "sign", clamp: "clamp",
+      floor: "floor",
+      ceil: "ceil",
+      round: "round",
+      random: "random",
+      min: "min",
+      max: "max",
+      abs: "abs",
+      sqrt: "sqrt",
+      pow: "pow",
+      sin: "sin",
+      cos: "cos",
+      tan: "tan",
+      asin: "asin",
+      acos: "acos",
+      atan: "atan",
+      atan2: "atan2",
+      exp: "exp",
+      log: "log",
+      log10: "log",
+      sign: "sign",
+      clamp: "clamp",
     };
     const luauName = mathMap[methodName];
     if (luauName) {
@@ -705,7 +783,7 @@ function transformObjectMethod(
   method: string,
   args: LuauExpression[],
   node: ts.CallExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   switch (method) {
     case "keys": {
@@ -739,7 +817,7 @@ function transformArrayMethod(
   method: string,
   args: LuauExpression[],
   node: ts.CallExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression | null {
   switch (method) {
     case "push":
@@ -754,7 +832,7 @@ function transformArrayMethod(
       return binary(
         call(index(ident("table"), "find"), [obj, args[0] ?? nil()]),
         "~=",
-        nil(),
+        nil()
       );
     }
 
@@ -783,11 +861,24 @@ function transformArrayMethod(
           : null;
         sortArgs.push(boolComp ?? args[0]!);
       }
-      return call(funcExpr([], [
-        { type: "local", name: "_s", value: call(index(ident("table"), "clone"), [obj]) },
-        { type: "expression-statement", expr: call(index(ident("table"), "sort"), sortArgs) },
-        { type: "return", value: ident("_s") },
-      ]), []);
+      return call(
+        funcExpr(
+          [],
+          [
+            {
+              type: "local",
+              name: "_s",
+              value: call(index(ident("table"), "clone"), [obj]),
+            },
+            {
+              type: "expression-statement",
+              expr: call(index(ident("table"), "sort"), sortArgs),
+            },
+            { type: "return", value: ident("_s") },
+          ]
+        ),
+        []
+      );
     }
 
     case "slice": {
@@ -888,7 +979,7 @@ function isLikelyStringResult(expr: LuauExpression): boolean {
  */
 function transformSortComparator(
   node: ts.Expression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression | null {
   if (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node)) return null;
   if (node.parameters.length !== 2) return null;
@@ -925,16 +1016,26 @@ function transformSortComparator(
     const thenVal = getNumericValue(bodyExpr.whenTrue);
     const elseVal = getNumericValue(bodyExpr.whenFalse);
 
-    if (thenVal !== null && elseVal !== null && ts.isBinaryExpression(bodyExpr.condition)) {
+    if (
+      thenVal !== null &&
+      elseVal !== null &&
+      ts.isBinaryExpression(bodyExpr.condition)
+    ) {
       if (thenVal > 0 && elseVal < 0) {
         // condition ? positive : negative → flip the comparison
         // e.g., a > b ? 1 : -1  →  a < b
         const flipped = flipComparison(bodyExpr.condition, ctx);
-        if (flipped) return funcExpr(params, [{ type: "return", value: flipped }]);
+        if (flipped)
+          return funcExpr(params, [{ type: "return", value: flipped }]);
       } else if (thenVal < 0 && elseVal > 0) {
         // condition ? negative : positive → keep the comparison
         // e.g., a < b ? -1 : 1  →  a < b
-        return funcExpr(params, [{ type: "return", value: transformExpression(bodyExpr.condition, ctx) }]);
+        return funcExpr(params, [
+          {
+            type: "return",
+            value: transformExpression(bodyExpr.condition, ctx),
+          },
+        ]);
       }
     }
   }
@@ -946,7 +1047,9 @@ function transformSortComparator(
   ) {
     const left = transformExpression(bodyExpr.left, ctx);
     const right = transformExpression(bodyExpr.right, ctx);
-    return funcExpr(params, [{ type: "return", value: binary(left, "<", right) }]);
+    return funcExpr(params, [
+      { type: "return", value: binary(left, "<", right) },
+    ]);
   }
 
   return null;
@@ -971,7 +1074,7 @@ function getNumericValue(node: ts.Expression): number | null {
 /** Flip a comparison operator: > → <, < → >, >= → <=, <= → >= */
 function flipComparison(
   node: ts.BinaryExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression | null {
   const flipMap: Partial<Record<ts.SyntaxKind, string>> = {
     [ts.SyntaxKind.GreaterThanToken]: "<",
@@ -993,7 +1096,7 @@ function transformStringMethod(
   obj: LuauExpression,
   method: string,
   args: LuauExpression[],
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression | null {
   switch (method) {
     case "toLowerCase":
@@ -1013,9 +1116,14 @@ function transformStringMethod(
 
     case "includes":
       return binary(
-        call(index(ident("string"), "find"), [obj, args[0] ?? str(""), num(1), bool(true)]),
+        call(index(ident("string"), "find"), [
+          obj,
+          args[0] ?? str(""),
+          num(1),
+          bool(true),
+        ]),
         "~=",
-        nil(),
+        nil()
       );
 
     case "startsWith": {
@@ -1023,7 +1131,7 @@ function transformStringMethod(
       return binary(
         call(index(ident("string"), "sub"), [obj, num(1), unary("#", pre)]),
         "==",
-        pre,
+        pre
       );
     }
 
@@ -1032,13 +1140,18 @@ function transformStringMethod(
       return binary(
         call(index(ident("string"), "sub"), [obj, unary("-", unary("#", suf))]),
         "==",
-        suf,
+        suf
       );
     }
 
     case "indexOf": {
       // (string.find(s, sub, 1, true) or 0) - 1
-      const find = call(index(ident("string"), "find"), [obj, args[0] ?? str(""), num(1), bool(true)]);
+      const find = call(index(ident("string"), "find"), [
+        obj,
+        args[0] ?? str(""),
+        num(1),
+        bool(true),
+      ]);
       return binary(binary(find, "or", num(0)), "-", num(1));
     }
 
@@ -1046,9 +1159,16 @@ function transformStringMethod(
     case "substring": {
       const start = args[0] ?? num(0);
       if (args[1]) {
-        return call(index(ident("string"), "sub"), [obj, binary(start, "+", num(1)), args[1]]);
+        return call(index(ident("string"), "sub"), [
+          obj,
+          binary(start, "+", num(1)),
+          args[1],
+        ]);
       }
-      return call(index(ident("string"), "sub"), [obj, binary(start, "+", num(1))]);
+      return call(index(ident("string"), "sub"), [
+        obj,
+        binary(start, "+", num(1)),
+      ]);
     }
 
     case "charAt": {
@@ -1064,11 +1184,20 @@ function transformStringMethod(
     }
 
     case "replace": {
-      return call(index(ident("string"), "gsub"), [obj, args[0] ?? str(""), args[1] ?? str(""), num(1)]);
+      return call(index(ident("string"), "gsub"), [
+        obj,
+        args[0] ?? str(""),
+        args[1] ?? str(""),
+        num(1),
+      ]);
     }
 
     case "replaceAll": {
-      return call(index(ident("string"), "gsub"), [obj, args[0] ?? str(""), args[1] ?? str("")]);
+      return call(index(ident("string"), "gsub"), [
+        obj,
+        args[0] ?? str(""),
+        args[1] ?? str(""),
+      ]);
     }
 
     case "split":
@@ -1081,7 +1210,10 @@ function transformStringMethod(
       const len = args[0] ?? num(0);
       const ch = args[1] ?? str(" ");
       return concat([
-        call(index(ident("string"), "rep"), [ch, binary(len, "-", unary("#", obj))]),
+        call(index(ident("string"), "rep"), [
+          ch,
+          binary(len, "-", unary("#", obj)),
+        ]),
         obj,
       ]);
     }
@@ -1091,7 +1223,10 @@ function transformStringMethod(
       const ch = args[1] ?? str(" ");
       return concat([
         obj,
-        call(index(ident("string"), "rep"), [ch, binary(len, "-", unary("#", obj))]),
+        call(index(ident("string"), "rep"), [
+          ch,
+          binary(len, "-", unary("#", obj)),
+        ]),
       ]);
     }
 
@@ -1111,7 +1246,7 @@ function transformStringMethod(
 
 function transformPropertyAccess(
   node: ts.PropertyAccessExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   const propName = node.name.text;
   const objText = node.expression.getText();
@@ -1145,7 +1280,8 @@ function transformPropertyAccess(
     if (propName === "MAX_SAFE_INTEGER") return num(2 ** 53 - 1);
     if (propName === "MIN_SAFE_INTEGER") return num(-(2 ** 53 - 1));
     if (propName === "POSITIVE_INFINITY") return index(ident("math"), "huge");
-    if (propName === "NEGATIVE_INFINITY") return unary("-", index(ident("math"), "huge"));
+    if (propName === "NEGATIVE_INFINITY")
+      return unary("-", index(ident("math"), "huge"));
     if (propName === "NaN") return binary(num(0), "/", num(0));
     if (propName === "isInteger") {
       ctx.requireHelper("numberIsInteger");
@@ -1176,24 +1312,20 @@ function transformPropertyAccess(
 
 function transformOptionalChain(
   node: ts.PropertyAccessExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   const obj = transformExpression(node.expression, ctx);
   const propName = node.name.text;
 
   // a?.b → if a ~= nil then a.b else nil
-  return ifExpr(
-    binary(obj, "~=", nil()),
-    index(obj, propName),
-    nil(),
-  );
+  return ifExpr(binary(obj, "~=", nil()), index(obj, propName), nil());
 }
 
 // ── Element Access ──
 
 function transformElementAccess(
   node: ts.ElementAccessExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   const obj = transformExpression(node.expression, ctx);
   const argExpr = node.argumentExpression;
@@ -1201,11 +1333,7 @@ function transformElementAccess(
   // Optional element access: a?.[b]
   if (node.questionDotToken) {
     const idx = transformExpression(argExpr, ctx);
-    return ifExpr(
-      binary(obj, "~=", nil()),
-      bracketIndex(obj, idx),
-      nil(),
-    );
+    return ifExpr(binary(obj, "~=", nil()), bracketIndex(obj, idx), nil());
   }
 
   // Numeric literal index: arr[0] → arr[1] (0-to-1 based adjustment)
@@ -1229,7 +1357,7 @@ function transformElementAccess(
 
 function transformObjectLiteral(
   node: ts.ObjectLiteralExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   const entries: LuauTableEntry[] = [];
 
@@ -1264,7 +1392,7 @@ function transformObjectLiteral(
 
 function buildSpreadObject(
   node: ts.ObjectLiteralExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   ctx.requireHelper("merge");
   const args: LuauExpression[] = [];
@@ -1296,11 +1424,15 @@ function buildSpreadObject(
   return call(ident("_merge"), args);
 }
 
-function getPropertyKey(name: ts.PropertyName, ctx: TransformContext): LuauExpression {
+function getPropertyKey(
+  name: ts.PropertyName,
+  ctx: TransformContext
+): LuauExpression {
   if (ts.isIdentifier(name)) return str(name.text);
   if (ts.isStringLiteral(name)) return str(name.text);
   if (ts.isNumericLiteral(name)) return num(Number(name.text));
-  if (ts.isComputedPropertyName(name)) return transformExpression(name.expression, ctx);
+  if (ts.isComputedPropertyName(name))
+    return transformExpression(name.expression, ctx);
   return str(name.getText());
 }
 
@@ -1308,7 +1440,7 @@ function getPropertyKey(name: ts.PropertyName, ctx: TransformContext): LuauExpre
 
 function transformArrayLiteral(
   node: ts.ArrayLiteralExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   const hasSpread = node.elements.some(ts.isSpreadElement);
 
@@ -1326,7 +1458,7 @@ function transformArrayLiteral(
 
 function buildSpreadArray(
   node: ts.ArrayLiteralExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   ctx.requireHelper("arrayConcat");
   const args: LuauExpression[] = [];
@@ -1356,7 +1488,7 @@ function buildSpreadArray(
 
 function transformNewExpression(
   node: ts.NewExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   const args = node.arguments?.map((a) => transformExpression(a, ctx)) ?? [];
 
@@ -1392,7 +1524,7 @@ function transformNewExpression(
 export function emitDestructuringStatements(
   pattern: ts.BindingPattern,
   source: LuauExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauStatement[] {
   const stmts: LuauStatement[] = [];
 
@@ -1402,8 +1534,12 @@ export function emitDestructuringStatements(
 
     for (const element of namedElements) {
       const propName = element.propertyName
-        ? (ts.isIdentifier(element.propertyName) ? element.propertyName.text : element.propertyName.getText())
-        : (ts.isIdentifier(element.name) ? element.name.getText() : "");
+        ? ts.isIdentifier(element.propertyName)
+          ? element.propertyName.text
+          : element.propertyName.getText()
+        : ts.isIdentifier(element.name)
+        ? element.name.getText()
+        : "";
 
       let value: LuauExpression = index(source, propName);
 
@@ -1414,12 +1550,19 @@ export function emitDestructuringStatements(
       }
 
       // Nested destructuring: { a: { b, c } } = obj
-      if (ts.isObjectBindingPattern(element.name) || ts.isArrayBindingPattern(element.name)) {
+      if (
+        ts.isObjectBindingPattern(element.name) ||
+        ts.isArrayBindingPattern(element.name)
+      ) {
         const tempName = `_dest_${propName}`;
         stmts.push({ type: "local", name: tempName, value });
-        stmts.push(...emitDestructuringStatements(element.name, ident(tempName), ctx));
+        stmts.push(
+          ...emitDestructuringStatements(element.name, ident(tempName), ctx)
+        );
       } else {
-        const localName = ts.isIdentifier(element.name) ? element.name.getText() : propName;
+        const localName = ts.isIdentifier(element.name)
+          ? element.name.getText()
+          : propName;
         stmts.push({ type: "local", name: localName, value });
       }
     }
@@ -1434,8 +1577,12 @@ export function emitDestructuringStatements(
       });
       for (const element of namedElements) {
         const propName = element.propertyName
-          ? (ts.isIdentifier(element.propertyName) ? element.propertyName.text : element.propertyName.getText())
-          : (ts.isIdentifier(element.name) ? element.name.getText() : "");
+          ? ts.isIdentifier(element.propertyName)
+            ? element.propertyName.text
+            : element.propertyName.getText()
+          : ts.isIdentifier(element.name)
+          ? element.name.getText()
+          : "";
         stmts.push({
           type: "assignment",
           target: index(ident(restName), propName),
@@ -1445,7 +1592,8 @@ export function emitDestructuringStatements(
     }
   } else if (ts.isArrayBindingPattern(pattern)) {
     const restElement = pattern.elements.find(
-      (e) => !ts.isOmittedExpression(e) && (e as ts.BindingElement).dotDotDotToken,
+      (e) =>
+        !ts.isOmittedExpression(e) && (e as ts.BindingElement).dotDotDotToken
     );
 
     let idx = 1;
@@ -1464,19 +1612,30 @@ export function emitDestructuringStatements(
       }
 
       // Nested destructuring: [[x, y], z] = matrix
-      if (ts.isObjectBindingPattern(element.name) || ts.isArrayBindingPattern(element.name)) {
+      if (
+        ts.isObjectBindingPattern(element.name) ||
+        ts.isArrayBindingPattern(element.name)
+      ) {
         const tempName = `_dest_${idx}`;
         stmts.push({ type: "local", name: tempName, value });
-        stmts.push(...emitDestructuringStatements(element.name, ident(tempName), ctx));
+        stmts.push(
+          ...emitDestructuringStatements(element.name, ident(tempName), ctx)
+        );
       } else {
-        const localName = ts.isIdentifier(element.name) ? element.name.getText() : `_${idx}`;
+        const localName = ts.isIdentifier(element.name)
+          ? element.name.getText()
+          : `_${idx}`;
         stmts.push({ type: "local", name: localName, value });
       }
       idx++;
     }
 
     // Rest element
-    if (restElement && !ts.isOmittedExpression(restElement) && ts.isIdentifier(restElement.name)) {
+    if (
+      restElement &&
+      !ts.isOmittedExpression(restElement) &&
+      ts.isIdentifier(restElement.name)
+    ) {
       stmts.push({
         type: "local",
         name: restElement.name.text,
@@ -1504,11 +1663,17 @@ function capitalize(s: string): string {
 function emitExprQuick(expr: LuauExpression): string {
   // This is a simplified version — for use in raw() code only
   switch (expr.type) {
-    case "identifier": return expr.name;
-    case "string": return `"${expr.value}"`;
-    case "number": return String(expr.value);
-    case "nil": return "nil";
-    case "boolean": return String(expr.value);
-    default: return "...";
+    case "identifier":
+      return expr.name;
+    case "string":
+      return `"${expr.value}"`;
+    case "number":
+      return String(expr.value);
+    case "nil":
+      return "nil";
+    case "boolean":
+      return String(expr.value);
+    default:
+      return "...";
   }
 }

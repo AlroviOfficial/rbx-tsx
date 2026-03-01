@@ -12,7 +12,7 @@ export interface CodegenOptions {
 
 export function generateLuau(
   statements: LuauStatement[],
-  options: CodegenOptions = {},
+  options: CodegenOptions = {}
 ): string {
   const ctx = new CodegenContext(options.indentStr ?? "    ");
   const lines: string[] = [];
@@ -46,7 +46,7 @@ function emitStatement(
   stmt: LuauStatement,
   lines: string[],
   ctx: CodegenContext,
-  depth: number,
+  depth: number
 ): void {
   const t = ctx.indent(depth);
 
@@ -115,9 +115,7 @@ function emitStatement(
       emitBody(stmt.body, lines, ctx, depth + 1);
       if (stmt.elseIfs) {
         for (const ei of stmt.elseIfs) {
-          lines.push(
-            `${t}elseif ${emitExpr(ei.condition, ctx, depth)} then`,
-          );
+          lines.push(`${t}elseif ${emitExpr(ei.condition, ctx, depth)} then`);
           emitBody(ei.body, lines, ctx, depth + 1);
         }
       }
@@ -130,7 +128,11 @@ function emitStatement(
     }
 
     case "for-numeric": {
-      let header = `${t}for ${stmt.var} = ${emitExpr(stmt.start, ctx, depth)}, ${emitExpr(stmt.end, ctx, depth)}`;
+      let header = `${t}for ${stmt.var} = ${emitExpr(
+        stmt.start,
+        ctx,
+        depth
+      )}, ${emitExpr(stmt.end, ctx, depth)}`;
       if (stmt.step) {
         header += `, ${emitExpr(stmt.step, ctx, depth)}`;
       }
@@ -143,7 +145,9 @@ function emitStatement(
 
     case "for-in": {
       const vars = stmt.vars.join(", ");
-      const iters = stmt.iterators.map((i) => emitExpr(i, ctx, depth)).join(", ");
+      const iters = stmt.iterators
+        .map((i) => emitExpr(i, ctx, depth))
+        .join(", ");
       lines.push(`${t}for ${vars} in ${iters} do`);
       emitBody(stmt.body, lines, ctx, depth + 1);
       lines.push(`${t}end`);
@@ -209,7 +213,7 @@ function emitBody(
   body: LuauStatement[],
   lines: string[],
   ctx: CodegenContext,
-  depth: number,
+  depth: number
 ): void {
   for (const stmt of body) {
     emitStatement(stmt, lines, ctx, depth);
@@ -221,7 +225,7 @@ function emitBody(
 function emitExpr(
   expr: LuauExpression,
   ctx: CodegenContext,
-  depth: number,
+  depth: number
 ): string {
   switch (expr.type) {
     case "identifier":
@@ -281,7 +285,9 @@ function emitExpr(
         return `${expr.op}${operand}`;
       }
       // "not" needs a space
-      return `${expr.op} ${needsParens(expr.operand, expr.op) ? `(${operand})` : operand}`;
+      return `${expr.op} ${
+        needsParens(expr.operand, expr.op) ? `(${operand})` : operand
+      }`;
     }
 
     case "if-expr": {
@@ -317,14 +323,20 @@ function emitExpr(
     }
 
     case "concat": {
-      return expr.parts.map((p) => {
-        const s = emitExpr(p, ctx, depth);
-        // Wrap complex exprs in parens for concat
-        if (p.type === "binary" || p.type === "if-expr" || p.type === "unary") {
-          return `(${s})`;
-        }
-        return s;
-      }).join(" .. ");
+      return expr.parts
+        .map((p) => {
+          const s = emitExpr(p, ctx, depth);
+          // Wrap complex exprs in parens for concat
+          if (
+            p.type === "binary" ||
+            p.type === "if-expr" ||
+            p.type === "unary"
+          ) {
+            return `(${s})`;
+          }
+          return s;
+        })
+        .join(" .. ");
     }
 
     case "varargs":
@@ -343,7 +355,7 @@ function emitExpr(
 function emitTable(
   entries: LuauTableEntry[],
   ctx: CodegenContext,
-  depth: number,
+  depth: number
 ): string {
   if (entries.length === 0) return "{}";
 
@@ -378,7 +390,7 @@ function emitTable(
 function emitTableEntry(
   entry: LuauTableEntry,
   ctx: CodegenContext,
-  depth: number,
+  depth: number
 ): string {
   const value = emitExpr(entry.value, ctx, depth);
   if (!entry.key) {
@@ -408,10 +420,19 @@ function emitParams(params: LuauParam[]): string {
 const PRECEDENCE: Record<string, number> = {
   or: 1,
   and: 2,
-  "<": 3, ">": 3, "<=": 3, ">=": 3, "~=": 3, "==": 3,
+  "<": 3,
+  ">": 3,
+  "<=": 3,
+  ">=": 3,
+  "~=": 3,
+  "==": 3,
   "..": 4,
-  "+": 5, "-": 5,
-  "*": 6, "/": 6, "//": 6, "%": 6,
+  "+": 5,
+  "-": 5,
+  "*": 6,
+  "/": 6,
+  "//": 6,
+  "%": 6,
   "^": 8,
 };
 
@@ -420,13 +441,16 @@ function emitExprWrapped(
   parentOp: string,
   side: "left" | "right",
   ctx: CodegenContext,
-  depth: number,
+  depth: number
 ): string {
   const s = emitExpr(expr, ctx, depth);
   if (expr.type === "binary") {
     const parentPrec = PRECEDENCE[parentOp] ?? 0;
     const childPrec = PRECEDENCE[expr.op] ?? 0;
-    if (childPrec < parentPrec || (childPrec === parentPrec && side === "right")) {
+    if (
+      childPrec < parentPrec ||
+      (childPrec === parentPrec && side === "right")
+    ) {
       return `(${s})`;
     }
   }
@@ -439,7 +463,9 @@ function emitExprWrapped(
 
 function needsParens(expr: LuauExpression, parentOp: string): boolean {
   if (parentOp === "not") {
-    return expr.type === "binary" || expr.type === "unary" || expr.type === "if-expr";
+    return (
+      expr.type === "binary" || expr.type === "unary" || expr.type === "if-expr"
+    );
   }
   return false;
 }
@@ -449,13 +475,39 @@ function isValidLuauIdent(s: string): boolean {
 }
 
 const LUAU_KEYWORDS = new Set([
-  "and", "break", "do", "else", "elseif", "end", "false", "for", "function",
-  "if", "in", "local", "nil", "not", "or", "repeat", "return", "then",
-  "true", "until", "while", "continue", "type", "export",
+  "and",
+  "break",
+  "do",
+  "else",
+  "elseif",
+  "end",
+  "false",
+  "for",
+  "function",
+  "if",
+  "in",
+  "local",
+  "nil",
+  "not",
+  "or",
+  "repeat",
+  "return",
+  "then",
+  "true",
+  "until",
+  "while",
+  "continue",
+  "type",
+  "export",
 ]);
 
 function luauStr(s: string): string {
-  return `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\0/g, "\\0")}"`;
+  return `"${s
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r")
+    .replace(/\0/g, "\\0")}"`;
 }
 
 function formatNumber(n: number): string {

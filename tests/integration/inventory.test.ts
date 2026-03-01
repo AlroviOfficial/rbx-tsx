@@ -539,8 +539,8 @@ describe("Inventory: property access text children", () => {
 
 describe("Inventory: map IIFE invocation", () => {
   test("map loop function is invoked (IIFE, not bare function)", () => {
-    // Should contain end() — the function is called
-    expect(luau).toContain("end(),");
+    // Should contain end)() — the function is called: (function() ... end)()
+    expect(luau).toContain("end)()");
   });
 });
 

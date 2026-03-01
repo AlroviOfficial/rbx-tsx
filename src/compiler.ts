@@ -1,6 +1,10 @@
 import ts from "typescript";
 import { transformSourceFile } from "./transforms/transform.ts";
-import { TransformContext, DEFAULT_OPTIONS, type CompileOptions } from "./transforms/transform-context.ts";
+import {
+  TransformContext,
+  DEFAULT_OPTIONS,
+  type CompileOptions,
+} from "./transforms/transform-context.ts";
 import { generateLuau } from "./codegen/luau-codegen.ts";
 import { WarningCollector, type WarningLevel } from "./warnings.ts";
 import type { CSSManifest } from "./css-manifest.ts";
@@ -27,11 +31,11 @@ export interface CompileResult {
 export function compile(
   source: string,
   filename: string,
-  options: CompilerOptions = {},
+  options: CompilerOptions = {}
 ): CompileResult {
   const warnings = new WarningCollector(
     options.warnLevel ?? "all",
-    options.strict ?? false,
+    options.strict ?? false
   );
 
   const compileOpts: CompileOptions = {
@@ -51,7 +55,7 @@ export function compile(
     true, // setParentNodes
     filename.endsWith(".tsx") || filename.endsWith(".jsx")
       ? ts.ScriptKind.TSX
-      : ts.ScriptKind.TS,
+      : ts.ScriptKind.TS
   );
 
   // Transform
@@ -72,7 +76,7 @@ export function compile(
  */
 export function compileProject(
   files: Map<string, string>,
-  options: CompilerOptions = {},
+  options: CompilerOptions = {}
 ): Map<string, CompileResult> {
   const results = new Map<string, CompileResult>();
 

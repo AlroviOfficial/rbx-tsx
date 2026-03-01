@@ -299,7 +299,7 @@ export function call(callee: LuauExpression, args: LuauExpression[]): LuauCall {
 export function methodCall(
   object: LuauExpression,
   method: string,
-  args: LuauExpression[],
+  args: LuauExpression[]
 ): LuauMethodCall {
   return { type: "method-call", object, method, args };
 }
@@ -310,7 +310,7 @@ export function index(object: LuauExpression, property: string): LuauIndex {
 
 export function bracketIndex(
   object: LuauExpression,
-  idx: LuauExpression,
+  idx: LuauExpression
 ): LuauBracketIndex {
   return { type: "bracket-index", object: object, index: idx };
 }
@@ -322,7 +322,7 @@ export function table(entries: LuauTableEntry[]): LuauTable {
 export function binary(
   left: LuauExpression,
   op: string,
-  right: LuauExpression,
+  right: LuauExpression
 ): LuauBinary {
   return { type: "binary", left, op, right };
 }
@@ -334,7 +334,7 @@ export function unary(op: string, operand: LuauExpression): LuauUnary {
 export function ifExpr(
   condition: LuauExpression,
   thenExpr: LuauExpression,
-  elseExpr: LuauExpression,
+  elseExpr: LuauExpression
 ): LuauIfExpr {
   return { type: "if-expr", condition, thenExpr, elseExpr };
 }
@@ -342,7 +342,7 @@ export function ifExpr(
 export function funcExpr(
   params: LuauParam[],
   body: LuauStatement[],
-  returnType?: string,
+  returnType?: string
 ): LuauFunctionExpr {
   return { type: "function-expr", params, body, returnType };
 }

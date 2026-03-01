@@ -21,11 +21,7 @@ export const HTML_TO_ROBLOX: Record<string, string> = {
 };
 
 /** Elements that can have a Text property */
-export const TEXT_ELEMENTS = new Set([
-  "TextLabel",
-  "TextButton",
-  "TextBox",
-]);
+export const TEXT_ELEMENTS = new Set(["TextLabel", "TextButton", "TextBox"]);
 
 /** Elements that cannot have Text property — text children become child TextLabels */
 export const CONTAINER_ELEMENTS = new Set([
@@ -55,13 +51,42 @@ export const ROBLOX_GUI_CLASSES = new Set([
 
 /** Unsupported HTML elements that should produce a warning */
 export const UNSUPPORTED_ELEMENTS = new Set([
-  "table", "tr", "td", "th", "thead", "tbody", "tfoot",
-  "form", "select", "option", "optgroup",
-  "ul", "ol", "li",
-  "nav", "header", "footer", "main", "section", "article", "aside",
-  "details", "summary", "dialog",
-  "iframe", "embed", "object",
-  "audio", "source", "track",
-  "map", "area",
-  "svg", "circle", "rect", "path", "line", "polygon",
+  "table",
+  "tr",
+  "td",
+  "th",
+  "thead",
+  "tbody",
+  "tfoot",
+  "form",
+  "select",
+  "option",
+  "optgroup",
+  "ul",
+  "ol",
+  "li",
+  "nav",
+  "header",
+  "footer",
+  "main",
+  "section",
+  "article",
+  "aside",
+  "details",
+  "summary",
+  "dialog",
+  "iframe",
+  "embed",
+  "object",
+  "audio",
+  "source",
+  "track",
+  "map",
+  "area",
+  "svg",
+  "circle",
+  "rect",
+  "path",
+  "line",
+  "polygon",
 ]);

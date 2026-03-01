@@ -1,10 +1,33 @@
 import ts from "typescript";
-import type { LuauExpression, LuauStatement, LuauTableEntry } from "../ast/luau-ast.ts";
-import {
-  ident, str, num, bool, nil, call, methodCall, index, bracketIndex,
-  table, binary, unary, ifExpr, funcExpr, concat, raw,
+import type {
+  LuauExpression,
+  LuauStatement,
+  LuauTableEntry,
 } from "../ast/luau-ast.ts";
-import { HTML_TO_ROBLOX, TEXT_ELEMENTS, CONTAINER_ELEMENTS, ROBLOX_GUI_CLASSES } from "../mappings/elements.ts";
+import {
+  ident,
+  str,
+  num,
+  bool,
+  nil,
+  call,
+  methodCall,
+  index,
+  bracketIndex,
+  table,
+  binary,
+  unary,
+  ifExpr,
+  funcExpr,
+  concat,
+  raw,
+} from "../ast/luau-ast.ts";
+import {
+  HTML_TO_ROBLOX,
+  TEXT_ELEMENTS,
+  CONTAINER_ELEMENTS,
+  ROBLOX_GUI_CLASSES,
+} from "../mappings/elements.ts";
 import { EVENT_MAP, UNSUPPORTED_EVENTS } from "../mappings/events.ts";
 import { ROBLOX_PROPERTIES } from "../mappings/roblox-properties.ts";
 import type { TransformContext } from "./transform-context.ts";
@@ -16,7 +39,7 @@ import { transformStatements } from "./statement-transform.ts";
  */
 export function transformJSX(
   node: ts.JsxElement | ts.JsxSelfClosingElement | ts.JsxFragment,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   ctx.needsReact = true;
 
@@ -27,12 +50,7 @@ export function transformJSX(
 
   // Self-closing: <Foo prop="val" />
   if (ts.isJsxSelfClosingElement(node)) {
-    return transformJSXElement(
-      node.tagName,
-      node.attributes,
-      [],
-      ctx,
-    );
+    return transformJSXElement(node.tagName, node.attributes, [], ctx);
   }
 
   // Full element: <Foo prop="val">children</Foo>
@@ -41,18 +59,21 @@ export function transformJSX(
     node.openingElement.tagName,
     node.openingElement.attributes,
     children,
-    ctx,
+    ctx
   );
 }
 
 function transformJSXFragment(
   node: ts.JsxFragment,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   const children = processJSXChildren(Array.from(node.children), null, ctx);
 
   if (children.length === 0) {
-    return call(index(ident("React"), "createElement"), [index(ident("React"), "Fragment"), table([])]);
+    return call(index(ident("React"), "createElement"), [
+      index(ident("React"), "Fragment"),
+      table([]),
+    ]);
   }
 
   return call(index(ident("React"), "createElement"), [
@@ -65,13 +86,17 @@ function transformJSXElement(
   tagName: ts.JsxTagNameExpression,
   attributes: ts.JsxAttributes,
   children: ts.JsxChild[],
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   // Extract static className before element resolution (for manifest-driven upgrades)
   const staticClassName = extractStaticClassName(attributes);
 
   // Determine the element type
-  const { elementArg, robloxClass, isComponent } = resolveElementType(tagName, ctx, staticClassName);
+  const { elementArg, robloxClass, isComponent } = resolveElementType(
+    tagName,
+    ctx,
+    staticClassName
+  );
 
   // Special: portal
   if (!isComponent && ts.isIdentifier(tagName) && tagName.text === "portal") {
@@ -83,14 +108,19 @@ function transformJSXElement(
     attributes,
     robloxClass,
     isComponent,
-    ctx,
+    ctx
   );
 
   // Process children
   const childEntries = processJSXChildren(children, robloxClass, ctx);
 
   // For text-capable elements, extract text children as the Text property
-  if (childEntries.length === 0 && robloxClass && TEXT_ELEMENTS.has(robloxClass) && children.length > 0) {
+  if (
+    childEntries.length === 0 &&
+    robloxClass &&
+    TEXT_ELEMENTS.has(robloxClass) &&
+    children.length > 0
+  ) {
     const textExpr = extractTextFromChildren(children, ctx);
     if (textExpr) {
       propsEntries.push({ key: str("Text"), value: textExpr });
@@ -106,7 +136,8 @@ function transformJSXElement(
     const localProps = propsEntries.length > 0 ? table(propsEntries) : null;
     const mergeArgs = [...spreadProps];
     if (localProps) mergeArgs.push(localProps);
-    propsArg = mergeArgs.length === 1 ? mergeArgs[0]! : call(ident("_merge"), mergeArgs);
+    propsArg =
+      mergeArgs.length === 1 ? mergeArgs[0]! : call(ident("_merge"), mergeArgs);
   } else if (propsEntries.length > 0) {
     propsArg = table(propsEntries);
   } else {
@@ -141,7 +172,7 @@ interface ResolvedElement {
 function resolveElementType(
   tagName: ts.JsxTagNameExpression,
   ctx: TransformContext,
-  staticClassName?: string | null,
+  staticClassName?: string | null
 ): ResolvedElement {
   if (ts.isIdentifier(tagName)) {
     const name = tagName.text;
@@ -153,19 +184,29 @@ function resolveElementType(
       // ScrollingFrame upgrade: if any className triggers overflow:scroll in the CSS manifest
       if (robloxClass === "Frame" && staticClassName && ctx.cssManifest) {
         const classNames = staticClassName.split(/\s+/);
-        const needsScroll = classNames.some((cls) => ctx.isScrollingFrameClass(cls));
+        const needsScroll = classNames.some((cls) =>
+          ctx.isScrollingFrameClass(cls)
+        );
         if (needsScroll) {
           robloxClass = "ScrollingFrame";
         }
       }
 
       if (!robloxClass && !ROBLOX_GUI_CLASSES.has(name)) {
-        ctx.warnAtNode("unsupported-element", `HTML element '${name}' has no Roblox mapping`, tagName);
+        ctx.warnAtNode(
+          "unsupported-element",
+          `HTML element '${name}' has no Roblox mapping`,
+          tagName
+        );
         return { elementArg: str(name), robloxClass: name, isComponent: false };
       }
 
       const className = robloxClass ?? name;
-      return { elementArg: str(className), robloxClass: className, isComponent: false };
+      return {
+        elementArg: str(className),
+        robloxClass: className,
+        isComponent: false,
+      };
     }
 
     // Uppercase = Component
@@ -189,26 +230,38 @@ function resolveElementType(
 function transformPortal(
   attributes: ts.JsxAttributes,
   children: ts.JsxChild[],
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   ctx.needsReactRoblox = true;
 
   let targetExpr: LuauExpression = nil();
 
   for (const attr of attributes.properties) {
-    if (ts.isJsxAttribute(attr) && attr.name.text === "target") {
-      if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+    if (ts.isJsxAttribute(attr) && attr.name.getText() === "target") {
+      if (
+        attr.initializer &&
+        ts.isJsxExpression(attr.initializer) &&
+        attr.initializer.expression
+      ) {
         targetExpr = transformExpression(attr.initializer.expression, ctx);
       }
     }
   }
 
   const childEntries = processJSXChildren(children, "Frame", ctx);
-  const childArg = childEntries.length > 0
-    ? call(index(ident("React"), "createElement"), [str("Frame"), table([]), table(childEntries)])
-    : nil();
+  const childArg =
+    childEntries.length > 0
+      ? call(index(ident("React"), "createElement"), [
+          str("Frame"),
+          table([]),
+          table(childEntries),
+        ])
+      : nil();
 
-  return call(index(ident("ReactRoblox"), "createPortal"), [childArg, targetExpr]);
+  return call(index(ident("ReactRoblox"), "createPortal"), [
+    childArg,
+    targetExpr,
+  ]);
 }
 
 // ── Attributes Processing ──
@@ -223,7 +276,7 @@ function processAttributes(
   attributes: ts.JsxAttributes,
   robloxClass: string | null,
   isComponent: boolean,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): ProcessedAttributes {
   const propsEntries: LuauTableEntry[] = [];
   let keyExpr: LuauExpression | null = null;
@@ -238,7 +291,7 @@ function processAttributes(
 
     if (!ts.isJsxAttribute(attr)) continue;
 
-    const propName = attr.name.text;
+    const propName = attr.name.getText();
     const propValue = getAttributeValue(attr, ctx);
 
     // key → stored separately (used as table key in parent)
@@ -269,7 +322,7 @@ function processAttributes(
     }
 
     // value → Text (for TextBox elements, the Roblox equivalent of a controlled input)
-    if (propName === "value" && (robloxClass === "TextBox")) {
+    if (propName === "value" && robloxClass === "TextBox") {
       propsEntries.push({ key: str("Text"), value: propValue });
       continue;
     }
@@ -280,7 +333,11 @@ function processAttributes(
         propsEntries.push({ key: str("style"), value: propValue });
       } else {
         // For native elements, expand CSS-like properties to Roblox properties
-        if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+        if (
+          attr.initializer &&
+          ts.isJsxExpression(attr.initializer) &&
+          attr.initializer.expression
+        ) {
           const styleExpr = attr.initializer.expression;
           if (ts.isObjectLiteralExpression(styleExpr)) {
             expandInlineStyle(styleExpr, propsEntries, ctx);
@@ -296,13 +353,23 @@ function processAttributes(
 
     // dangerouslySetInnerHTML → warning
     if (propName === "dangerouslySetInnerHTML") {
-      ctx.warnAtNode("unsupported-prop", "'dangerouslySetInnerHTML' is not supported", attr);
+      ctx.warnAtNode(
+        "unsupported-prop",
+        "'dangerouslySetInnerHTML' is not supported",
+        attr
+      );
       continue;
     }
 
     // Event handlers (only for native elements, not components)
     if (propName.startsWith("on") && !isComponent) {
-      const eventEntry = transformEventProp(propName, propValue, attr, robloxClass, ctx);
+      const eventEntry = transformEventProp(
+        propName,
+        propValue,
+        attr,
+        robloxClass,
+        ctx
+      );
       if (eventEntry) {
         propsEntries.push(eventEntry);
       }
@@ -322,7 +389,11 @@ function processAttributes(
     }
 
     // Unknown prop on native element
-    ctx.warnAtNode("unsupported-prop", `Unknown prop '${propName}' on <${robloxClass ?? "unknown"}>`, attr);
+    ctx.warnAtNode(
+      "unsupported-prop",
+      `Unknown prop '${propName}' on <${robloxClass ?? "unknown"}>`,
+      attr
+    );
     propsEntries.push({ key: str(propName), value: propValue });
   }
 
@@ -331,7 +402,7 @@ function processAttributes(
 
 function getAttributeValue(
   attr: ts.JsxAttribute,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   if (!attr.initializer) {
     // Boolean attribute: <button disabled /> → true
@@ -359,11 +430,15 @@ function transformEventProp(
   value: LuauExpression,
   attr: ts.JsxAttribute,
   robloxClass: string | null,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauTableEntry | null {
   // Check unsupported events
   if (UNSUPPORTED_EVENTS.has(propName)) {
-    ctx.warnAtNode("unsupported-event", `'${propName}' has no Roblox equivalent - skipped`, attr);
+    ctx.warnAtNode(
+      "unsupported-event",
+      `'${propName}' has no Roblox equivalent - skipped`,
+      attr
+    );
     return null;
   }
 
@@ -375,10 +450,7 @@ function transformEventProp(
   }
 
   // Build the Roblox event key: [React.Event.X] or [React.Change.X]
-  const eventKey = index(
-    index(ident("React"), mapping.kind),
-    mapping.name,
-  );
+  const eventKey = index(index(ident("React"), mapping.kind), mapping.name);
 
   // Special handling for onSubmit: wrap in enterPressed check
   if (propName === "onSubmit") {
@@ -406,7 +478,7 @@ function transformEventProp(
 function buildOnSubmitHandler(
   value: LuauExpression,
   attr: ts.JsxAttribute,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
   // FocusLost handler that checks enterPressed
   // function(rbx, enterPressed, _input)
@@ -417,33 +489,44 @@ function buildOnSubmitHandler(
     : call(value, [index(ident("rbx"), "Text")]);
 
   return funcExpr(
-    [{ name: "rbx" }, { name: "enterPressed" }, { name: "_inputThatCausedFocusLoss" }],
-    [{
-      type: "if",
-      condition: ident("enterPressed"),
-      body: [{ type: "expression-statement", expr: handlerCall }],
-    }],
+    [
+      { name: "rbx" },
+      { name: "enterPressed" },
+      { name: "_inputThatCausedFocusLoss" },
+    ],
+    [
+      {
+        type: "if",
+        condition: ident("enterPressed"),
+        body: [{ type: "expression-statement", expr: handlerCall }],
+      },
+    ]
   );
 }
 
 function buildOnChangeHandler(
   value: LuauExpression,
   attr: ts.JsxAttribute,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression {
-  ctx.warnAtNode("lossy-transform", "'onChange' with e.target.value transformed to rbx.Text", attr);
+  ctx.warnAtNode(
+    "lossy-transform",
+    "'onChange' with e.target.value transformed to rbx.Text",
+    attr
+  );
 
   // Detect (e) => setText(e.target.value) pattern
-  if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+  if (
+    attr.initializer &&
+    ts.isJsxExpression(attr.initializer) &&
+    attr.initializer.expression
+  ) {
     const expr = attr.initializer.expression;
     if (ts.isArrowFunction(expr) || ts.isFunctionExpression(expr)) {
       // Rewrite: function(rbx) originalCallback(rbx.Text) end
       const body = rewriteEventTargetValue(expr, ctx);
       if (body) {
-        return funcExpr(
-          [{ name: "rbx" }],
-          body,
-        );
+        return funcExpr([{ name: "rbx" }], body);
       }
     }
   }
@@ -451,13 +534,18 @@ function buildOnChangeHandler(
   // Fallback: wrap
   return funcExpr(
     [{ name: "rbx" }],
-    [{ type: "expression-statement", expr: call(value, [index(ident("rbx"), "Text")]) }],
+    [
+      {
+        type: "expression-statement",
+        expr: call(value, [index(ident("rbx"), "Text")]),
+      },
+    ]
   );
 }
 
 function rewriteEventTargetValue(
   fn: ts.ArrowFunction | ts.FunctionExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauStatement[] | null {
   // Try to detect (e) => setText(e.target.value) and rewrite to setText(rbx.Text)
   if (!ts.isBlock(fn.body)) {
@@ -470,7 +558,11 @@ function rewriteEventTargetValue(
           return index(ident("rbx"), "Text");
         }
         if (text.includes(".target.checked")) {
-          ctx.warnAtNode("lossy-transform", "e.target.checked has no direct Roblox equivalent; using nil", arg);
+          ctx.warnAtNode(
+            "lossy-transform",
+            "e.target.checked has no direct Roblox equivalent; using nil",
+            arg
+          );
           return nil();
         }
         if (text.includes(".target.name")) {
@@ -479,10 +571,12 @@ function rewriteEventTargetValue(
         return transformExpression(arg, ctx);
       });
       const callee = transformExpression(expr.expression, ctx);
-      return [{
-        type: "expression-statement",
-        expr: call(callee, rewrittenArgs),
-      }];
+      return [
+        {
+          type: "expression-statement",
+          expr: call(callee, rewrittenArgs),
+        },
+      ];
     }
   }
   return null;
@@ -491,8 +585,8 @@ function rewriteEventTargetValue(
 function wrapEventHandler(
   value: LuauExpression,
   _attr: ts.JsxAttribute,
-  mapping: typeof EVENT_MAP[string],
-  _ctx: TransformContext,
+  mapping: (typeof EVENT_MAP)[string],
+  _ctx: TransformContext
 ): LuauExpression {
   if (!mapping.params) return value;
 
@@ -507,7 +601,11 @@ function wrapEventHandler(
 }
 
 function isSimpleCallback(attr: ts.JsxAttribute): boolean {
-  if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+  if (
+    attr.initializer &&
+    ts.isJsxExpression(attr.initializer) &&
+    attr.initializer.expression
+  ) {
     return ts.isIdentifier(attr.initializer.expression);
   }
   return false;
@@ -522,7 +620,7 @@ function getCallbackBody(value: LuauExpression): LuauExpression {
 function processJSXChildren(
   children: ts.JsxChild[],
   robloxClass: string | null,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauTableEntry[] {
   const entries: LuauTableEntry[] = [];
   const isTextElement = robloxClass ? TEXT_ELEMENTS.has(robloxClass) : false;
@@ -538,7 +636,10 @@ function processJSXChildren(
 
   // Separate text and element children
   const textParts: LuauExpression[] = [];
-  const elementChildren: { key: LuauExpression | null; value: LuauExpression }[] = [];
+  const elementChildren: {
+    key: LuauExpression | null;
+    value: LuauExpression;
+  }[] = [];
   let hasText = false;
   let hasElements = false;
   const usedChildNames = new Map<string, number>();
@@ -554,11 +655,16 @@ function processJSXChildren(
       if (child.expression) {
         // Check if it's a text expression or an element expression
         if (isTextExpression(child.expression)) {
-          textParts.push(wrapToString(transformExpression(child.expression, ctx)));
+          textParts.push(
+            wrapToString(transformExpression(child.expression, ctx))
+          );
           hasText = true;
         } else if (isMapExpression(child.expression)) {
           // .map() in JSX context → for loop
-          const mapResult = transformJSXMap(child.expression as ts.CallExpression, ctx);
+          const mapResult = transformJSXMap(
+            child.expression as ts.CallExpression,
+            ctx
+          );
           if (mapResult) {
             elementChildren.push({ key: null, value: mapResult });
             hasElements = true;
@@ -609,7 +715,10 @@ function processJSXChildren(
 
   // Container with text children → wrap in TextLabel
   if (hasText && !hasElements && isContainer) {
-    ctx.warn("text-in-container", `Text inside <${robloxClass}> will be wrapped in TextLabel`);
+    ctx.warn(
+      "text-in-container",
+      `Text inside <${robloxClass}> will be wrapped in TextLabel`
+    );
     const textExpr = textParts.length === 1 ? textParts[0]! : concat(textParts);
     entries.push({
       key: str("_text"),
@@ -623,7 +732,10 @@ function processJSXChildren(
 
   // Mixed text + elements
   if (hasText && hasElements) {
-    ctx.warn("mixed-children", `Mixed text and element children in <${robloxClass ?? "component"}>`);
+    ctx.warn(
+      "mixed-children",
+      `Mixed text and element children in <${robloxClass ?? "component"}>`
+    );
     // Wrap text in TextLabel
     const textExpr = textParts.length === 1 ? textParts[0]! : concat(textParts);
     entries.push({
@@ -654,7 +766,7 @@ function processJSXChildren(
  */
 export function extractTextFromChildren(
   children: ts.JsxChild[],
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression | null {
   const meaningful = children.filter((child) => {
     if (ts.isJsxText(child)) return normalizeJSXText(child.text).length > 0;
@@ -689,7 +801,7 @@ export function extractTextFromChildren(
 
 function transformJSXMap(
   callExpr: ts.CallExpression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression | null {
   if (!ts.isPropertyAccessExpression(callExpr.expression)) return null;
   if (callExpr.expression.name.text !== "map") return null;
@@ -716,7 +828,10 @@ function transformJSXMap(
     if (returnStmt && returnStmt.type === "return" && returnStmt.value) {
       bodyExpr = returnStmt.value;
     } else {
-      return call(index(ident("React"), "createElement"), [index(ident("React"), "Fragment"), table([])]);
+      return call(index(ident("React"), "createElement"), [
+        index(ident("React"), "Fragment"),
+        table([]),
+      ]);
     }
   } else {
     bodyExpr = transformExpression(callback.body as ts.Expression, ctx);
@@ -724,7 +839,8 @@ function transformJSXMap(
 
   // Extract key from the rendered element (if any)
   let keyExpr: LuauExpression = ident(indexName); // default: numeric index
-  const callbackBody = (callback as ts.ArrowFunction | ts.FunctionExpression).body;
+  const callbackBody = (callback as ts.ArrowFunction | ts.FunctionExpression)
+    .body;
   if (!ts.isBlock(callbackBody)) {
     const bodyNode = callbackBody as ts.Expression;
     const extractedKey = extractKeyFromJSXBody(bodyNode, ctx);
@@ -746,20 +862,34 @@ function transformJSXMap(
   // Build: (function() local _map_result = {} ; for idx, item in arr do _map_result[key] = expr end ; return createFragment(_map_result) end)()
   const tempVar = `_map_result`;
 
-  return call(funcExpr([], [
-    { type: "local", name: tempVar, value: table([]) },
-    {
-      type: "for-in",
-      vars: [indexName, itemName],
-      iterators: [arr],
-      body: [{
-        type: "assignment",
-        target: bracketIndex(ident(tempVar), keyExpr),
-        value: bodyExpr,
-      }],
-    },
-    { type: "return", value: call(index(ident("React"), "createElement"), [index(ident("React"), "Fragment"), ident(tempVar)]) },
-  ]), []);
+  return call(
+    funcExpr(
+      [],
+      [
+        { type: "local", name: tempVar, value: table([]) },
+        {
+          type: "for-in",
+          vars: [indexName, itemName],
+          iterators: [arr],
+          body: [
+            {
+              type: "assignment",
+              target: bracketIndex(ident(tempVar), keyExpr),
+              value: bodyExpr,
+            },
+          ],
+        },
+        {
+          type: "return",
+          value: call(index(ident("React"), "createElement"), [
+            index(ident("React"), "Fragment"),
+            ident(tempVar),
+          ]),
+        },
+      ]
+    ),
+    []
+  );
 }
 
 // ── Inline style expansion ──
@@ -777,7 +907,7 @@ const CSS_TO_ROBLOX_PROP: Record<string, string> = {
 function expandInlineStyle(
   styleObj: ts.ObjectLiteralExpression,
   propsEntries: LuauTableEntry[],
-  ctx: TransformContext,
+  ctx: TransformContext
 ): void {
   for (const prop of styleObj.properties) {
     if (ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name)) {
@@ -789,7 +919,11 @@ function expandInlineStyle(
           value: transformExpression(prop.initializer, ctx),
         });
       } else {
-        ctx.warnAtNode("unsupported-prop", `CSS property '${cssProp}' has no Roblox mapping`, prop);
+        ctx.warnAtNode(
+          "unsupported-prop",
+          `CSS property '${cssProp}' has no Roblox mapping`,
+          prop
+        );
       }
     }
   }
@@ -808,7 +942,11 @@ function isTextExpression(expr: ts.Expression): boolean {
   // Property access (e.g., item.name) — in text context, likely a string/number field
   if (ts.isPropertyAccessExpression(expr)) return true;
   // Binary + of strings
-  if (ts.isBinaryExpression(expr) && expr.operatorToken.kind === ts.SyntaxKind.PlusToken) return true;
+  if (
+    ts.isBinaryExpression(expr) &&
+    expr.operatorToken.kind === ts.SyntaxKind.PlusToken
+  )
+    return true;
   return false;
 }
 
@@ -822,7 +960,11 @@ function isMapExpression(expr: ts.Expression): boolean {
 
 function isConditionalJSX(expr: ts.Expression): boolean {
   if (ts.isConditionalExpression(expr)) return true;
-  if (ts.isBinaryExpression(expr) && expr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) return true;
+  if (
+    ts.isBinaryExpression(expr) &&
+    expr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+  )
+    return true;
   return false;
 }
 
@@ -850,7 +992,7 @@ function wrapToString(expr: LuauExpression): LuauExpression {
 
 function extractKeyFromJSXBody(
   expr: ts.Expression,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauExpression | null {
   if (ts.isJsxElement(expr) || ts.isJsxSelfClosingElement(expr)) {
     const key = extractKeyFromElement(expr);
@@ -862,15 +1004,20 @@ function extractKeyFromJSXBody(
   return null;
 }
 
-function extractKeyFromElement(child: ts.JsxElement | ts.JsxSelfClosingElement): ts.Expression | null {
+function extractKeyFromElement(
+  child: ts.JsxElement | ts.JsxSelfClosingElement
+): ts.Expression | null {
   const attrs = ts.isJsxElement(child)
     ? child.openingElement.attributes
     : child.attributes;
 
   for (const attr of attrs.properties) {
-    if (ts.isJsxAttribute(attr) && attr.name.text === "key") {
+    if (ts.isJsxAttribute(attr) && attr.name.getText() === "key") {
       if (attr.initializer) {
-        if (ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+        if (
+          ts.isJsxExpression(attr.initializer) &&
+          attr.initializer.expression
+        ) {
           return attr.initializer.expression;
         }
         if (ts.isStringLiteral(attr.initializer)) {
@@ -886,7 +1033,7 @@ function extractStaticClassName(attributes: ts.JsxAttributes): string | null {
   for (const attr of attributes.properties) {
     if (
       ts.isJsxAttribute(attr) &&
-      attr.name.text === "className" &&
+      attr.name.getText() === "className" &&
       attr.initializer &&
       ts.isStringLiteral(attr.initializer)
     ) {
@@ -896,9 +1043,16 @@ function extractStaticClassName(attributes: ts.JsxAttributes): string | null {
   return null;
 }
 
-function getChildName(child: ts.JsxElement | ts.JsxSelfClosingElement, idx: number): string {
-  const tag = ts.isJsxElement(child) ? child.openingElement.tagName : child.tagName;
-  const attrs = ts.isJsxElement(child) ? child.openingElement.attributes : child.attributes;
+function getChildName(
+  child: ts.JsxElement | ts.JsxSelfClosingElement,
+  idx: number
+): string {
+  const tag = ts.isJsxElement(child)
+    ? child.openingElement.tagName
+    : child.tagName;
+  const attrs = ts.isJsxElement(child)
+    ? child.openingElement.attributes
+    : child.attributes;
 
   if (ts.isIdentifier(tag)) {
     const name = tag.text;
@@ -908,7 +1062,7 @@ function getChildName(child: ts.JsxElement | ts.JsxSelfClosingElement, idx: numb
     for (const attr of attrs.properties) {
       if (
         ts.isJsxAttribute(attr) &&
-        attr.name.text === "className" &&
+        attr.name.getText() === "className" &&
         attr.initializer &&
         ts.isStringLiteral(attr.initializer)
       ) {

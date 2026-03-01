@@ -4,7 +4,7 @@ import { join, resolve } from "path";
 
 export function startWatch(
   watchPath: string,
-  onCompile: (files: string[]) => void,
+  onCompile: (files: string[]) => void
 ): void {
   const absPath = resolve(watchPath);
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -23,20 +23,24 @@ export function startWatch(
 
   console.log(`Watching ${absPath} for changes...`);
 
-  const watcher = fsWatch(absPath, { recursive: true }, (eventType, filename) => {
-    if (!filename) return;
-    if (!filename.match(/\.(tsx?|jsx?)$/)) return;
-    if (filename.includes(".test.") || filename.includes(".spec.")) return;
+  const watcher = fsWatch(
+    absPath,
+    { recursive: true },
+    (eventType, filename) => {
+      if (!filename) return;
+      if (!filename.match(/\.(tsx?|jsx?)$/)) return;
+      if (filename.includes(".test.") || filename.includes(".spec.")) return;
 
-    // Debounce
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      const files = collectFiles();
-      if (files.length > 0) {
-        onCompile(files);
-      }
-    }, 100);
-  });
+      // Debounce
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const files = collectFiles();
+        if (files.length > 0) {
+          onCompile(files);
+        }
+      }, 100);
+    }
+  );
 
   process.on("SIGINT", () => {
     watcher.close();
@@ -54,7 +58,11 @@ function findTSXFiles(dir: string): string[] {
       if (entry.isDirectory()) {
         if (entry.name === "node_modules" || entry.name === ".git") continue;
         files.push(...findTSXFiles(fullPath));
-      } else if (entry.name.match(/\.(tsx?|jsx?)$/) && !entry.name.includes(".test.") && !entry.name.includes(".spec.")) {
+      } else if (
+        entry.name.match(/\.(tsx?|jsx?)$/) &&
+        !entry.name.includes(".test.") &&
+        !entry.name.includes(".spec.")
+      ) {
         files.push(fullPath);
       }
     }

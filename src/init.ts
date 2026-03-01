@@ -3,73 +3,73 @@ import { join, basename, resolve } from "path";
 import { execSync } from "child_process";
 
 export interface InitOptions {
-    name?: string;
+  name?: string;
 }
 
 export function handleInit(
-    directory: string | undefined,
-    opts: InitOptions,
+  directory: string | undefined,
+  opts: InitOptions
 ): void {
-    const targetDir = directory ? resolve(directory) : process.cwd();
-    const projectName = opts.name || basename(targetDir);
+  const targetDir = directory ? resolve(directory) : process.cwd();
+  const projectName = opts.name || basename(targetDir);
 
-    console.log(`\nInitializing rbx-tsx project: ${projectName}\n`);
+  console.log(`\nInitializing rbx-tsx project: ${projectName}\n`);
 
-    // Create directory structure
-    const dirs = ["src/client", "src/server", "src/shared", "out"];
-    for (const dir of dirs) {
-        mkdirSync(join(targetDir, dir), { recursive: true });
+  // Create directory structure
+  const dirs = ["src/client", "src/server", "src/shared", "out"];
+  for (const dir of dirs) {
+    mkdirSync(join(targetDir, dir), { recursive: true });
+  }
+
+  // Generate files
+  const files: [string, string][] = [
+    ["package.json", packageJson(projectName)],
+    ["tsconfig.json", TSCONFIG],
+    ["wally.toml", wallyToml(projectName)],
+    ["default.project.json", projectJson(projectName)],
+    ["src/client/index.client.tsx", CLIENT_INDEX],
+    ["src/client/App.tsx", CLIENT_APP],
+    ["src/server/index.server.ts", SERVER_INDEX],
+  ];
+
+  for (const [filePath, content] of files) {
+    const fullPath = join(targetDir, filePath);
+    if (existsSync(fullPath)) {
+      console.log(`  skip  ${filePath} (already exists)`);
+      continue;
     }
+    mkdirSync(join(targetDir, filePath, ".."), { recursive: true });
+    writeFileSync(fullPath, content);
+    console.log(`  create ${filePath}`);
+  }
 
-    // Generate files
-    const files: [string, string][] = [
-        ["package.json", packageJson(projectName)],
-        ["tsconfig.json", TSCONFIG],
-        ["wally.toml", wallyToml(projectName)],
-        ["default.project.json", projectJson(projectName)],
-        ["src/client/index.client.tsx", CLIENT_INDEX],
-        ["src/client/App.tsx", CLIENT_APP],
-        ["src/server/index.server.ts", SERVER_INDEX],
-    ];
-
-    for (const [filePath, content] of files) {
-        const fullPath = join(targetDir, filePath);
-        if (existsSync(fullPath)) {
-            console.log(`  skip  ${filePath} (already exists)`);
-            continue;
-        }
-        mkdirSync(join(targetDir, filePath, ".."), { recursive: true });
-        writeFileSync(fullPath, content);
-        console.log(`  create ${filePath}`);
-    }
-
-    // Install npm dependencies (for rbx-tsx types)
-    console.log("\nInstalling dependencies...");
+  // Install npm dependencies (for rbx-tsx types)
+  console.log("\nInstalling dependencies...");
+  try {
+    execSync("bun install", { cwd: targetDir, stdio: "inherit" });
+  } catch {
     try {
-        execSync("bun install", { cwd: targetDir, stdio: "inherit" });
+      execSync("npm install", { cwd: targetDir, stdio: "inherit" });
     } catch {
-        try {
-            execSync("npm install", { cwd: targetDir, stdio: "inherit" });
-        } catch {
-            console.log(
-                "Could not install npm dependencies. Run 'bun install' or 'npm install' manually.",
-            );
-        }
+      console.log(
+        "Could not install npm dependencies. Run 'bun install' or 'npm install' manually."
+      );
     }
+  }
 
-    // Try to run wally install
-    console.log("\nInstalling Roblox packages with wally...");
-    try {
-        execSync("wally install", { cwd: targetDir, stdio: "inherit" });
-    } catch {
-        console.log(
-            "Could not run wally. Install it from https://github.com/UpliftGames/wally",
-        );
-        console.log("Then run: wally install");
-    }
+  // Try to run wally install
+  console.log("\nInstalling Roblox packages with wally...");
+  try {
+    execSync("wally install", { cwd: targetDir, stdio: "inherit" });
+  } catch {
+    console.log(
+      "Could not run wally. Install it from https://github.com/UpliftGames/wally"
+    );
+    console.log("Then run: wally install");
+  }
 
-    // Print next steps
-    console.log(`
+  // Print next steps
+  console.log(`
 Done! Next steps:
 
   rbx-tsx compile src -o out    Compile TSX/TS to Luau
@@ -82,36 +82,37 @@ Done! Next steps:
 // ---------------------------------------------------------------------------
 
 function packageJson(name: string): string {
-    const pkg = {
-        name,
-        private: true,
-        devDependencies: {
-            "rbx-tsx": "^0.1.0",
-        },
-    };
-    return JSON.stringify(pkg, null, 2) + "\n";
+  const pkg = {
+    name,
+    private: true,
+    devDependencies: {
+      "rbx-tsx": "^0.1.0",
+    },
+  };
+  return JSON.stringify(pkg, null, 2) + "\n";
 }
 
-const TSCONFIG = JSON.stringify(
+const TSCONFIG =
+  JSON.stringify(
     {
-        compilerOptions: {
-            target: "ESNext",
-            lib: ["ESNext"],
-            module: "ESNext",
-            moduleResolution: "bundler",
-            jsx: "react",
-            strict: true,
-            noEmit: true,
-            skipLibCheck: true,
-        },
-        include: ["src/**/*", "node_modules/rbx-tsx/types/**/*"],
+      compilerOptions: {
+        target: "ESNext",
+        lib: ["ESNext"],
+        module: "ESNext",
+        moduleResolution: "bundler",
+        jsx: "react",
+        strict: true,
+        noEmit: true,
+        skipLibCheck: true,
+      },
+      include: ["src/**/*", "node_modules/rbx-tsx/types/**/*"],
     },
     null,
-    2,
-) + "\n";
+    2
+  ) + "\n";
 
 function wallyToml(name: string): string {
-    return `[package]
+  return `[package]
 name = "developer/${name}"
 version = "0.1.0"
 registry = "https://github.com/UpliftGames/wally-index"
@@ -124,37 +125,37 @@ ReactRoblox = "jsdotlua/react-roblox@17.1.0"
 }
 
 function projectJson(name: string): string {
-    const project = {
-        name,
-        tree: {
-            $className: "DataModel",
-            StarterPlayer: {
-                $className: "StarterPlayer",
-                StarterPlayerScripts: {
-                    $className: "StarterPlayerScripts",
-                    Client: {
-                        $path: "out/client",
-                    },
-                },
-            },
-            ServerScriptService: {
-                $className: "ServerScriptService",
-                Server: {
-                    $path: "out/server",
-                },
-            },
-            ReplicatedStorage: {
-                $className: "ReplicatedStorage",
-                Shared: {
-                    $path: "out/shared",
-                },
-                Packages: {
-                    $path: "Packages",
-                },
-            },
+  const project = {
+    name,
+    tree: {
+      $className: "DataModel",
+      StarterPlayer: {
+        $className: "StarterPlayer",
+        StarterPlayerScripts: {
+          $className: "StarterPlayerScripts",
+          Client: {
+            $path: "out/client",
+          },
         },
-    };
-    return JSON.stringify(project, null, 2) + "\n";
+      },
+      ServerScriptService: {
+        $className: "ServerScriptService",
+        Server: {
+          $path: "out/server",
+        },
+      },
+      ReplicatedStorage: {
+        $className: "ReplicatedStorage",
+        Shared: {
+          $path: "out/shared",
+        },
+        Packages: {
+          $path: "Packages",
+        },
+      },
+    },
+  };
+  return JSON.stringify(project, null, 2) + "\n";
 }
 
 const CLIENT_INDEX = `import React from "react";

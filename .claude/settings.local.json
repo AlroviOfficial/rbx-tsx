@@ -19,7 +19,10 @@
       "WebFetch(domain:devforum.roblox.com)",
       "Bash(bun:*)",
       "Bash(bash build.sh:*)",
-      "WebFetch(domain:react.luau.page)"
+      "WebFetch(domain:react.luau.page)",
+      "Bash(powershell -ExecutionPolicy Bypass -File build.ps1)",
+      "Bash(Select-String:*)",
+      "Bash(powershell -Command \"Get-ChildItem -Recurse ''C:\\\\Users\\\\alexr\\\\Programming\\\\RandomProjects\\\\rbx-css\\\\tests'' | Select-Object FullName\")"
     ]
   }
 }

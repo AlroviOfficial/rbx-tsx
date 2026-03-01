@@ -1,8 +1,26 @@
 import ts from "typescript";
-import type { LuauStatement, LuauExpression, LuauTableEntry } from "../ast/luau-ast.ts";
+import type {
+  LuauStatement,
+  LuauExpression,
+  LuauTableEntry,
+} from "../ast/luau-ast.ts";
 import {
-  ident, str, num, bool, nil, call, methodCall, index, bracketIndex,
-  table, binary, unary, ifExpr, funcExpr, concat, raw,
+  ident,
+  str,
+  num,
+  bool,
+  nil,
+  call,
+  methodCall,
+  index,
+  bracketIndex,
+  table,
+  binary,
+  unary,
+  ifExpr,
+  funcExpr,
+  concat,
+  raw,
 } from "../ast/luau-ast.ts";
 import { ROBLOX_SERVICES } from "../mappings/roblox-services.ts";
 import type { TransformContext } from "./transform-context.ts";
@@ -14,7 +32,7 @@ import { transformType } from "./type-transform.ts";
  */
 export function transformImport(
   node: ts.ImportDeclaration,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauStatement[] {
   const results: LuauStatement[] = [];
   const moduleSpecifier = (node.moduleSpecifier as ts.StringLiteral).text;
@@ -36,7 +54,11 @@ export function transformImport(
   }
 
   // React-DOM / React-Roblox
-  if (moduleSpecifier === "react-dom" || moduleSpecifier === "react-roblox" || moduleSpecifier === "react-dom/client") {
+  if (
+    moduleSpecifier === "react-dom" ||
+    moduleSpecifier === "react-roblox" ||
+    moduleSpecifier === "react-dom/client"
+  ) {
     return transformReactRobloxImport(node, ctx);
   }
 
@@ -58,13 +80,16 @@ export function transformImport(
 
 function transformReactImport(
   node: ts.ImportDeclaration,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauStatement[] {
   ctx.needsReact = true;
   const results: LuauStatement[] = [];
 
   // Named imports: import { useState, useEffect } from "react"
-  if (node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) {
+  if (
+    node.importClause?.namedBindings &&
+    ts.isNamedImports(node.importClause.namedBindings)
+  ) {
     for (const spec of node.importClause.namedBindings.elements) {
       const name = spec.name.text;
       const originalName = spec.propertyName?.text ?? name;
@@ -80,13 +105,16 @@ function transformReactImport(
 
 function transformReactRobloxImport(
   node: ts.ImportDeclaration,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauStatement[] {
   ctx.needsReactRoblox = true;
   const results: LuauStatement[] = [];
 
   // Named imports: import { createRoot } from "react-roblox"
-  if (node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) {
+  if (
+    node.importClause?.namedBindings &&
+    ts.isNamedImports(node.importClause.namedBindings)
+  ) {
     for (const spec of node.importClause.namedBindings.elements) {
       const name = spec.name.text;
       const originalName = spec.propertyName?.text ?? name;
@@ -106,11 +134,14 @@ function transformReactRobloxImport(
 
 function transformServicesImport(
   node: ts.ImportDeclaration,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauStatement[] {
   const results: LuauStatement[] = [];
 
-  if (node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) {
+  if (
+    node.importClause?.namedBindings &&
+    ts.isNamedImports(node.importClause.namedBindings)
+  ) {
     for (const spec of node.importClause.namedBindings.elements) {
       const serviceName = spec.name.text;
       if (ROBLOX_SERVICES.has(serviceName)) {
@@ -127,7 +158,7 @@ function transformServicesImport(
 function transformCSSImport(
   node: ts.ImportDeclaration,
   moduleSpecifier: string,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauStatement[] {
   // import "./Card.css" → side-effect only import, no Luau output
   // import styles from "./Card.module.css" → require style module
@@ -138,11 +169,13 @@ function transformCSSImport(
     const stylePath = cssPathToRequirePath(moduleSpecifier, ctx.isIndexFile);
     ctx.cssModuleImports.set(localName, stylePath);
 
-    return [{
-      type: "local",
-      name: localName,
-      value: call(ident("require"), [raw(stylePath)]),
-    }];
+    return [
+      {
+        type: "local",
+        name: localName,
+        value: call(ident("require"), [raw(stylePath)]),
+      },
+    ];
   }
 
   // Side-effect CSS import — defer attachment to createRoot container
@@ -175,15 +208,21 @@ function cssPathToRequirePath(specifier: string, isIndexFile: boolean): string {
 function transformRelativeImport(
   node: ts.ImportDeclaration,
   moduleSpecifier: string,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauStatement[] {
   const results: LuauStatement[] = [];
-  const requirePath = relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile);
+  const requirePath = relativePathToRequirePath(
+    moduleSpecifier,
+    ctx.isIndexFile
+  );
 
   const defaultImport = node.importClause?.name;
   const namedBindings = node.importClause?.namedBindings;
 
-  const hasNamedImports = namedBindings && ts.isNamedImports(namedBindings) && namedBindings.elements.length > 0;
+  const hasNamedImports =
+    namedBindings &&
+    ts.isNamedImports(namedBindings) &&
+    namedBindings.elements.length > 0;
   const hasDefaultImport = !!defaultImport;
 
   if (hasDefaultImport && hasNamedImports) {
@@ -265,7 +304,11 @@ function transformRelativeImport(
       results.push({
         type: "type-alias",
         name,
-        definition: `${nonTypeImports.length > 0 ? `_module_${sanitizeName(moduleSpecifier)}` : moduleName}.${originalName}`,
+        definition: `${
+          nonTypeImports.length > 0
+            ? `_module_${sanitizeName(moduleSpecifier)}`
+            : moduleName
+        }.${originalName}`,
       });
     }
   } else if (namedBindings && ts.isNamespaceImport(namedBindings)) {
@@ -288,7 +331,10 @@ function transformRelativeImport(
   return results;
 }
 
-function relativePathToRequirePath(specifier: string, isIndexFile: boolean): string {
+function relativePathToRequirePath(
+  specifier: string,
+  isIndexFile: boolean
+): string {
   // "./Card" → script.Parent.Card  (from regular file)
   // "./Card" → script.Card         (from index file — script IS the folder)
   // "../types" → script.Parent.Parent.types
@@ -324,7 +370,7 @@ function relativePathToRequirePath(specifier: string, isIndexFile: boolean): str
 function transformPackageImport(
   node: ts.ImportDeclaration,
   moduleSpecifier: string,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauStatement[] {
   // Generic package import → require from Packages folder
   const results: LuauStatement[] = [];
@@ -341,7 +387,10 @@ function transformPackageImport(
     ctx.importedModules.set(node.importClause.name.text, moduleSpecifier);
   }
 
-  if (node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) {
+  if (
+    node.importClause?.namedBindings &&
+    ts.isNamedImports(node.importClause.namedBindings)
+  ) {
     const moduleName = `_${packageName}`;
     results.push({
       type: "local",
@@ -369,18 +418,22 @@ function transformPackageImport(
 
 function transformTypeImport(
   node: ts.ImportDeclaration,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauStatement[] {
   const results: LuauStatement[] = [];
   const moduleSpecifier = (node.moduleSpecifier as ts.StringLiteral).text;
 
   if (moduleSpecifier === "react") return results;
 
-  const requirePath = moduleSpecifier.startsWith("./") || moduleSpecifier.startsWith("../")
-    ? relativePathToRequirePath(moduleSpecifier)
-    : `ReplicatedStorage.Packages.${capitalize(moduleSpecifier)}`;
+  const requirePath =
+    moduleSpecifier.startsWith("./") || moduleSpecifier.startsWith("../")
+      ? relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile)
+      : `ReplicatedStorage.Packages.${capitalize(moduleSpecifier)}`;
 
-  if (node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) {
+  if (
+    node.importClause?.namedBindings &&
+    ts.isNamedImports(node.importClause.namedBindings)
+  ) {
     const typesModuleName = `_types_${sanitizeName(moduleSpecifier)}`;
     let needsRequire = false;
 
@@ -414,7 +467,7 @@ function transformTypeImport(
  */
 export function processExportDeclaration(
   node: ts.ExportDeclaration,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): LuauStatement[] {
   // export { X, Y } from "./module" → re-exports
   // export type { CardProps } → type re-export

@@ -83,10 +83,16 @@ export class TransformContext {
     this.options = options;
     this.filename = options.filename ?? "unknown";
     this.cssManifest = options.cssManifest ?? null;
-    this.isIndexFile = /(?:^|[\\/])index(?:\.(?:client|server))?\.[tj]sx?$/.test(this.filename);
+    this.isIndexFile =
+      /(?:^|[\\/])index(?:\.(?:client|server))?\.[tj]sx?$/.test(this.filename);
   }
 
-  warn(code: WarningCode, message: string, line?: number, column?: number): void {
+  warn(
+    code: WarningCode,
+    message: string,
+    line?: number,
+    column?: number
+  ): void {
     this.warnings.warn({
       code,
       message,
@@ -102,7 +108,10 @@ export class TransformContext {
     let column: number | undefined;
     if (this.sourceFile) {
       const pos = node.getStart(this.sourceFile);
-      const lineAndChar = ts.getLineAndCharacterOfPosition(this.sourceFile, pos);
+      const lineAndChar = ts.getLineAndCharacterOfPosition(
+        this.sourceFile,
+        pos
+      );
       line = lineAndChar.line + 1;
       column = lineAndChar.character + 1;
     }

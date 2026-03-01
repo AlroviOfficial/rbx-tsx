@@ -6,7 +6,7 @@ import type { TransformContext } from "./transform-context.ts";
  */
 export function transformType(
   node: ts.TypeNode,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): string {
   // Type predicate: x is Type → boolean
   if (node.kind === ts.SyntaxKind.TypePredicate) return "boolean";
@@ -33,7 +33,10 @@ export function transformType(
   if (node.kind === ts.SyntaxKind.NeverKeyword) return "any";
 
   // null / undefined → nil
-  if (node.kind === ts.SyntaxKind.NullKeyword || node.kind === ts.SyntaxKind.UndefinedKeyword) {
+  if (
+    node.kind === ts.SyntaxKind.NullKeyword ||
+    node.kind === ts.SyntaxKind.UndefinedKeyword
+  ) {
     return "nil";
   }
 
@@ -127,7 +130,8 @@ export function transformType(
   // keyof → string
   if (ts.isTypeOperatorNode(node)) {
     if (node.operator === ts.SyntaxKind.KeyOfKeyword) return "string";
-    if (node.operator === ts.SyntaxKind.ReadonlyKeyword) return transformType(node.type, ctx);
+    if (node.operator === ts.SyntaxKind.ReadonlyKeyword)
+      return transformType(node.type, ctx);
     return "any";
   }
 
@@ -149,7 +153,7 @@ export function transformType(
 
 function transformTypeReference(
   node: ts.TypeReferenceNode,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): string {
   const typeName = node.typeName.getText();
 
@@ -168,19 +172,29 @@ function transformTypeReference(
     }
 
     case "Record": {
-      const keyType = node.typeArguments?.[0] ? transformType(node.typeArguments[0], ctx) : "string";
-      const valType = node.typeArguments?.[1] ? transformType(node.typeArguments[1], ctx) : "any";
+      const keyType = node.typeArguments?.[0]
+        ? transformType(node.typeArguments[0], ctx)
+        : "string";
+      const valType = node.typeArguments?.[1]
+        ? transformType(node.typeArguments[1], ctx)
+        : "any";
       return `{ [${keyType}]: ${valType} }`;
     }
 
     case "Map": {
-      const keyType = node.typeArguments?.[0] ? transformType(node.typeArguments[0], ctx) : "any";
-      const valType = node.typeArguments?.[1] ? transformType(node.typeArguments[1], ctx) : "any";
+      const keyType = node.typeArguments?.[0]
+        ? transformType(node.typeArguments[0], ctx)
+        : "any";
+      const valType = node.typeArguments?.[1]
+        ? transformType(node.typeArguments[1], ctx)
+        : "any";
       return `{ [${keyType}]: ${valType} }`;
     }
 
     case "Set": {
-      const valType = node.typeArguments?.[0] ? transformType(node.typeArguments[0], ctx) : "any";
+      const valType = node.typeArguments?.[0]
+        ? transformType(node.typeArguments[0], ctx)
+        : "any";
       return `{ [${valType}]: boolean }`;
     }
 
@@ -228,7 +242,7 @@ function transformTypeReference(
 
 function transformUnionType(
   node: ts.UnionTypeNode,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): string {
   const types = node.types.map((t) => transformType(t, ctx));
 
@@ -246,7 +260,7 @@ function transformUnionType(
 
 function transformFunctionType(
   node: ts.FunctionTypeNode,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): string {
   const params = node.parameters.map((p) => {
     const paramType = p.type ? transformType(p.type, ctx) : "any";
@@ -262,7 +276,7 @@ function transformFunctionType(
 
 function transformTypeLiteral(
   node: ts.TypeLiteralNode,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): string {
   const members: string[] = [];
 
@@ -272,7 +286,7 @@ function transformTypeLiteral(
       const memberType = member.type ? transformType(member.type, ctx) : "any";
       const optional = member.questionToken ? "?" : "";
       members.push(`${name}: ${memberType}${optional}`);
-    } else if (ts.isIndexSignature(member)) {
+    } else if (ts.isIndexSignatureDeclaration(member)) {
       const keyType = member.parameters[0]?.type
         ? transformType(member.parameters[0].type, ctx)
         : "string";
@@ -285,7 +299,9 @@ function transformTypeLiteral(
       });
       const returnType = member.type ? transformType(member.type, ctx) : "()";
       const optional = member.questionToken ? "?" : "";
-      members.push(`${name}: ((${params.join(", ")}) -> ${returnType})${optional}`);
+      members.push(
+        `${name}: ((${params.join(", ")}) -> ${returnType})${optional}`
+      );
     }
   }
 
@@ -308,7 +324,7 @@ function transformLiteralType(node: ts.LiteralTypeNode): string {
  */
 export function transformInterfaceToLuauType(
   node: ts.InterfaceDeclaration,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): string {
   const members: string[] = [];
 
@@ -318,7 +334,7 @@ export function transformInterfaceToLuauType(
       const memberType = member.type ? transformType(member.type, ctx) : "any";
       const optional = member.questionToken ? "?" : "";
       members.push(`${name}: ${memberType}${optional}`);
-    } else if (ts.isIndexSignature(member)) {
+    } else if (ts.isIndexSignatureDeclaration(member)) {
       const keyType = member.parameters[0]?.type
         ? transformType(member.parameters[0].type, ctx)
         : "string";
@@ -331,7 +347,9 @@ export function transformInterfaceToLuauType(
       });
       const returnType = member.type ? transformType(member.type, ctx) : "()";
       const optional = member.questionToken ? "?" : "";
-      members.push(`${name}: ((${params.join(", ")}) -> ${returnType})${optional}`);
+      members.push(
+        `${name}: ((${params.join(", ")}) -> ${returnType})${optional}`
+      );
     }
   }
 
@@ -343,7 +361,7 @@ export function transformInterfaceToLuauType(
  */
 export function transformTypeAliasToLuauType(
   node: ts.TypeAliasDeclaration,
-  ctx: TransformContext,
+  ctx: TransformContext
 ): string {
   return transformType(node.type, ctx);
 }
