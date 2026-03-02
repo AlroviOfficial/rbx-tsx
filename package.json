@@ -23,7 +23,6 @@
     "jsx"
   ],
   "main": "dist/index.js",
-  "module": "src/index.ts",
   "type": "module",
   "bin": {
     "rbx-tsx": "./dist/index.js"
@@ -49,9 +48,6 @@
     "@types/bun": "latest",
     "tailwindcss": "^4.1.18",
     "yaml": "^2.8.2"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
   },
   "dependencies": {
     "commander": "^14.0.3",
