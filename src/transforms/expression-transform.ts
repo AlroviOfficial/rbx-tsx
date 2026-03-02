@@ -602,15 +602,20 @@ function transformCallExpression(
     return ifExpr(binary(callee, "~=", nil()), call(callee, args), nil());
   }
 
-  // super.method(args) → Parent.method(self, args)
+  // super.method(args) → Parent.method(self :: Parent, args)
   if (
     ts.isPropertyAccessExpression(node.expression) &&
     node.expression.expression.kind === ts.SyntaxKind.SuperKeyword &&
     ctx.currentParentClassName
   ) {
     const methodName = node.expression.name.text;
+    const selfAsParent: LuauExpression = {
+      type: "type-assertion",
+      expr: { type: "type-assertion", expr: ident("self"), annotation: "any" },
+      annotation: ctx.currentParentClassName,
+    };
     return call(index(ident(ctx.currentParentClassName), methodName), [
-      ident("self"),
+      selfAsParent,
       ...args,
     ]);
   }

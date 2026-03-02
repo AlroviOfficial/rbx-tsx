@@ -1470,60 +1470,40 @@ function transformClassDeclaration(
     }
   }
 
-  // Emit type alias FIRST — Luau hoists types, and we need the type
-  // available for the `:: ClassName` cast on the table declaration
-  result.push(
-    ...emitClassTypeAlias(
-      className,
-      parentClassName,
-      constructorDecl,
-      properties,
-      methods,
-      isExported,
-      ctx
-    )
-  );
-
-  // Emit: local ClassName = ({} :: any) :: ClassName
-  // The double-cast avoids metatable type conversion errors
-  const castToAny = (expr: LuauExpression): LuauExpression => ({
-    type: "type-assertion",
-    expr,
-    annotation: "any",
-  });
-  const castToClass = (expr: LuauExpression): LuauExpression => ({
-    type: "type-assertion",
-    expr,
-    annotation: className,
-  });
-
+  // Emit table and __index first (Roblox OOP pattern)
   if (parentClassName) {
     result.push({
       type: "local",
       name: className,
-      value: castToClass(
-        castToAny(
-          call(ident("setmetatable"), [
-            table([]),
-            table([{ key: str("__index"), value: ident(parentClassName) }]),
-          ])
-        )
-      ),
+      value: call(ident("setmetatable"), [
+        table([]),
+        table([{ key: str("__index"), value: ident(parentClassName) }]),
+      ]),
     });
   } else {
     result.push({
       type: "local",
       name: className,
-      value: castToClass(castToAny(table([]))),
+      value: table([]),
     });
   }
 
-  // Emit: ClassName.__index = ClassName
   result.push({
     type: "assignment",
     target: index(ident(className), "__index"),
     value: ident(className),
   });
+
+  // Emit type ClassNameData and type ClassName = typeof(setmetatable(...))
+  result.push(
+    ...emitClassTypeAlias(
+      className,
+      parentClassName,
+      properties,
+      isExported,
+      ctx
+    )
+  );
 
   // Emit constructor as ClassName.new()
   result.push(
@@ -1583,23 +1563,14 @@ function emitClassConstructor(
   const body: LuauStatement[] = [];
   let params: LuauParam[] = [];
 
-  // Helper: setmetatable(...) :: any — avoids metatable type conversion errors
-  const setmetatableAny = (obj: LuauExpression, mt: LuauExpression): LuauExpression => ({
-    type: "type-assertion",
-    expr: call(ident("setmetatable"), [obj, mt]),
-    annotation: "any",
-  });
-
   if (constructorDecl) {
     params = transformFunctionParams(constructorDecl.parameters, ctx);
     const preamble = getDestructuringPreamble(constructorDecl.parameters, ctx);
 
     if (parentClassName && constructorDecl.body) {
-      // Inherited: scan body for super(args) call, emit the rest normally
       body.push(...preamble);
 
       for (const stmt of constructorDecl.body.statements) {
-        // Detect super(args) call at statement level
         if (
           ts.isExpressionStatement(stmt) &&
           ts.isCallExpression(stmt.expression) &&
@@ -1608,13 +1579,15 @@ function emitClassConstructor(
           const superArgs = stmt.expression.arguments.map((a) =>
             transformExpression(a, ctx)
           );
+          const parentNew = call(index(ident(parentClassName), "new"), superArgs);
           body.push({
             type: "local",
             name: "self",
-            value: setmetatableAny(
-              call(index(ident(parentClassName), "new"), superArgs),
-              ident(className)
-            ),
+            value: {
+              type: "type-assertion",
+              expr: { type: "type-assertion", expr: parentNew, annotation: "any" },
+              annotation: `${className}Data`,
+            },
           });
         } else {
           const stmts = transformStatement(stmt, ctx);
@@ -1623,14 +1596,12 @@ function emitClassConstructor(
         }
       }
     } else {
-      // No parent
       body.push({
         type: "local",
         name: "self",
-        value: setmetatableAny(table([]), ident(className)),
+        value: table([]),
       });
 
-      // Instance property defaults
       for (const prop of properties) {
         if (prop.initializer && ts.isIdentifier(prop.name)) {
           const isStatic = prop.modifiers?.some(
@@ -1646,32 +1617,31 @@ function emitClassConstructor(
         }
       }
 
-      // Constructor body
       if (constructorDecl.body) {
         body.push(...preamble);
         body.push(...transformStatements(constructorDecl.body.statements, ctx));
       }
     }
   } else {
-    // No constructor — synthesize default
     if (parentClassName) {
+      const parentNew = call(index(ident(parentClassName), "new"), []);
       body.push({
         type: "local",
         name: "self",
-        value: setmetatableAny(
-          call(index(ident(parentClassName), "new"), []),
-          ident(className)
-        ),
+        value: {
+          type: "type-assertion",
+          expr: { type: "type-assertion", expr: parentNew, annotation: "any" },
+          annotation: `${className}Data`,
+        },
       });
     } else {
       body.push({
         type: "local",
         name: "self",
-        value: setmetatableAny(table([]), ident(className)),
+        value: table([]),
       });
     }
 
-    // Instance property defaults
     for (const prop of properties) {
       if (prop.initializer && ts.isIdentifier(prop.name)) {
         const isStatic = prop.modifiers?.some(
@@ -1688,8 +1658,20 @@ function emitClassConstructor(
     }
   }
 
-  // Ensure return self at end
-  body.push({ type: "return", value: ident("self") });
+  const setmetatableCall = call(ident("setmetatable"), [
+    ident("self"),
+    ident(className),
+  ]);
+  body.push({
+    type: "return",
+    value: parentClassName
+      ? {
+          type: "type-assertion",
+          expr: { type: "type-assertion", expr: setmetatableCall, annotation: "any" },
+          annotation: className,
+        }
+      : setmetatableCall,
+  });
 
   return [
     {
@@ -1698,6 +1680,7 @@ function emitClassConstructor(
       name: `${className}.new`,
       params,
       body,
+      returnType: className,
     },
   ];
 }
@@ -1720,6 +1703,7 @@ function emitClassMethod(
     (m) => m.kind === ts.SyntaxKind.AsyncKeyword
   );
 
+  // Roblox OOP: use dot syntax with explicit self for required self: ClassName annotation
   const params = transformFunctionParams(method.parameters, ctx);
   const additionalBodyStmts = getDestructuringPreamble(method.parameters, ctx);
 
@@ -1752,17 +1736,23 @@ function emitClassMethod(
     body = innerBody;
   }
 
-  // Static → dot syntax, instance → colon syntax
-  const qualifiedName = isStatic
-    ? `${className}.${methodName}`
-    : `${className}:${methodName}`;
+  // Static → ClassName.method(), instance → ClassName.method(self: ClassName, ...)
+  let qualifiedName: string;
+  let finalParams: LuauParam[];
+  if (isStatic) {
+    qualifiedName = `${className}.${methodName}`;
+    finalParams = params;
+  } else {
+    qualifiedName = `${className}.${methodName}`;
+    finalParams = [{ name: "self", type: className }, ...params];
+  }
 
   return [
     {
       type: "function-decl",
       local: false,
       name: qualifiedName,
-      params,
+      params: finalParams,
       body,
       returnType,
     },
@@ -1772,15 +1762,12 @@ function emitClassMethod(
 function emitClassTypeAlias(
   className: string,
   parentClassName: string | null,
-  constructorDecl: ts.ConstructorDeclaration | null,
   properties: ts.PropertyDeclaration[],
-  methods: ts.MethodDeclaration[],
   isExported: boolean | undefined,
   ctx: TransformContext
 ): LuauStatement[] {
-  const members: string[] = [];
+  const dataMembers: string[] = [];
 
-  // Instance properties (non-static)
   for (const prop of properties) {
     if (!ts.isIdentifier(prop.name)) continue;
     const isStatic = prop.modifiers?.some(
@@ -1791,72 +1778,37 @@ function emitClassTypeAlias(
     const propName = prop.name.text;
     const propType = prop.type ? transformType(prop.type, ctx) : "any";
     const optional = prop.questionToken ? "?" : "";
-    members.push(`${propName}: ${propType}${optional}`);
+    dataMembers.push(`${propName}: ${propType}${optional}`);
   }
 
-  // Instance methods (non-static)
-  for (const method of methods) {
-    if (!ts.isIdentifier(method.name)) continue;
-    const isStatic = method.modifiers?.some(
-      (m) => m.kind === ts.SyntaxKind.StaticKeyword
-    );
-    if (isStatic) continue;
+  const dataTypeName = `${className}Data`;
+  const dataDefinition =
+    parentClassName !== null
+      ? dataMembers.length > 0
+        ? `${parentClassName}Data & {\n    ${dataMembers.join(",\n    ")},\n}`
+        : `${parentClassName}Data`
+      : dataMembers.length > 0
+        ? `{\n    ${dataMembers.join(",\n    ")},\n}`
+        : `{}`;
 
-    const methodName = method.name.text;
-    const paramTypes = method.parameters.map((p) => {
-      return p.type ? transformType(p.type, ctx) : "any";
-    });
-    const returnType = method.type ? transformType(method.type, ctx) : "()";
-    const allParams =
-      paramTypes.length > 0
-        ? `self: ${className}, ${paramTypes.join(", ")}`
-        : `self: ${className}`;
-    members.push(`${methodName}: ((${allParams}) -> ${returnType})`);
-  }
+  const classDefinition = `typeof(setmetatable({} :: ${dataTypeName}, ${className}))`;
 
-  // Static methods
-  for (const method of methods) {
-    if (!ts.isIdentifier(method.name)) continue;
-    const isStatic = method.modifiers?.some(
-      (m) => m.kind === ts.SyntaxKind.StaticKeyword
-    );
-    if (!isStatic) continue;
-
-    const methodName = method.name.text;
-    const paramTypes = method.parameters.map((p) => {
-      return p.type ? transformType(p.type, ctx) : "any";
-    });
-    const returnType = method.type ? transformType(method.type, ctx) : "()";
-    const paramStr = paramTypes.length > 0 ? paramTypes.join(", ") : "";
-    members.push(`${methodName}: ((${paramStr}) -> ${returnType})`);
-  }
-
-  // Constructor signature: new: (...) -> ClassName
-  if (constructorDecl) {
-    const paramTypes = constructorDecl.parameters.map((p) => {
-      return p.type ? transformType(p.type, ctx) : "any";
-    });
-    const paramStr = paramTypes.length > 0 ? paramTypes.join(", ") : "";
-    members.push(`new: ((${paramStr}) -> ${className})`);
-  } else {
-    members.push(`new: (() -> ${className})`);
-  }
-
-  // __index self-reference
-  members.push(`__index: ${className}`);
-
-  const memberStr = members.join(",\n    ");
-  const typeBody = `{\n    ${memberStr},\n}`;
-  const definition = parentClassName
-    ? `${parentClassName} & ${typeBody}`
-    : typeBody;
+  const statements: LuauStatement[] = [
+    { type: "type-alias", name: dataTypeName, definition: dataDefinition },
+    isExported
+      ? ({
+          type: "export-type-alias",
+          name: className,
+          definition: classDefinition,
+        } as LuauStatement)
+      : { type: "type-alias", name: className, definition: classDefinition },
+  ];
 
   if (isExported) {
     ctx.typeExports.add(className);
-    return [{ type: "export-type-alias", name: className, definition }];
   }
 
-  return [{ type: "type-alias", name: className, definition }];
+  return statements;
 }
 
 // ── Try/Catch ──

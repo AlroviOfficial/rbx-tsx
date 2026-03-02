@@ -239,13 +239,14 @@ describe("class declarations", () => {
         speak(): string { return this.name + " makes a noise"; }
       }
     `);
-    expect(result).toContain("({} :: any) :: Animal");
+    expect(result).toContain("local Animal = {}");
     expect(result).toContain("Animal.__index = Animal");
-    expect(result).toContain("function Animal.new(name: string)");
-    expect(result).toContain("local self = setmetatable({}, Animal) :: any");
+    expect(result).toContain("type Animal = typeof(setmetatable({} :: AnimalData, Animal))");
+    expect(result).toContain("function Animal.new(name: string): Animal");
+    expect(result).toContain("local self = {}");
     expect(result).toContain("self.name = name");
-    expect(result).toContain("return self");
-    expect(result).toContain("function Animal:speak(): string");
+    expect(result).toContain("return setmetatable(self, Animal)");
+    expect(result).toContain("function Animal.speak(self: Animal): string");
   });
 
   test("class with inheritance", () => {
@@ -259,11 +260,12 @@ describe("class declarations", () => {
         speak(): string { return this.name + " barks"; }
       }
     `);
-    expect(result).toContain(":: Dog");
+    expect(result).toContain("type Dog = typeof(setmetatable({} :: DogData, Dog))");
     expect(result).toContain("Dog.__index = Dog");
-    expect(result).toContain("function Dog.new(name: string)");
-    expect(result).toContain("local self = setmetatable(Animal.new(name), Dog) :: any");
-    expect(result).toContain("function Dog:speak(): string");
+    expect(result).toContain("function Dog.new(name: string): Dog");
+    expect(result).toContain("local self = (Animal.new(name) :: any) :: DogData");
+    expect(result).toContain("return (setmetatable(self, Dog) :: any) :: Dog");
+    expect(result).toContain("function Dog.speak(self: Dog): string");
   });
 
   test("static methods use dot syntax", () => {
@@ -295,12 +297,11 @@ describe("class declarations", () => {
         distanceTo(other: Point): number { return 0; }
       }
     `);
-    expect(result).toContain("type Point = {");
+    expect(result).toContain("type PointData = {");
     expect(result).toContain("x: number");
     expect(result).toContain("y: number");
-    expect(result).toContain("distanceTo:");
-    expect(result).toContain("new: ((number, number) -> Point)");
-    expect(result).toContain("__index: Point");
+    expect(result).toContain("type Point = typeof(setmetatable({} :: PointData, Point))");
+    expect(result).toContain("function Point.distanceTo(self: Point, other: Point): number");
   });
 
   test("class without explicit constructor generates default", () => {
@@ -309,9 +310,9 @@ describe("class declarations", () => {
         value: number;
       }
     `);
-    expect(result).toContain("function Simple.new()");
-    expect(result).toContain("local self = setmetatable({}, Simple) :: any");
-    expect(result).toContain("return self");
+    expect(result).toContain("function Simple.new(): Simple");
+    expect(result).toContain("local self = {}");
+    expect(result).toContain("return setmetatable(self, Simple)");
   });
 
   test("inherited class type extends parent type", () => {
@@ -325,7 +326,8 @@ describe("class declarations", () => {
         constructor(id: number, name: string) { super(id); this.name = name; }
       }
     `);
-    expect(result).toContain("type Child = Base & {");
+    expect(result).toContain("type ChildData = BaseData & {");
+    expect(result).toContain("type Child = typeof(setmetatable({} :: ChildData, Child))");
   });
 
   test("super.method() calls parent with self", () => {
@@ -337,7 +339,7 @@ describe("class declarations", () => {
         greet(): string { return super.greet() + " world"; }
       }
     `);
-    expect(result).toContain("Base.greet(self)");
+    expect(result).toContain("Base.greet((self :: any) :: Base)");
   });
 
   test("static property initializers", () => {
@@ -355,7 +357,7 @@ describe("class declarations", () => {
         constructor() {}
       }
     `);
-    expect(result).toContain("local MyClass = ({} :: any) :: MyClass");
+    expect(result).toContain("local MyClass = {}");
     expect(result).toContain("return MyClass");
   });
 });
