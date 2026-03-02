@@ -6,6 +6,7 @@ import type { CSSManifest } from "../css-manifest.ts";
 export interface CompileOptions {
   reactPath: string;
   reactRobloxPath: string;
+  regExpPath: string;
   strict: boolean;
   sourcemap: boolean;
   filename?: string;
@@ -17,6 +18,7 @@ export interface CompileOptions {
 export const DEFAULT_OPTIONS: CompileOptions = {
   reactPath: "ReplicatedStorage.Packages.React",
   reactRobloxPath: "ReplicatedStorage.Packages.ReactRoblox",
+  regExpPath: "ReplicatedStorage.Packages.RegExp",
   strict: false,
   sourcemap: false,
 };
@@ -39,6 +41,8 @@ export class TransformContext {
   needsReactRoblox = false;
   /** Whether the Promise library is needed */
   needsPromise = false;
+  /** Whether the RegExp library is needed (luau-regexp) */
+  needsRegExp = false;
 
   /** Named React imports needed (useState, useEffect, etc.) */
   readonly reactImports = new Set<string>();

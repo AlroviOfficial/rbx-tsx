@@ -200,14 +200,14 @@ export function transformExpression(
     return nil();
   }
 
-  // Regular expression literal — unsupported
+  // Regular expression literal → RegExp(pattern, flags) via luau-regexp
   if (ts.isRegularExpressionLiteral(node)) {
-    ctx.warnAtNode(
-      "unsupported-syntax",
-      "Regular expressions are not supported in Luau; use string.match patterns instead",
-      node
-    );
-    return raw(`nil --[[ regex not supported ]]`);
+    ctx.needsRegExp = true;
+    const text = node.text;
+    const lastSlash = text.lastIndexOf("/");
+    const pattern = text.slice(1, lastSlash);
+    const flags = text.slice(lastSlash + 1);
+    return call(ident("RegExp"), [str(pattern), str(flags)]);
   }
 
   // Tagged template literal — unsupported
@@ -732,6 +732,9 @@ function transformCallExpression(
     // Check if this is a Roblox method call (use : syntax)
     if (ROBLOX_METHODS.has(method)) {
       result = methodCall(obj, method, args);
+    } else if (method === "test" || method === "exec") {
+      // RegExp.test/exec need : syntax to pass self (luau-regexp)
+      result = methodCall(obj, method, args);
     } else {
       result = call(index(obj, method), args);
     }
@@ -840,6 +843,16 @@ function transformSpecialCallExpression(
 ): LuauExpression | null {
   const methodName = propAccess.name.text;
   const objText = propAccess.expression.getText();
+
+  // RegExp.test(str) / RegExp.exec(str) — use : syntax so self is passed
+  if (
+    ts.isRegularExpressionLiteral(propAccess.expression) &&
+    (methodName === "test" || methodName === "exec")
+  ) {
+    ctx.needsRegExp = true;
+    const obj = transformExpression(propAccess.expression, ctx);
+    return methodCall(obj, methodName, args);
+  }
 
   // console.log/warn/error
   if (objText === "console") {
@@ -975,7 +988,7 @@ function transformSpecialCallExpression(
   if (arrayResult) return arrayResult;
 
   // String methods
-  const stringResult = transformStringMethod(obj, methodName, args, ctx);
+  const stringResult = transformStringMethod(obj, methodName, args, node, ctx);
   if (stringResult) return stringResult;
 
   return null;
@@ -1301,6 +1314,7 @@ function transformStringMethod(
   obj: LuauExpression,
   method: string,
   args: LuauExpression[],
+  node: ts.CallExpression,
   ctx: TransformContext
 ): LuauExpression | null {
   switch (method) {
@@ -1389,6 +1403,21 @@ function transformStringMethod(
     }
 
     case "replace": {
+      const firstArg = node.arguments[0];
+      if (firstArg && ts.isRegularExpressionLiteral(firstArg)) {
+        ctx.needsRegExp = true;
+        ctx.warnAtNode(
+          "lossy-transform",
+          "String.replace with RegExp uses Lua pattern via regex.source; $1,$2 capture refs may need manual conversion",
+          firstArg
+        );
+        return call(index(ident("string"), "gsub"), [
+          obj,
+          index(args[0] ?? nil(), "source"),
+          args[1] ?? str(""),
+          num(1),
+        ]);
+      }
       return call(index(ident("string"), "gsub"), [
         obj,
         args[0] ?? str(""),
@@ -1398,6 +1427,20 @@ function transformStringMethod(
     }
 
     case "replaceAll": {
+      const firstArg = node.arguments[0];
+      if (firstArg && ts.isRegularExpressionLiteral(firstArg)) {
+        ctx.needsRegExp = true;
+        ctx.warnAtNode(
+          "lossy-transform",
+          "String.replaceAll with RegExp uses Lua pattern via regex.source; $1,$2 capture refs may need manual conversion",
+          firstArg
+        );
+        return call(index(ident("string"), "gsub"), [
+          obj,
+          index(args[0] ?? nil(), "source"),
+          args[1] ?? str(""),
+        ]);
+      }
       return call(index(ident("string"), "gsub"), [
         obj,
         args[0] ?? str(""),
@@ -1436,6 +1479,11 @@ function transformStringMethod(
     }
 
     case "match": {
+      const firstArg = node.arguments[0];
+      if (firstArg && ts.isRegularExpressionLiteral(firstArg)) {
+        ctx.needsRegExp = true;
+        return methodCall(args[0] ?? nil(), "exec", [obj]);
+      }
       return call(index(ident("string"), "match"), [obj, args[0] ?? str("")]);
     }
 
@@ -1719,6 +1767,14 @@ function transformNewExpression(
     // Roblox constructors: new Color3() → Color3.new()
     if (ROBLOX_CONSTRUCTORS.has(name)) {
       return call(index(ident(name), "new"), args);
+    }
+
+    // RegExp → RegExp(pattern, flags) via luau-regexp
+    if (name === "RegExp") {
+      ctx.needsRegExp = true;
+      const pattern = args[0] ?? str("");
+      const flags = args[1] ?? str("");
+      return call(ident("RegExp"), [pattern, flags]);
     }
 
     // Map → table (basic support)

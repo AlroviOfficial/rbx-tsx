@@ -278,14 +278,30 @@ describe("Number static methods", () => {
   });
 });
 
-// ── Task 15: Regex literal warning ──
+// ── Task 15: Regex literal (luau-regexp) ──
 
 describe("regex literals", () => {
-  test("regex literal emits warning and nil", () => {
-    const result = compile("const r = /test/gi;", "test.ts", { warnLevel: "all" });
-    expect(result.luau).toContain("nil");
-    const warnings = result.warnings.getWarnings();
-    expect(warnings.some(w => w.code === "unsupported-syntax")).toBe(true);
+  test("regex literal compiles to RegExp(pattern, flags)", () => {
+    const result = compile("const r = /test/gi;", "test.ts", { warnLevel: "none" });
+    expect(result.luau).toContain('RegExp("test", "gi")');
+    expect(result.luau).toContain("local RegExp = require");
+  });
+
+  test("regex.test(str) compiles to :test() method call", () => {
+    const result = compileExpr('/foo/.test("bar")');
+    expect(result).toContain(":test(");
+    expect(result).toContain("RegExp(");
+  });
+
+  test("str.match(regex) compiles to regex:exec(str)", () => {
+    const result = compileExpr('"hello".match(/l+/g)');
+    expect(result).toContain(":exec(");
+    expect(result).toContain("RegExp(");
+  });
+
+  test("new RegExp(pattern, flags) compiles to RegExp call", () => {
+    const result = compileExpr('new RegExp("\\\\d+", "g")');
+    expect(result).toContain("RegExp(");
   });
 });
 
@@ -300,6 +316,18 @@ describe("optional chaining extensions", () => {
   test("a?.[b] → nil check with bracket access", () => {
     const result = compileStmt("const x = a?.[b];");
     expect(result).toContain("~= nil");
+  });
+
+  test("cb?.() as statement → if cb ~= nil then cb() end (not if-expr)", () => {
+    const result = compileStmt(`
+      type Fn = (() => void) | undefined;
+      const cb: Fn = undefined;
+      cb?.();
+    `);
+    expect(result).toContain("if cb ~= nil then");
+    expect(result).toContain("cb()");
+    expect(result).toContain("end");
+    expect(result).not.toMatch(/if cb ~= nil then cb\(\) else nil/);
   });
 });
 

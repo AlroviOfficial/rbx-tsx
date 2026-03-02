@@ -198,6 +198,17 @@ export function transformSourceFile(
     });
   }
 
+  // RegExp require (for regex literals — luau-regexp)
+  if (ctx.needsRegExp) {
+    allStatements.push({
+      type: "local",
+      name: "RegExp",
+      value: call(ident("require"), [
+        raw(buildRequirePath(ctx.options.regExpPath)),
+      ]),
+    });
+  }
+
   // Emit module import statements (after services so React/services come first)
   if (importStatements.length > 0) {
     allStatements.push(...importStatements);

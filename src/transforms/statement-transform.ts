@@ -2,6 +2,7 @@ import ts from "typescript";
 import type {
   LuauStatement,
   LuauExpression,
+  LuauExpressionStatement,
   LuauParam,
 } from "../ast/luau-ast.ts";
 import {
@@ -1303,6 +1304,29 @@ function transformExpressionStatement(
         ];
       }
     }
+  }
+
+  // Optional call as statement: cb?.() → if cb ~= nil then cb() end
+  // Luau's if-then-else expression cannot be used as a bare standalone statement
+  if (ts.isCallExpression(expr) && expr.questionDotToken) {
+    let callee = transformExpression(expr.expression, ctx);
+    const args = expr.arguments.map((a) => transformExpression(a, ctx));
+    if (callee.type === "if-expr") {
+      const tmp = ctx.nextTempVar();
+      ctx.pushPreStatement({ type: "local", name: tmp, value: callee });
+      callee = ident(tmp);
+    }
+    const callStmt: LuauExpressionStatement = {
+      type: "expression-statement",
+      expr: call(callee, args),
+    };
+    return [
+      {
+        type: "if",
+        condition: binary(callee, "~=", nil()),
+        body: [callStmt],
+      },
+    ];
   }
 
   // Delete expression at statement level

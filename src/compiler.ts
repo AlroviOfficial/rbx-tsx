@@ -12,6 +12,7 @@ import type { CSSManifest } from "./css-manifest.ts";
 export interface CompilerOptions {
   reactPath?: string;
   reactRobloxPath?: string;
+  regExpPath?: string;
   strict?: boolean;
   sourcemap?: boolean;
   warnLevel?: WarningLevel;
@@ -43,6 +44,7 @@ export function compile(
   const compileOpts: CompileOptions = {
     reactPath: options.reactPath ?? DEFAULT_OPTIONS.reactPath,
     reactRobloxPath: options.reactRobloxPath ?? DEFAULT_OPTIONS.reactRobloxPath,
+    regExpPath: options.regExpPath ?? DEFAULT_OPTIONS.regExpPath,
     strict: options.strict ?? false,
     sourcemap: options.sourcemap ?? false,
     filename,

@@ -399,14 +399,14 @@ describe("namespace declarations", () => {
 });
 
 describe("generator functions", () => {
-  test("function* compiles to coroutine.wrap", () => {
+  test("function* compiles to __generatorAdapter", () => {
     const result = compileStmt(`
       function* gen() {
         yield 1;
         yield 2;
       }
     `);
-    expect(result).toContain("coroutine.wrap");
+    expect(result).toContain("__generatorAdapter");
     expect(result).toContain("coroutine.yield(1)");
     expect(result).toContain("coroutine.yield(2)");
   });
@@ -418,7 +418,7 @@ describe("generator functions", () => {
       }
       for (const x of range(5)) { print(x); }
     `);
-    expect(result).toContain("coroutine.wrap");
+    expect(result).toContain("__generatorAdapter");
     expect(result).toContain("for _, x in range(5)");
   });
 
@@ -428,7 +428,7 @@ describe("generator functions", () => {
         yield* [1, 2, 3];
       }
     `);
-    expect(result).toContain("coroutine.wrap");
+    expect(result).toContain("__generatorAdapter");
     expect(result).toMatch(/for.*in.*do/);
     expect(result).toContain("coroutine.yield");
   });

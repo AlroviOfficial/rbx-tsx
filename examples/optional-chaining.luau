@@ -19,5 +19,7 @@ local displayTheme = if theme ~= nil then theme else "light"
 local displayName = if (if user ~= nil then user.name else nil) ~= nil then if user ~= nil then user.name else nil else "Anonymous"
 type Callback = ((() -> ()))?
 local cb: Callback = nil
-if cb ~= nil then cb() else nil
+if cb ~= nil then
+    cb()
+end
 print(displayTheme, displayName)
