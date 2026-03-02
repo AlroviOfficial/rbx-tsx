@@ -494,16 +494,8 @@ function transformFunctionDeclaration(
   let body: LuauStatement[];
   if (isAsync) {
     ctx.needsPromise = true;
-    // Replace return statements with resolve() calls
-    const promiseBody = innerBody.map((stmt): LuauStatement => {
-      if (stmt.type === "return" && stmt.value) {
-        return {
-          type: "expression-statement",
-          expr: call(ident("resolve"), [stmt.value]),
-        };
-      }
-      return stmt;
-    });
+    // Replace return statements with resolve() calls (recursively through all blocks)
+    const promiseBody = rewriteReturnsToResolve(innerBody);
 
     body = [
       {
@@ -643,10 +635,14 @@ function transformSwitchStatement(
     return { type: "comment", text: "empty switch" };
   }
 
-  let result: LuauStatement | null = null;
-  const elseIfs: Array<{ condition: LuauExpression; body: LuauStatement[] }> =
-    [];
-  let defaultBody: LuauStatement[] | undefined;
+  // Collect case groups: consecutive cases without statements fall through
+  // to the next case that has statements (merging conditions with `or`)
+  const caseGroups: Array<{
+    conditions: LuauExpression[]; // empty for default
+    body: LuauStatement[];
+    isDefault: boolean;
+  }> = [];
+  let pendingConditions: LuauExpression[] = [];
 
   for (const clause of clauses) {
     if (ts.isCaseClause(clause)) {
@@ -654,24 +650,86 @@ function transformSwitchStatement(
       const condition = binary(expr, "==", caseExpr);
       const body = transformStatements(clause.statements, ctx).filter(
         (s) => s.type !== "break"
-      ); // Remove break statements
+      );
+
+      if (body.length === 0) {
+        // Fall-through: accumulate this condition
+        pendingConditions.push(condition);
+      } else {
+        // This case has a body — merge any pending fall-through conditions
+        caseGroups.push({
+          conditions: [...pendingConditions, condition],
+          body,
+          isDefault: false,
+        });
+        pendingConditions = [];
+      }
+    } else {
+      // Default clause
+      const body = transformStatements(clause.statements, ctx).filter(
+        (s) => s.type !== "break"
+      );
+      if (body.length === 0 && pendingConditions.length > 0) {
+        // default with no body in a fall-through chain — becomes the default
+        pendingConditions = [];
+        caseGroups.push({ conditions: [], body: [], isDefault: true });
+      } else {
+        // Merge pending fall-through conditions into default
+        // (they all fall through to default)
+        caseGroups.push({
+          conditions: pendingConditions,
+          body,
+          isDefault: true,
+        });
+        pendingConditions = [];
+      }
+    }
+  }
+
+  // If there are trailing pending conditions with no body, they are dead code (no-op)
+
+  // Build if/elseif/else chain
+  let result: LuauStatement | null = null;
+  const elseIfs: Array<{ condition: LuauExpression; body: LuauStatement[] }> =
+    [];
+  let defaultBody: LuauStatement[] | undefined;
+
+  for (const group of caseGroups) {
+    if (group.isDefault) {
+      // If default also has fall-through case conditions, emit those as an elseif
+      // and the default as else
+      if (group.conditions.length > 0) {
+        const merged = group.conditions.reduce((a, b) => binary(a, "or", b));
+        if (!result) {
+          result = {
+            type: "if",
+            condition: merged,
+            body: group.body,
+            elseIfs,
+            elseBody: undefined,
+          };
+        } else {
+          elseIfs.push({ condition: merged, body: group.body });
+        }
+      }
+      defaultBody = group.body;
+    } else {
+      const condition =
+        group.conditions.length === 1
+          ? group.conditions[0]!
+          : group.conditions.reduce((a, b) => binary(a, "or", b));
 
       if (!result) {
         result = {
           type: "if",
           condition,
-          body,
+          body: group.body,
           elseIfs,
           elseBody: undefined,
         };
       } else {
-        elseIfs.push({ condition, body });
+        elseIfs.push({ condition, body: group.body });
       }
-    } else {
-      // Default clause
-      defaultBody = transformStatements(clause.statements, ctx).filter(
-        (s) => s.type !== "break"
-      );
     }
   }
 
@@ -723,7 +781,15 @@ function transformForStatement(
         ts.isIdentifier(cond.left) &&
         cond.left.text === varName
       ) {
+        // for (i = start; i > N; i--) → for i = start, N + 1, -1
         end = binary(transformExpression(cond.right, ctx), "+", num(1));
+      } else if (
+        cond.operatorToken.kind === ts.SyntaxKind.GreaterThanEqualsToken &&
+        ts.isIdentifier(cond.left) &&
+        cond.left.text === varName
+      ) {
+        // for (i = start; i >= N; i--) → for i = start, N, -1
+        end = transformExpression(cond.right, ctx);
       }
 
       if (end) {
@@ -748,6 +814,15 @@ function transformForStatement(
           node.incrementor.operatorToken.kind === ts.SyntaxKind.MinusEqualsToken
         ) {
           step = unary("-", transformExpression(node.incrementor.right, ctx));
+        }
+
+        // If condition is > or >= but no negative step was detected, default to -1
+        if (
+          !step &&
+          (cond.operatorToken.kind === ts.SyntaxKind.GreaterThanToken ||
+            cond.operatorToken.kind === ts.SyntaxKind.GreaterThanEqualsToken)
+        ) {
+          step = num(-1);
         }
 
         return {
@@ -1289,6 +1364,56 @@ function transformTryStatement(
   }
 
   return results;
+}
+
+// ── Async Return Rewriting ──
+
+/**
+ * Recursively rewrite `return X` → `resolve(X); return` throughout a statement tree.
+ * Walks into if/else, loops, do-blocks, try/catch — but NOT into nested function expressions
+ * (those have their own return semantics).
+ */
+function rewriteReturnsToResolve(stmts: LuauStatement[]): LuauStatement[] {
+  const result: LuauStatement[] = [];
+  for (const stmt of stmts) {
+    if (stmt.type === "return" && stmt.value) {
+      result.push({
+        type: "expression-statement",
+        expr: call(ident("resolve"), [stmt.value]),
+      });
+      result.push({ type: "return" } as LuauStatement);
+    } else if (stmt.type === "return" && !stmt.value) {
+      result.push({
+        type: "expression-statement",
+        expr: call(ident("resolve"), [nil()]),
+      });
+      result.push({ type: "return" } as LuauStatement);
+    } else if (stmt.type === "if") {
+      const rewritten: LuauStatement = {
+        ...stmt,
+        body: rewriteReturnsToResolve(stmt.body),
+        elseIfs: stmt.elseIfs?.map(
+          (ei: { condition: LuauExpression; body: LuauStatement[] }) => ({
+            ...ei,
+            body: rewriteReturnsToResolve(ei.body),
+          })
+        ),
+        elseBody: stmt.elseBody
+          ? rewriteReturnsToResolve(stmt.elseBody)
+          : undefined,
+      };
+      result.push(rewritten);
+    } else if (stmt.type === "while" || stmt.type === "repeat-until") {
+      result.push({ ...stmt, body: rewriteReturnsToResolve(stmt.body) });
+    } else if (stmt.type === "for-numeric" || stmt.type === "for-in") {
+      result.push({ ...stmt, body: rewriteReturnsToResolve(stmt.body) });
+    } else if (stmt.type === "do-block") {
+      result.push({ ...stmt, body: rewriteReturnsToResolve(stmt.body) });
+    } else {
+      result.push(stmt);
+    }
+  }
+  return result;
 }
 
 // ── Helpers ──

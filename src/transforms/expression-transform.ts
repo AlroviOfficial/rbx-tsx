@@ -371,9 +371,32 @@ function transformBinaryExpression(
     );
   }
 
-  // instanceof → unsupported
+  // instanceof → Roblox :IsA() for Instance types, typeof() for value types
   if (op === ts.SyntaxKind.InstanceOfKeyword) {
-    ctx.warn("unsupported-syntax", "'instanceof' has no Luau equivalent");
+    const left = transformExpression(node.left, ctx);
+    if (ts.isIdentifier(node.right)) {
+      const className = node.right.text;
+      // Roblox value types (Color3, Vector3, etc.) use typeof()
+      if (ROBLOX_CONSTRUCTORS.has(className) && className !== "Instance") {
+        return binary(
+          call(ident("typeof"), [left]),
+          "==",
+          str(className)
+        );
+      }
+      // Roblox Instance and its subclasses use :IsA()
+      if (className === "Instance" || ROBLOX_SERVICES.has(className)) {
+        return methodCall(left, "IsA", [str(className)]);
+      }
+      // Other identifiers — try :IsA() as a best-effort for Roblox class names
+      ctx.warn(
+        "lossy-transform",
+        `'instanceof ${className}' compiled to :IsA() — verify this is a Roblox class`
+      );
+      return methodCall(left, "IsA", [str(className)]);
+    }
+    // Non-identifier right side (e.g., expr instanceof foo.Bar)
+    ctx.warn("unsupported-syntax", "'instanceof' with complex expression has no Luau equivalent");
     return raw("--[[ instanceof not supported ]] false");
   }
 
