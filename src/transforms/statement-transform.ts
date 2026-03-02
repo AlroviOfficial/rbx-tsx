@@ -313,6 +313,58 @@ function transformVariableStatement(
         typeAnnotation,
       });
 
+      // Track Map/Set variables for method → table operation transforms
+      if (decl.type && ts.isTypeReferenceNode(decl.type)) {
+        const typeName = decl.type.typeName.getText();
+        if (typeName === "Map") ctx.mapVariables.add(name);
+        if (typeName === "Set") ctx.setVariables.add(name);
+      }
+      let rawInit = decl.initializer;
+      if (rawInit && ts.isAsExpression(rawInit)) rawInit = rawInit.expression;
+      if (
+        rawInit &&
+        ts.isNewExpression(rawInit) &&
+        ts.isIdentifier(rawInit.expression)
+      ) {
+        const ctorName = rawInit.expression.text;
+        if (ctorName === "Map") ctx.mapVariables.add(name);
+        if (ctorName === "Set") ctx.setVariables.add(name);
+      }
+
+      // Track const arrays with string literal elements for type resolution
+      if (rawInit && ts.isArrayLiteralExpression(rawInit)) {
+        const strings: string[] = [];
+        let allStrings = true;
+        for (const elem of rawInit.elements) {
+          if (ts.isStringLiteral(elem)) {
+            strings.push(elem.text);
+          } else {
+            allStrings = false;
+            break;
+          }
+        }
+        if (allStrings && strings.length > 0) {
+          ctx.constArrayValues.set(name, strings);
+        }
+      }
+
+      // Track object literal declarations for keyof typeof resolution
+      if (rawInit && ts.isObjectLiteralExpression(rawInit)) {
+        const keys: string[] = [];
+        for (const prop of rawInit.properties) {
+          if (ts.isPropertyAssignment(prop)) {
+            if (ts.isIdentifier(prop.name)) {
+              keys.push(prop.name.text);
+            } else if (ts.isStringLiteral(prop.name)) {
+              keys.push(prop.name.text);
+            }
+          }
+        }
+        if (keys.length > 0) {
+          ctx.constObjectKeys.set(name, keys);
+        }
+      }
+
       // Auto-attach pending CSS stylesheets when createRoot(container) is found
       if (
         decl.initializer &&
@@ -942,6 +994,78 @@ function transformExpressionStatement(
         value: num(1),
       },
     ];
+  }
+
+  // Map/Set methods at statement level: map.set(k, v) → map[k] = v, etc.
+  if (
+    ts.isCallExpression(expr) &&
+    ts.isPropertyAccessExpression(expr.expression) &&
+    ts.isIdentifier(expr.expression.expression)
+  ) {
+    const objName = expr.expression.expression.text;
+    const method = expr.expression.name.text;
+
+    if (ctx.mapVariables.has(objName)) {
+      const obj = transformExpression(expr.expression.expression, ctx);
+      if (method === "set" && expr.arguments.length >= 2) {
+        return [
+          {
+            type: "assignment",
+            target: bracketIndex(
+              obj,
+              transformExpression(expr.arguments[0]!, ctx)
+            ),
+            value: transformExpression(expr.arguments[1]!, ctx),
+          },
+        ];
+      }
+      if (method === "delete" && expr.arguments.length >= 1) {
+        return [
+          {
+            type: "assignment",
+            target: bracketIndex(
+              obj,
+              transformExpression(expr.arguments[0]!, ctx)
+            ),
+            value: nil(),
+          },
+        ];
+      }
+      if (method === "clear") {
+        return [{ type: "assignment", target: obj, value: table([]) }];
+      }
+    }
+
+    if (ctx.setVariables.has(objName)) {
+      const obj = transformExpression(expr.expression.expression, ctx);
+      if (method === "add" && expr.arguments.length >= 1) {
+        return [
+          {
+            type: "assignment",
+            target: bracketIndex(
+              obj,
+              transformExpression(expr.arguments[0]!, ctx)
+            ),
+            value: bool(true),
+          },
+        ];
+      }
+      if (method === "delete" && expr.arguments.length >= 1) {
+        return [
+          {
+            type: "assignment",
+            target: bracketIndex(
+              obj,
+              transformExpression(expr.arguments[0]!, ctx)
+            ),
+            value: nil(),
+          },
+        ];
+      }
+      if (method === "clear") {
+        return [{ type: "assignment", target: obj, value: table([]) }];
+      }
+    }
   }
 
   // forEach: arr.forEach((item, i) => { ... }) → for i, item in arr do ... end

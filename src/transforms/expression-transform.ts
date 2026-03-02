@@ -786,8 +786,59 @@ function transformSpecialCallExpression(
     return transformObjectMethod(methodName, args, node, ctx);
   }
 
-  // Array method chaining: arr.map(), arr.filter(), etc.
+  // Map/Set methods: map.get(k), map.has(k), set.has(k), etc.
   const obj = transformExpression(propAccess.expression, ctx);
+  if (ts.isIdentifier(propAccess.expression)) {
+    const objName = propAccess.expression.text;
+    if (ctx.mapVariables.has(objName)) {
+      switch (methodName) {
+        case "get":
+          return bracketIndex(obj, args[0] ?? nil());
+        case "has":
+          return binary(bracketIndex(obj, args[0] ?? nil()), "~=", nil());
+        case "set": {
+          ctx.pushPreStatement({
+            type: "assignment",
+            target: bracketIndex(obj, args[0] ?? nil()),
+            value: args[1] ?? nil(),
+          });
+          return obj;
+        }
+        case "delete": {
+          ctx.pushPreStatement({
+            type: "assignment",
+            target: bracketIndex(obj, args[0] ?? nil()),
+            value: nil(),
+          });
+          return bool(true);
+        }
+      }
+    }
+    if (ctx.setVariables.has(objName)) {
+      switch (methodName) {
+        case "has":
+          return binary(bracketIndex(obj, args[0] ?? nil()), "~=", nil());
+        case "add": {
+          ctx.pushPreStatement({
+            type: "assignment",
+            target: bracketIndex(obj, args[0] ?? nil()),
+            value: bool(true),
+          });
+          return obj;
+        }
+        case "delete": {
+          ctx.pushPreStatement({
+            type: "assignment",
+            target: bracketIndex(obj, args[0] ?? nil()),
+            value: nil(),
+          });
+          return bool(true);
+        }
+      }
+    }
+  }
+
+  // Array method chaining: arr.map(), arr.filter(), etc.
   const arrayResult = transformArrayMethod(obj, methodName, args, node, ctx);
   if (arrayResult) return arrayResult;
 

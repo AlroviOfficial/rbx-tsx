@@ -86,6 +86,18 @@ export class TransformContext {
   /** Whether the current file is an index file (becomes init.luau — script IS the folder) */
   readonly isIndexFile: boolean;
 
+  /** Variables known to be Map instances (for method → table operation transforms) */
+  readonly mapVariables = new Set<string>();
+
+  /** Variables known to be Set instances (for method → table operation transforms) */
+  readonly setVariables = new Set<string>();
+
+  /** Const array declarations with all-string-literal elements: name → element values */
+  readonly constArrayValues = new Map<string, string[]>();
+
+  /** Object literal declarations: name → key names */
+  readonly constObjectKeys = new Map<string, string[]>();
+
   /** Pre-statements accumulated during expression transforms (e.g., temp vars for optional chains) */
   readonly preStatements: LuauStatement[] = [];
 

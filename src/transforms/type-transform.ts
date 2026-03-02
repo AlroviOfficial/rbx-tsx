@@ -96,8 +96,20 @@ export function transformType(
     return transformLiteralType(node);
   }
 
-  // Indexed access type (T[K]) → any
+  // Indexed access type (T[K])
   if (ts.isIndexedAccessTypeNode(node)) {
+    // (typeof X)[number] → resolve to string literal union if X is a known const array
+    if (node.indexType.kind === ts.SyntaxKind.NumberKeyword) {
+      let inner = node.objectType;
+      if (ts.isParenthesizedTypeNode(inner)) inner = inner.type;
+      if (ts.isTypeQueryNode(inner)) {
+        const name = inner.exprName.getText();
+        const values = ctx.constArrayValues.get(name);
+        if (values) {
+          return values.map((s) => `"${s}"`).join(" | ");
+        }
+      }
+    }
     return "any";
   }
 
@@ -127,9 +139,19 @@ export function transformType(
     return "any";
   }
 
-  // keyof → string
+  // keyof → string (or string literal union if we can resolve it)
   if (ts.isTypeOperatorNode(node)) {
-    if (node.operator === ts.SyntaxKind.KeyOfKeyword) return "string";
+    if (node.operator === ts.SyntaxKind.KeyOfKeyword) {
+      // keyof typeof X → resolve to key union if X is a known const object
+      if (ts.isTypeQueryNode(node.type)) {
+        const name = node.type.exprName.getText();
+        const keys = ctx.constObjectKeys.get(name);
+        if (keys) {
+          return keys.map((k) => `"${k}"`).join(" | ");
+        }
+      }
+      return "string";
+    }
     if (node.operator === ts.SyntaxKind.ReadonlyKeyword)
       return transformType(node.type, ctx);
     return "any";
