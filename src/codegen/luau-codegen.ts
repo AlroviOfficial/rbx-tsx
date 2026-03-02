@@ -320,7 +320,11 @@ function emitExpr(
 
     case "function-expr": {
       const params = emitParams(expr.params);
-      let header = `function(${params})`;
+      const typeParams =
+        expr.typeParams && expr.typeParams.length > 0
+          ? `<${expr.typeParams.join(", ")}>`
+          : "";
+      let header = `function${typeParams}(${params})`;
       if (expr.returnType) {
         header += `: ${expr.returnType}`;
       }

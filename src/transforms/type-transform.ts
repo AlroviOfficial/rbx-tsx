@@ -298,16 +298,17 @@ function transformFunctionType(
   node: ts.FunctionTypeNode,
   ctx: TransformContext
 ): string {
+  const typeParams =
+    node.typeParameters?.map((p) => p.name.getText()).join(", ") ?? "";
   const params = node.parameters.map((p) => {
     const paramType = p.type ? transformType(p.type, ctx) : "any";
     return paramType;
   });
   const returnType = transformType(node.type, ctx);
 
-  if (params.length === 0) {
-    return `(() -> ${returnType})`;
-  }
-  return `((${params.join(", ")}) -> ${returnType})`;
+  const paramPart = params.length === 0 ? "()" : `(${params.join(", ")})`;
+  const genericPart = typeParams ? `<${typeParams}>` : "";
+  return `(${genericPart}${paramPart} -> ${returnType})`;
 }
 
 function transformTypeLiteral(
@@ -346,8 +347,8 @@ function transformTypeLiteral(
 }
 
 function transformLiteralType(node: ts.LiteralTypeNode): string {
-  if (node.literal.kind === ts.SyntaxKind.TrueKeyword) return "boolean";
-  if (node.literal.kind === ts.SyntaxKind.FalseKeyword) return "boolean";
+  if (node.literal.kind === ts.SyntaxKind.TrueKeyword) return "true";
+  if (node.literal.kind === ts.SyntaxKind.FalseKeyword) return "false";
   if (node.literal.kind === ts.SyntaxKind.NullKeyword) return "nil";
   if (ts.isStringLiteral(node.literal)) return `"${node.literal.text}"`;
   if (ts.isNumericLiteral(node.literal)) return node.literal.text;

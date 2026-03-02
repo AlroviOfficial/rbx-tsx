@@ -601,13 +601,14 @@ function transformFunctionDeclaration(
 
   if (isGenerator) ctx.isGenerator = prevGenerator;
 
-  // Generator: wrap body in coroutine.wrap and return the iterator
+  // Generator: wrap in adapter that provides .next() for JS generator protocol
   let body: LuauStatement[];
   if (isGenerator) {
+    ctx.requireHelper("generatorAdapter");
     body = [
       {
         type: "return",
-        value: call(index(ident("coroutine"), "wrap"), [
+        value: call(ident("__generatorAdapter"), [
           funcExpr([], innerBody),
         ]),
       },
@@ -1563,6 +1564,9 @@ function transformClassDeclaration(
     }
   }
 
+  const classTypeParams =
+    node.typeParameters?.map((p) => p.name.getText()) ?? undefined;
+
   // Emit table and __index first (Roblox OOP pattern)
   if (parentClassName) {
     result.push({
@@ -1594,6 +1598,7 @@ function transformClassDeclaration(
       parentClassName,
       properties,
       isExported,
+      classTypeParams,
       ctx
     )
   );
@@ -1605,13 +1610,16 @@ function transformClassDeclaration(
       parentClassName,
       constructorDecl,
       properties,
+      classTypeParams,
       ctx
     )
   );
 
   // Emit instance and static methods
   for (const method of methods) {
-    result.push(...emitClassMethod(className, method, ctx));
+    result.push(
+      ...emitClassMethod(className, method, classTypeParams, ctx)
+    );
   }
 
   // Emit static property initializers
@@ -1651,6 +1659,7 @@ function emitClassConstructor(
   parentClassName: string | null,
   constructorDecl: ts.ConstructorDeclaration | null,
   properties: ts.PropertyDeclaration[],
+  typeParams: string[] | undefined,
   ctx: TransformContext
 ): LuauStatement[] {
   const body: LuauStatement[] = [];
@@ -1766,6 +1775,9 @@ function emitClassConstructor(
       : setmetatableCall,
   });
 
+  const returnType =
+    typeParams?.length ? `${className}<${typeParams.join(", ")}>` : className;
+
   return [
     {
       type: "function-decl",
@@ -1773,7 +1785,8 @@ function emitClassConstructor(
       name: `${className}.new`,
       params,
       body,
-      returnType: className,
+      returnType,
+      ...(typeParams?.length && { typeParams }),
     },
   ];
 }
@@ -1781,6 +1794,7 @@ function emitClassConstructor(
 function emitClassMethod(
   className: string,
   method: ts.MethodDeclaration,
+  classTypeParams: string[] | undefined,
   ctx: TransformContext
 ): LuauStatement[] {
   if (!ts.isIdentifier(method.name)) {
@@ -1832,13 +1846,20 @@ function emitClassMethod(
   // Static → ClassName.method(), instance → ClassName.method(self: ClassName, ...)
   let qualifiedName: string;
   let finalParams: LuauParam[];
+  const selfType =
+    classTypeParams?.length
+      ? `${className}<${classTypeParams.join(", ")}>`
+      : className;
   if (isStatic) {
     qualifiedName = `${className}.${methodName}`;
     finalParams = params;
   } else {
     qualifiedName = `${className}.${methodName}`;
-    finalParams = [{ name: "self", type: className }, ...params];
+    finalParams = [{ name: "self", type: selfType }, ...params];
   }
+
+  const methodTypeParams =
+    method.typeParameters?.map((p) => p.name.getText()) ?? classTypeParams;
 
   return [
     {
@@ -1848,6 +1869,7 @@ function emitClassMethod(
       params: finalParams,
       body,
       returnType,
+      ...(methodTypeParams?.length && { typeParams: methodTypeParams }),
     },
   ];
 }
@@ -1857,6 +1879,7 @@ function emitClassTypeAlias(
   parentClassName: string | null,
   properties: ts.PropertyDeclaration[],
   isExported: boolean | undefined,
+  typeParams: string[] | undefined,
   ctx: TransformContext
 ): LuauStatement[] {
   const dataMembers: string[] = [];
@@ -1893,8 +1916,14 @@ function emitClassTypeAlias(
           type: "export-type-alias",
           name: className,
           definition: classDefinition,
+          ...(typeParams?.length && { typeParams }),
         } as LuauStatement)
-      : { type: "type-alias", name: className, definition: classDefinition },
+      : {
+          type: "type-alias",
+          name: className,
+          definition: classDefinition,
+          ...(typeParams?.length && { typeParams }),
+        },
   ];
 
   if (isExported) {

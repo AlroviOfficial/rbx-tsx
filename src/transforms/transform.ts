@@ -957,6 +957,145 @@ function getHelperFunction(name: string): LuauStatement[] | null {
         },
       ];
 
+    case "generatorToIterator":
+      return [
+        {
+          type: "function-decl",
+          local: true,
+          name: "__generatorToIterator",
+          params: [{ name: "x" }],
+          body: [
+            {
+              type: "if",
+              condition: binary(
+                call(ident("typeof"), [ident("x")]),
+                "==",
+                str("function")
+              ),
+              body: [
+                { type: "return", value: raw("x, nil, nil") },
+              ],
+            },
+            {
+              type: "local",
+              name: "_iter",
+              value: funcExpr(
+                [{ name: "_" }, { name: "prev" }],
+                [
+                  {
+                    type: "local",
+                    name: "r",
+                    value: call(index(ident("x"), "next"), [
+                      ident("x"),
+                      ident("prev"),
+                    ]),
+                  },
+                  {
+                    type: "if",
+                    condition: index(ident("r"), "done"),
+                    body: [{ type: "return", value: nil() }],
+                  },
+                  {
+                    type: "return",
+                    value: index(ident("r"), "value"),
+                  },
+                ]
+              ),
+            },
+            { type: "return", value: raw("_iter, nil, nil") },
+          ],
+        },
+      ];
+
+    case "generatorAdapter":
+      return [
+        {
+          type: "function-decl",
+          local: true,
+          name: "__generatorAdapter",
+          params: [{ name: "f" }],
+          body: [
+            {
+              type: "local",
+              name: "co",
+              value: call(index(ident("coroutine"), "create"), [ident("f")]),
+            },
+            {
+              type: "local",
+              name: "sent",
+              value: nil(),
+            },
+            {
+              type: "return",
+              value: table([
+                {
+                  key: str("next"),
+                  value: funcExpr(
+                    [{ name: "self" }, { name: "v" }],
+                    [
+                      {
+                        type: "if",
+                        condition: binary(ident("v"), "~=", nil()),
+                        body: [
+                          {
+                            type: "assignment",
+                            target: ident("sent"),
+                            value: ident("v"),
+                          },
+                        ],
+                      },
+                      {
+                        type: "multi-local",
+                        names: ["ok", "result"],
+                        values: [
+                          call(index(ident("coroutine"), "resume"), [
+                            ident("co"),
+                            ident("sent"),
+                          ]),
+                        ],
+                      },
+                      {
+                        type: "if",
+                        condition: binary(
+                          call(index(ident("coroutine"), "status"), [
+                            ident("co"),
+                          ]),
+                          "==",
+                          str("dead")
+                        ),
+                        body: [
+                          {
+                            type: "return",
+                            value: table([
+                              { key: str("done"), value: bool(true) },
+                              {
+                                key: str("value"),
+                                value: ifExpr(
+                                  ident("ok"),
+                                  ident("result"),
+                                  nil()
+                                ),
+                              },
+                            ]),
+                          },
+                        ],
+                      },
+                      {
+                        type: "return",
+                        value: table([
+                          { key: str("done"), value: bool(false) },
+                          { key: str("value"), value: ident("result") },
+                        ]),
+                      },
+                    ]
+                  ),
+                },
+              ]),
+            },
+          ],
+        },
+      ];
+
     default:
       return null;
   }

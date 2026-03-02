@@ -247,6 +247,7 @@ export interface LuauFunctionExpr {
   params: LuauParam[];
   body: LuauStatement[];
   returnType?: string;
+  typeParams?: string[];
 }
 
 export interface LuauConcat {
@@ -359,9 +360,10 @@ export function ifExpr(
 export function funcExpr(
   params: LuauParam[],
   body: LuauStatement[],
-  returnType?: string
+  returnType?: string,
+  typeParams?: string[]
 ): LuauFunctionExpr {
-  return { type: "function-expr", params, body, returnType };
+  return { type: "function-expr", params, body, returnType, typeParams };
 }
 
 export function concat(parts: LuauExpression[]): LuauExpression {

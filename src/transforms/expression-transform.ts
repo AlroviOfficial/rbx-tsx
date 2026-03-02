@@ -244,8 +244,14 @@ export function transformExpression(
       return raw("--[[ unsupported: yield outside generator ]] nil");
     }
     if (node.asteriskToken) {
-      // yield* expr — delegate to another iterable
-      const iterable = transformExpression(node.expression!, ctx);
+      // yield* expr — delegate to another iterable, capture return value.
+      // Wrap in __generatorToIterator so both JS generators (.next) and Lua iterators work in for loop.
+      // Wrap result in IIFE so when used as statement it's a valid function call (Luau rejects bare identifiers).
+      ctx.requireHelper("generatorToIterator");
+      const rawIterable = transformExpression(node.expression!, ctx);
+      const iterable = call(ident("__generatorToIterator"), [rawIterable]);
+      const tmp = ctx.nextTempVar();
+      ctx.pushPreStatement({ type: "local", name: tmp });
       ctx.pushPreStatement({
         type: "for-in",
         vars: ["_", "_v"],
@@ -255,9 +261,10 @@ export function transformExpression(
             type: "expression-statement",
             expr: call(index(ident("coroutine"), "yield"), [ident("_v")]),
           },
+          { type: "assignment", target: ident(tmp), value: ident("_v") },
         ],
       });
-      return nil();
+      return call(funcExpr([], [{ type: "return", value: ident(tmp) }]), []);
     }
     const value = node.expression
       ? transformExpression(node.expression, ctx)
@@ -558,6 +565,8 @@ export function transformFunctionExpression(
   const isGenerator = !ts.isArrowFunction(node) && !!node.asteriskToken;
 
   const params = transformParameters(node.parameters, ctx);
+  const typeParams =
+    node.typeParameters?.map((p) => p.name.getText()) ?? undefined;
   let returnType: string | undefined;
 
   if (node.type) {
@@ -580,15 +589,21 @@ export function transformFunctionExpression(
   if (isGenerator) ctx.isGenerator = prevGenerator;
 
   if (isGenerator) {
-    return funcExpr(params, [
-      {
-        type: "return",
-        value: call(index(ident("coroutine"), "wrap"), [funcExpr([], body)]),
-      },
-    ], returnType);
+    ctx.requireHelper("generatorAdapter");
+    return funcExpr(
+      params,
+      [
+        {
+          type: "return",
+          value: call(ident("__generatorAdapter"), [funcExpr([], body)]),
+        },
+      ],
+      returnType,
+      typeParams
+    );
   }
 
-  return funcExpr(params, body, returnType);
+  return funcExpr(params, body, returnType, typeParams);
 }
 
 export function transformParameters(
@@ -883,8 +898,11 @@ function transformSpecialCallExpression(
     }
   }
 
-  // Number.isInteger / Number.isNaN
+  // Number.parseInt / Number.parseFloat / Number.isInteger / Number.isNaN
   if (objText === "Number") {
+    if (methodName === "parseInt" || methodName === "parseFloat") {
+      return call(ident("tonumber"), args);
+    }
     if (methodName === "isInteger") {
       ctx.requireHelper("numberIsInteger");
       return call(ident("_numberIsInteger"), args);
