@@ -271,13 +271,41 @@ function mapValueType(vt: ValueType): string {
   }
 }
 
-function formatParams(params: Parameter[], yamlOptional?: Set<string>): string {
-  return params
-    .map((p) => {
-      const optional = p.Default !== undefined || yamlOptional?.has(p.Name) ? "?" : "";
-      return `${safeParamName(p.Name)}${optional}: ${mapValueType(p.Type)}`;
-    })
-    .join(", ");
+function isTupleType(vt: ValueType): boolean {
+  return vt?.Category === "Group" && vt?.Name === "Tuple";
+}
+
+function formatParams(
+  params: Parameter[],
+  yamlOptional?: Set<string>,
+  context?: { className?: string; memberName?: string },
+): string {
+  if (params.length === 0) return "";
+
+  const lastParam = params[params.length - 1];
+  const hasTupleVarargs =
+    isTupleType(lastParam.Type) && (lastParam.Name === "arguments" || lastParam.Name === "args");
+
+  const regularParams = hasTupleVarargs ? params.slice(0, -1) : params;
+  const tupleParam = hasTupleVarargs ? lastParam : null;
+
+  // OnServerInvoke receives (player, ...args) — player is always provided by the engine
+  const effectiveOptional =
+    context?.memberName === "OnServerInvoke"
+      ? new Set([...(yamlOptional ?? [])].filter((n) => n !== "player"))
+      : yamlOptional;
+
+  const parts: string[] = regularParams.map((p) => {
+    const optional = p.Default !== undefined || effectiveOptional?.has(p.Name) ? "?" : "";
+    return `${safeParamName(p.Name)}${optional}: ${mapValueType(p.Type)}`;
+  });
+
+  if (tupleParam) {
+    // Use "args" for rest params — "arguments" is a reserved identifier in TS
+    parts.push(`...args: unknown[]`);
+  }
+
+  return parts.join(", ");
 }
 
 // ─── YAML type mapping ───────────────────────────────────────────────
@@ -558,20 +586,27 @@ function generateInstances(classes: ApiClass[], docs: ClassDocsMap): string {
         }
         case "Function": {
           const params = formatParams(member.Parameters ?? [], yamlOptional);
-          const ret = mapValueType(member.ReturnType!);
+          const ret =
+            member.Name === "Clone" ? "this" : mapValueType(member.ReturnType!);
           lines.push(`${doc}\t${name}(${params}): ${ret};`);
           break;
         }
         case "Event": {
           // Event callback params are always provided by the engine — never optional
-          const params = formatParams(member.Parameters ?? []);
+          const params = formatParams(member.Parameters ?? [], undefined, {
+            className: cls.Name,
+            memberName: member.Name,
+          });
           lines.push(
             `${doc}\treadonly ${name}: RBXScriptSignal<(${params}) => void>;`
           );
           break;
         }
         case "Callback": {
-          const params = formatParams(member.Parameters ?? [], yamlOptional);
+          const params = formatParams(member.Parameters ?? [], yamlOptional, {
+            className: cls.Name,
+            memberName: member.Name,
+          });
           const ret = mapValueType(member.ReturnType!);
           lines.push(`${doc}\t${name}?: (${params}) => ${ret};`);
           break;

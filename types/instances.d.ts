@@ -278,10 +278,10 @@ interface EditableMesh extends Object {
 }
 
 interface ExecutedRemoteCommand extends Object {
-	RunMoreCode(code: string, args: unknown): undefined;
-	SendUpdate(args: unknown): undefined;
+	RunMoreCode(code: string, ...args: unknown[]): undefined;
+	SendUpdate(...args: unknown[]): undefined;
 	Stop(): undefined;
-	readonly ReceivedUpdate: RBXScriptSignal<(args: unknown) => void>;
+	readonly ReceivedUpdate: RBXScriptSignal<(...args: unknown[]) => void>;
 }
 
 /**
@@ -307,7 +307,7 @@ interface Instance extends Object {
 	/**
 	 * Create a copy of an instance and all its descendants, ignoring instances that are not `Archivable`.
 	 */
-	Clone(): Instance;
+	Clone(): this;
 	/**
 	 * Sets the `Instance.Parent` property to `nil`, locks the `Instance.Parent` property, disconnects all connections, and calls `Destroy()` on all children.
 	 */
@@ -2198,19 +2198,19 @@ interface BaseRemoteEvent extends Instance {
  */
 interface RemoteEvent extends BaseRemoteEvent {
 	/** Fires the `OnClientEvent` event for each connected client. */
-	FireAllClients(arguments?: unknown): undefined;
+	FireAllClients(...args: unknown[]): undefined;
 	/** Fires the `OnClientEvent` event for a specific client. */
-	FireClient(player?: Player, arguments?: unknown): undefined;
+	FireClient(player?: Player, ...args: unknown[]): undefined;
 	/** Fires the `OnServerEvent` event on the server from one connected client. */
-	FireServer(arguments?: unknown): undefined;
+	FireServer(...args: unknown[]): undefined;
 	/**
 	 * Fires from a `LocalScript` when either `FireClient()` or `FireAllClients()` is called on the same `RemoteEvent` instance from a `Script`.
 	 */
-	readonly OnClientEvent: RBXScriptSignal<(arguments: unknown) => void>;
+	readonly OnClientEvent: RBXScriptSignal<(...args: unknown[]) => void>;
 	/**
 	 * Fires from a `Script` when `FireServer()` is called on the same `RemoteEvent` instance from a `LocalScript`.
 	 */
-	readonly OnServerEvent: RBXScriptSignal<(player: Player, arguments: unknown) => void>;
+	readonly OnServerEvent: RBXScriptSignal<(player: Player, ...args: unknown[]) => void>;
 }
 
 /**
@@ -2220,23 +2220,23 @@ interface UnreliableRemoteEvent extends BaseRemoteEvent {
 	/**
 	 * Fires the `OnClientEvent` event for all connected clients. Has a 1000 byte limit to the payload of the event. Events with larger payloads are dropped.
 	 */
-	FireAllClients(arguments?: unknown): undefined;
+	FireAllClients(...args: unknown[]): undefined;
 	/**
 	 * Fires the `OnClientEvent` event for a specific client. Has a 1000 byte limit to the payload of the event. Events with larger payloads are dropped.
 	 */
-	FireClient(player?: Player, arguments?: unknown): undefined;
+	FireClient(player?: Player, ...args: unknown[]): undefined;
 	/**
 	 * Fires the `OnServerEvent` event on the server from one connected client. Has a 1000 byte limit to the payload of the event. Events with larger payloads are dropped.
 	 */
-	FireServer(arguments?: unknown): undefined;
+	FireServer(...args: unknown[]): undefined;
 	/**
 	 * Fires from a `LocalScript` when either `FireClient()` or `FireAllClients()` is called on the same `UnreliableRemoteEvent` instance from a `Script`, although this firing is not guaranteed even if one of the above methods are called. This can occur due to packet loss or to maintain optimal engine performance.
 	 */
-	readonly OnClientEvent: RBXScriptSignal<(arguments: unknown) => void>;
+	readonly OnClientEvent: RBXScriptSignal<(...args: unknown[]) => void>;
 	/**
 	 * Fires from a `Script` when `FireServer()` is called on the same `UnreliableRemoteEvent` instance from a `LocalScript`, although this firing is not guaranteed even if the above methods is called. This can occur due to packet loss or to maintain optimal engine performance.
 	 */
-	readonly OnServerEvent: RBXScriptSignal<(player: Player, arguments: unknown) => void>;
+	readonly OnServerEvent: RBXScriptSignal<(player: Player, ...args: unknown[]) => void>;
 }
 
 interface BaseWrap extends Instance {
@@ -2370,11 +2370,11 @@ interface Beam extends Instance {
  */
 interface BindableEvent extends Instance {
 	/** Fires the `BindableEvent` which in turn fires the `Event` event. */
-	Fire(arguments?: unknown): undefined;
+	Fire(...args: unknown[]): undefined;
 	/**
 	 * Fires when any script calls the `Fire()` method on the same `BindableEvent` instance.
 	 */
-	readonly Event: RBXScriptSignal<(arguments: unknown) => void>;
+	readonly Event: RBXScriptSignal<(...args: unknown[]) => void>;
 }
 
 /**
@@ -2384,9 +2384,9 @@ interface BindableFunction extends Instance {
 	/**
 	 * Invokes the `BindableFunction` which in turn calls the `OnInvoke` callback, returning any values returned by the callback.
 	 */
-	Invoke(arguments?: unknown): unknown;
+	Invoke(...args: unknown[]): unknown;
 	/** Callback for when the `BindableFunction` is invoked with `Invoke()`. */
-	OnInvoke?: (arguments?: unknown) => unknown;
+	OnInvoke?: (...args: unknown[]) => unknown;
 }
 
 /**
@@ -10912,7 +10912,7 @@ interface RemoteCommandService extends Instance {
 	GetExecutingPlayer(): Player;
 	GetReceivedUpdateSignal(): RBXScriptSignal;
 	GetStoppingSignal(): RBXScriptSignal;
-	SendUpdate(args?: unknown): undefined;
+	SendUpdate(...args: unknown[]): undefined;
 }
 
 interface RemoteCursorService extends Instance {
@@ -10926,13 +10926,13 @@ interface RemoteDebuggerServer extends Instance {
  */
 interface RemoteFunction extends Instance {
 	/** Invokes the `RemoteFunction` which in turn calls the `OnClientInvoke` callback. */
-	InvokeClient(player?: Player, arguments?: unknown): unknown;
+	InvokeClient(player?: Player, ...args: unknown[]): unknown;
 	/** Invokes the `RemoteFunction` which in turn calls the `OnServerInvoke` callback. */
-	InvokeServer(arguments?: unknown): unknown;
+	InvokeServer(...args: unknown[]): unknown;
 	/** Callback for when the `RemoteFunction` is invoked with `InvokeClient()`. */
-	OnClientInvoke?: (arguments?: unknown) => unknown;
+	OnClientInvoke?: (...args: unknown[]) => unknown;
 	/** Callback for when the `RemoteFunction` is invoked with `InvokeServer()`. */
-	OnServerInvoke?: (player?: Player, arguments?: unknown) => unknown;
+	OnServerInvoke?: (player: Player, ...args: unknown[]) => unknown;
 }
 
 interface RenderSettings extends Instance {

@@ -257,7 +257,13 @@ function transformTypeReference(
       return "any"; // Ref types are complex in Luau
 
     default:
-      // Could be a user-defined type or Roblox type — pass through
+      // User-defined type or Roblox type — pass through with type args if present
+      if (node.typeArguments && node.typeArguments.length > 0) {
+        const args = node.typeArguments
+          .map((a) => transformType(a, ctx))
+          .join(", ");
+        return `${typeName}<${args}>`;
+      }
       return typeName;
   }
 }

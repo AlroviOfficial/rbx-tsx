@@ -1665,6 +1665,14 @@ function transformNewExpression(
       return table([]);
     }
 
+    // Array → table.create / table literal (Luau has no Array.new)
+    // new Array() → {}; new Array(n) → table.create(n); new Array(a,b,...) → {a,b,...}
+    if (name === "Array") {
+      if (args.length === 0) return table([]);
+      if (args.length === 1) return call(index(ident("table"), "create"), args);
+      return table(args.map((v) => ({ value: v })));
+    }
+
     // Default: X.new(args)
     return call(index(ident(name), "new"), args);
   }

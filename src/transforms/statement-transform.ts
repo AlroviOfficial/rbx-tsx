@@ -295,19 +295,56 @@ function transformVariableStatement(
     } else {
       // Simple variable
       const name = decl.name.getText();
-      const value = decl.initializer
-        ? transformExpression(decl.initializer, ctx)
-        : undefined;
-      const typeAnnotation = decl.type
-        ? transformType(decl.type, ctx)
-        : undefined;
+      const rawInit = decl.initializer;
+      const isGenericArrow =
+        rawInit &&
+        ts.isIdentifier(decl.name) &&
+        (ts.isArrowFunction(rawInit) || ts.isFunctionExpression(rawInit)) &&
+        rawInit.typeParameters &&
+        rawInit.typeParameters.length > 0;
 
-      results.push({
-        type: "local",
-        name,
-        value,
-        typeAnnotation,
-      });
+      if (isGenericArrow) {
+        const fn = rawInit as ts.ArrowFunction | ts.FunctionExpression;
+        const typeParams = fn.typeParameters!.map((p) => p.name.getText());
+        const params = transformParameters(fn.parameters, ctx);
+        const returnType = fn.type
+          ? transformType(fn.type, ctx)
+          : undefined;
+        const additionalBodyStmts = getDestructuringPreamble(fn.parameters, ctx);
+        let body: LuauStatement[];
+        if (ts.isBlock(fn.body)) {
+          body = [
+            ...additionalBodyStmts,
+            ...transformStatements(fn.body.statements, ctx),
+          ];
+        } else {
+          const expr = transformExpression(fn.body as ts.Expression, ctx);
+          const pre = ctx.flushPreStatements();
+          body = [...additionalBodyStmts, ...pre, { type: "return", value: expr }];
+        }
+        results.push({
+          type: "function-decl",
+          local: true,
+          name,
+          params,
+          body,
+          returnType,
+          typeParams,
+        });
+      } else {
+        const value = rawInit
+          ? transformExpression(rawInit, ctx)
+          : undefined;
+        const typeAnnotation = decl.type
+          ? transformType(decl.type, ctx)
+          : undefined;
+        results.push({
+          type: "local",
+          name,
+          value,
+          typeAnnotation,
+        });
+      }
 
       // Track Map/Set variables for method → table operation transforms
       if (decl.type && ts.isTypeReferenceNode(decl.type)) {
@@ -315,23 +352,24 @@ function transformVariableStatement(
         if (typeName === "Map") ctx.mapVariables.add(name);
         if (typeName === "Set") ctx.setVariables.add(name);
       }
-      let rawInit = decl.initializer;
-      if (rawInit && ts.isAsExpression(rawInit)) rawInit = rawInit.expression;
+      let initForTracking = rawInit;
+      if (initForTracking && ts.isAsExpression(initForTracking))
+        initForTracking = (initForTracking as ts.AsExpression).expression;
       if (
-        rawInit &&
-        ts.isNewExpression(rawInit) &&
-        ts.isIdentifier(rawInit.expression)
+        initForTracking &&
+        ts.isNewExpression(initForTracking) &&
+        ts.isIdentifier(initForTracking.expression)
       ) {
-        const ctorName = rawInit.expression.text;
+        const ctorName = initForTracking.expression.text;
         if (ctorName === "Map") ctx.mapVariables.add(name);
         if (ctorName === "Set") ctx.setVariables.add(name);
       }
 
       // Track const arrays with string literal elements for type resolution
-      if (rawInit && ts.isArrayLiteralExpression(rawInit)) {
+      if (initForTracking && ts.isArrayLiteralExpression(initForTracking)) {
         const strings: string[] = [];
         let allStrings = true;
-        for (const elem of rawInit.elements) {
+        for (const elem of initForTracking.elements) {
           if (ts.isStringLiteral(elem)) {
             strings.push(elem.text);
           } else {
@@ -345,9 +383,9 @@ function transformVariableStatement(
       }
 
       // Track object literal declarations for keyof typeof resolution
-      if (rawInit && ts.isObjectLiteralExpression(rawInit)) {
+      if (initForTracking && ts.isObjectLiteralExpression(initForTracking)) {
         const keys: string[] = [];
-        for (const prop of rawInit.properties) {
+        for (const prop of initForTracking.properties) {
           if (ts.isPropertyAssignment(prop)) {
             if (ts.isIdentifier(prop.name)) {
               keys.push(prop.name.text);
@@ -473,6 +511,8 @@ function transformFunctionDeclaration(
   // we need to add destructuring in the body
   const params = transformFunctionParams(node.parameters, ctx);
   const additionalBodyStmts = getDestructuringPreamble(node.parameters, ctx);
+  const typeParams =
+    node.typeParameters?.map((p) => p.name.getText()) ?? undefined;
 
   let returnType: string | undefined;
   if (node.type) {
@@ -520,9 +560,10 @@ function transformFunctionDeclaration(
       type: "function-decl",
       local: true,
       name,
-      params: params,
+      params,
       body,
       returnType,
+      ...(typeParams && typeParams.length > 0 && { typeParams }),
       sourceLine,
       sourceFile: sourceFileStr,
     },
@@ -1209,14 +1250,30 @@ function transformInterfaceDeclaration(
     (m) => m.kind === ts.SyntaxKind.ExportKeyword
   );
 
+  const typeParams =
+    node.typeParameters?.map((p) => p.name.getText()) ?? undefined;
   const definition = transformInterfaceToLuauType(node, ctx);
 
   if (isExported) {
     ctx.typeExports.add(name);
-    return [{ type: "export-type-alias", name, definition }];
+    return [
+      {
+        type: "export-type-alias",
+        name,
+        definition,
+        ...(typeParams?.length && { typeParams }),
+      },
+    ];
   }
 
-  return [{ type: "type-alias", name, definition }];
+  return [
+    {
+      type: "type-alias",
+      name,
+      definition,
+      ...(typeParams?.length && { typeParams }),
+    },
+  ];
 }
 
 // ── Type Alias Declaration ──
@@ -1230,22 +1287,30 @@ function transformTypeAliasDeclaration(
     (m) => m.kind === ts.SyntaxKind.ExportKeyword
   );
 
-  // Check for generics
-  if (node.typeParameters && node.typeParameters.length > 0) {
-    ctx.warn(
-      "generic-erasure",
-      `Generic type parameter on '${name}' erased to 'any'`
-    );
-  }
-
+  const typeParams =
+    node.typeParameters?.map((p) => p.name.getText()) ?? undefined;
   const definition = transformTypeAliasToLuauType(node, ctx);
 
   if (isExported) {
     ctx.typeExports.add(name);
-    return [{ type: "export-type-alias", name, definition }];
+    return [
+      {
+        type: "export-type-alias",
+        name,
+        definition,
+        ...(typeParams?.length && { typeParams }),
+      },
+    ];
   }
 
-  return [{ type: "type-alias", name, definition }];
+  return [
+    {
+      type: "type-alias",
+      name,
+      definition,
+      ...(typeParams?.length && { typeParams }),
+    },
+  ];
 }
 
 // ── Enum Declaration ──

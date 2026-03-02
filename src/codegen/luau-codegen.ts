@@ -100,7 +100,11 @@ function emitStatement(
       }
       const prefix = stmt.local ? "local function" : "function";
       const params = emitParams(stmt.params);
-      let sig = `${t}${prefix} ${stmt.name}(${params})`;
+      const typeParams =
+        stmt.typeParams && stmt.typeParams.length > 0
+          ? `<${stmt.typeParams.join(", ")}>`
+          : "";
+      let sig = `${t}${prefix} ${stmt.name}${typeParams}(${params})`;
       if (stmt.returnType) {
         sig += `: ${stmt.returnType}`;
       }
@@ -188,12 +192,20 @@ function emitStatement(
     }
 
     case "type-alias": {
-      lines.push(`${t}type ${stmt.name} = ${stmt.definition}`);
+      const typeParams =
+        stmt.typeParams && stmt.typeParams.length > 0
+          ? `<${stmt.typeParams.join(", ")}>`
+          : "";
+      lines.push(`${t}type ${stmt.name}${typeParams} = ${stmt.definition}`);
       break;
     }
 
     case "export-type-alias": {
-      lines.push(`${t}export type ${stmt.name} = ${stmt.definition}`);
+      const typeParams =
+        stmt.typeParams && stmt.typeParams.length > 0
+          ? `<${stmt.typeParams.join(", ")}>`
+          : "";
+      lines.push(`${t}export type ${stmt.name}${typeParams} = ${stmt.definition}`);
       break;
     }
 

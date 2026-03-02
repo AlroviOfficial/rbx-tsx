@@ -60,6 +60,7 @@ export interface LuauFunctionDecl {
   params: LuauParam[];
   body: LuauStatement[];
   returnType?: string;
+  typeParams?: string[];
   sourceLine?: number;
   sourceFile?: string;
 }
@@ -119,12 +120,14 @@ export interface LuauTypeAlias {
   type: "type-alias";
   name: string;
   definition: string;
+  typeParams?: string[];
 }
 
 export interface LuauExportTypeAlias {
   type: "export-type-alias";
   name: string;
   definition: string;
+  typeParams?: string[];
 }
 
 export interface LuauBreak {
