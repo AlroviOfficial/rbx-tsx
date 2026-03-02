@@ -86,6 +86,12 @@ export class TransformContext {
   /** Whether the current file is an index file (becomes init.luau — script IS the folder) */
   readonly isIndexFile: boolean;
 
+  /** Pre-statements accumulated during expression transforms (e.g., temp vars for optional chains) */
+  readonly preStatements: LuauStatement[] = [];
+
+  /** Counter for generating unique temp variable names */
+  private _tempCounter = 0;
+
   constructor(warnings: WarningCollector, options: CompileOptions) {
     this.warnings = warnings;
     this.options = options;
@@ -140,5 +146,21 @@ export class TransformContext {
   /** Check if a CSS className triggers ScrollingFrame upgrade */
   isScrollingFrameClass(className: string): boolean {
     return this.cssManifest?.classes[className]?.overflowScroll === true;
+  }
+
+  /** Generate a unique temp variable name for optional chain extraction */
+  nextTempVar(): string {
+    return `_opt${this._tempCounter++}`;
+  }
+
+  /** Add a statement that must be emitted before the current expression's containing statement */
+  pushPreStatement(stmt: LuauStatement): void {
+    this.preStatements.push(stmt);
+  }
+
+  /** Drain and return all accumulated pre-statements */
+  flushPreStatements(): LuauStatement[] {
+    if (this.preStatements.length === 0) return [];
+    return this.preStatements.splice(0);
   }
 }

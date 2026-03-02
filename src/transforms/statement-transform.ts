@@ -45,7 +45,9 @@ export function transformStatements(
   const result: LuauStatement[] = [];
 
   for (const stmt of statements) {
-    result.push(...transformStatement(stmt, ctx));
+    const stmts = transformStatement(stmt, ctx);
+    const pre = ctx.flushPreStatements();
+    result.push(...pre, ...stmts);
   }
 
   return result;

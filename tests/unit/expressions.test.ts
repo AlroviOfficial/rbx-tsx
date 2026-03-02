@@ -303,6 +303,57 @@ describe("optional chaining extensions", () => {
   });
 });
 
+// ── Chained optional chaining temp extraction ──
+
+describe("chained optional chaining", () => {
+  test("single optional chain does not extract temp var", () => {
+    const result = compileStmt("const x = a?.b;");
+    expect(result).toContain("if a ~= nil then a.b else nil");
+    expect(result).not.toContain("_opt");
+  });
+
+  test("chained property access extracts temp var", () => {
+    const result = compileStmt("const x = a?.b?.c;");
+    expect(result).toContain("local _opt0");
+    expect(result).toContain("if _opt0 ~= nil then _opt0.c else nil");
+  });
+
+  test("chained method call extracts temp var", () => {
+    const result = compileStmt(
+      'const x = part.Parent?.FindFirstChildOfClass("Humanoid")?.TakeDamage(100);',
+      'declare const part: { Parent: any };'
+    );
+    expect(result).toContain("local _opt0");
+    expect(result).toContain("_opt0:TakeDamage(100)");
+    // Should NOT duplicate the inner if-expression
+    const matches = result.match(/FindFirstChildOfClass/g);
+    expect(matches?.length).toBe(1);
+  });
+
+  test("triple chained optional extracts multiple temps", () => {
+    const result = compileStmt("const x = a?.b?.c?.d;");
+    expect(result).toContain("local _opt0");
+    expect(result).toContain("local _opt1");
+  });
+
+  test("chained optional in arrow expression body", () => {
+    const result = compileStmt("const f = (x: any) => x?.a?.b;");
+    expect(result).toContain("local _opt0");
+    expect(result).toContain("if _opt0 ~= nil then _opt0.b else nil");
+  });
+
+  test("chained optional call a?.()?.b extracts temp", () => {
+    const result = compileStmt("const x = a?.()?.b;");
+    expect(result).toContain("local _opt");
+    expect(result).not.toMatch(/if \(if.*then.*else nil\) ~= nil then \(if/);
+  });
+
+  test("chained optional bracket access a?.b?.[c] extracts temp", () => {
+    const result = compileStmt("const x = a?.b?.[c];");
+    expect(result).toContain("local _opt0");
+  });
+});
+
 // ── Task 18: 0-to-1 based indexing ──
 
 describe("0-to-1 based indexing", () => {

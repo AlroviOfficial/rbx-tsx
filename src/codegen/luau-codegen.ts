@@ -257,18 +257,21 @@ function emitExpr(
     }
 
     case "method-call": {
-      const obj = emitExpr(expr.object, ctx, depth);
+      let obj = emitExpr(expr.object, ctx, depth);
+      if (expr.object.type === "if-expr") obj = `(${obj})`;
       const args = expr.args.map((a) => emitExpr(a, ctx, depth)).join(", ");
       return `${obj}:${expr.method}(${args})`;
     }
 
     case "index": {
-      const obj = emitExpr(expr.object, ctx, depth);
+      let obj = emitExpr(expr.object, ctx, depth);
+      if (expr.object.type === "if-expr") obj = `(${obj})`;
       return `${obj}.${expr.property}`;
     }
 
     case "bracket-index": {
-      const obj = emitExpr(expr.object, ctx, depth);
+      let obj = emitExpr(expr.object, ctx, depth);
+      if (expr.object.type === "if-expr") obj = `(${obj})`;
       const idx = emitExpr(expr.index, ctx, depth);
       return `${obj}[${idx}]`;
     }

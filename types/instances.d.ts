@@ -345,11 +345,11 @@ interface Instance extends Object {
 	/** Returns a dictionary of the instance's attributes. */
 	GetAttributes(): unknown;
 	/** Returns an array containing all of the instance's children. */
-	GetChildren(): Instances;
+	GetChildren(): Instance[];
 	/** Returns a coded string of the debug ID used internally by Roblox. */
 	GetDebugId(scopeLength?: number): string;
 	/** Returns an array containing all of the descendants of the instance. */
-	GetDescendants(): Instances;
+	GetDescendants(): Instance[];
 	/** Returns a string describing the instance's ancestry. */
 	GetFullName(): string;
 	/**
@@ -369,7 +369,7 @@ interface Instance extends Object {
 	 * Returns `true` if the value stored in the specified property is not equal to the code-instantiated default.
 	 */
 	IsPropertyModified(property?: string): boolean;
-	QueryDescendants(selector?: string): Instances;
+	QueryDescendants(selector?: string): Instance[];
 	/**
 	 * Sets the object's `Parent` to `nil`, and does the same for all its descendants.
 	 * @deprecated Deprecated.
@@ -389,7 +389,7 @@ interface Instance extends Object {
 	 * Returns an array of the object's children.
 	 * @deprecated Deprecated.
 	 */
-	children(): Instances;
+	children(): Instance[];
 	/** @deprecated Deprecated. */
 	clone(): Instance;
 	/** @deprecated Deprecated. */
@@ -397,7 +397,7 @@ interface Instance extends Object {
 	/** @deprecated Deprecated. */
 	findFirstChild(name?: string, recursive?: boolean): Instance;
 	/** @deprecated Deprecated. */
-	getChildren(): Instances;
+	getChildren(): Instance[];
 	/** @deprecated Deprecated. */
 	isDescendantOf(ancestor?: Instance): boolean;
 	/** @deprecated Deprecated. */
@@ -602,7 +602,7 @@ interface KeyframeSequence extends AnimationClip {
 	/**
 	 * Returns an array that contains all `Keyframes` contained in a `KeyframeSequence`.
 	 */
-	GetKeyframes(): Instances;
+	GetKeyframes(): Instance[];
 	/**
 	 * This method removes a `Keyframe` from the `KeyframeSequence` by setting its parent to `nil`.
 	 */
@@ -946,7 +946,7 @@ interface Attachment extends Instance {
 	 */
 	GetAxis(): Vector3;
 	/** Returns a list of `Constraints` connected to the attachment. */
-	GetConstraints(): Instances;
+	GetConstraints(): Instance[];
 	/**
 	 * Returns the value of the attachment's `SecondaryAxis`.
 	 * @deprecated Deprecated.
@@ -988,7 +988,7 @@ interface AudioAnalyzer extends Instance {
 	SpectrumEnabled: boolean;
 	WindowSize: Enum.AudioWindowSize;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1010,7 +1010,7 @@ interface AudioChannelMixer extends Instance {
 	/** Controls the output channel layout to be mixed to. */
 	Layout: Enum.AudioChannelLayout;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1032,7 +1032,7 @@ interface AudioChannelSplitter extends Instance {
 	/** Controls the input channel layout to be split from. */
 	Layout: Enum.AudioChannelLayout;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1060,7 +1060,7 @@ interface AudioChorus extends Instance {
 	/** Controls the rate of pitch modulations. */
 	Rate: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1096,7 +1096,7 @@ interface AudioCompressor extends Instance {
 	/** Gain value at which the compressor will start to modify the input stream. */
 	Threshold: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1126,7 +1126,7 @@ interface AudioDeviceInput extends Instance {
 	/** Volume level which is multiplied onto the output audio stream. */
 	Volume: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1156,7 +1156,7 @@ interface AudioDeviceOutput extends Instance {
 	/** A `Player` who is intended to hear the connected audio streams. */
 	Player: Player;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1178,7 +1178,7 @@ interface AudioDistortion extends Instance {
 	/** Controls how distorted the input stream will become. */
 	Level: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1207,7 +1207,7 @@ interface AudioEcho extends Instance {
 	/** Gain level determining how loud the echoed stream will be. */
 	WetLevel: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1239,7 +1239,7 @@ interface AudioEmitter extends Instance {
 	/** Calculates how audible this emitter is for a particular `AudioListener`. */
 	GetAudibilityFor(listener?: AudioListener): number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the distance attenuation curve that the `AudioEmitter` is using, or an empty table if it's using the default curve.
 	 */
@@ -1249,7 +1249,7 @@ interface AudioEmitter extends Instance {
 	 */
 	GetInputPins(): unknown;
 	/** Lists all `AudioListeners` that are capable of hearing this emitter. */
-	GetInteractingListeners(): Instances;
+	GetInteractingListeners(): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.SourceName` to connect to this instance via its `Wire.SourceInstance` property.
 	 */
@@ -1287,7 +1287,7 @@ interface AudioEqualizer extends Instance {
 	/** The frequency range of the band influenced by `MidGain`. */
 	MidRange: NumberRange;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1309,7 +1309,7 @@ interface AudioFader extends Instance {
 	/** Volume level which is multiplied onto the input stream. */
 	Volume: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1339,7 +1339,7 @@ interface AudioFilter extends Instance {
 	 */
 	Q: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/** Returns the magnitude response of the filter at the given frequency. */
 	GetGainAt(frequency?: number): number;
 	/**
@@ -1367,7 +1367,7 @@ interface AudioFlanger extends Instance {
 	/** Controls the rate of pitch modulations. */
 	Rate: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1391,7 +1391,7 @@ interface AudioGate extends Instance {
 	Release: number;
 	Threshold: NumberRange;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1417,7 +1417,7 @@ interface AudioLimiter extends Instance {
 	 */
 	Release: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1449,7 +1449,7 @@ interface AudioListener extends Instance {
 	/** Calculates how audible an `AudioEmitter` is for this listener */
 	GetAudibilityFor(emitter?: AudioEmitter): number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the distance attenuation curve that the `AudioListener` is using, or an empty table if it's using the default curve.
 	 */
@@ -1459,7 +1459,7 @@ interface AudioListener extends Instance {
 	 */
 	GetInputPins(): unknown;
 	/** Lists all `AudioEmitters` that this listener is capable of hearing. */
-	GetInteractingEmitters(): Instances;
+	GetInteractingEmitters(): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.SourceName` to connect to this instance via its `Wire.SourceInstance` property.
 	 */
@@ -1486,7 +1486,7 @@ interface AudioPitchShifter extends Instance {
 	Pitch: number;
 	WindowSize: Enum.AudioWindowSize;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1534,7 +1534,7 @@ interface AudioPlayer extends Instance {
 	/** Controls how loudly the asset will be played. */
 	Volume: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1564,7 +1564,7 @@ interface AudioRecorder extends Instance {
 	TimeLength: number;
 	Clear(): undefined;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1576,7 +1576,7 @@ interface AudioRecorder extends Instance {
 	GetTemporaryContent(): Content;
 	Stop(): undefined;
 	CanRecordAsync(): boolean;
-	GetUnrecordableInstancesAsync(): Instances;
+	GetUnrecordableInstancesAsync(): Instance[];
 	RecordAsync(): undefined;
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioAnalyzer` via a `Wire`.
@@ -1617,7 +1617,7 @@ interface AudioReverb extends Instance {
 	/** Gain level determining how loud the reverberated stream will be. */
 	WetLevel: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -1671,7 +1671,7 @@ interface AudioSpeechToText extends Instance {
 	 */
 	VoiceDetected: boolean;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Fires when another instance is connected to or disconnected from the `AudioSpeechToText` via a `Wire`.
 	 */
@@ -1709,7 +1709,7 @@ interface AudioTextToSpeech extends Instance {
 	/** Controls how loudly the generated speech audio will be played. */
 	Volume: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/** Pauses the `AudioTextToSpeech` object wherever its `TimePosition` is. */
 	Pause(): undefined;
 	/** Plays the `AudioTextToSpeech` from wherever its `TimePosition` is. */
@@ -1747,7 +1747,7 @@ interface AudioTremolo extends Instance {
 	/** Flatness of the low frequency oscillations shape. */
 	Square: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -2123,7 +2123,7 @@ interface BasePlayerGui extends Instance {
 	/**
 	 * Returns a list of all `GuiObject` instances occupying the given point on the screen.
 	 */
-	GetGuiObjectsAtPosition(x?: number, y?: number): Instances;
+	GetGuiObjectsAtPosition(x?: number, y?: number): Instance[];
 }
 
 /**
@@ -3028,13 +3028,13 @@ interface CollectionService extends Instance {
 	 * Returns all instances of a given class which are in the `DataModel`.
 	 * @deprecated Deprecated.
 	 */
-	GetCollection(_class?: string): Instances;
+	GetCollection(_class?: string): Instance[];
 	/** Returns a signal that fires when a given tag is added to an instance. */
 	GetInstanceAddedSignal(tag?: string): RBXScriptSignal;
 	/** Returns a signal that fires when a given tag is removed from an instance. */
 	GetInstanceRemovedSignal(tag?: string): RBXScriptSignal;
 	/** Returns an array of instances in the game with a given tag. */
-	GetTagged(tag?: string): Instances;
+	GetTagged(tag?: string): Instance[];
 	/** Gets an array of all tags applied to a given instance. */
 	GetTags(instance?: Instance): unknown;
 	/** Check whether an instance has a given tag. */
@@ -3088,7 +3088,7 @@ interface CompositeValueCurve extends Instance {
 	/**
 	 * Returns the child curves with the given names for the `CurveType` of this `CompositeValueCurve`.
 	 */
-	GetComponentCurves(): Instances;
+	GetComponentCurves(): Instance[];
 	/** Returns the sampled animated value at the passed `time` argument. */
 	GetValueAtTime(time?: number): unknown;
 }
@@ -3949,7 +3949,7 @@ interface CrossDMScriptChangeListener extends Instance {
 /** @deprecated This class is deprecated. */
 interface CustomEvent extends Instance {
 	/** Returns the `CustomEventReceivers` that are connected to the `CustomEvent`. */
-	GetAttachedReceivers(): Instances;
+	GetAttachedReceivers(): Instance[];
 	/**
 	 * Sets the value of the `CustomEvent` and fires the `CustomEventReceiver.SourceValueChanged` event for all connected `CustomEventReceiver|receivers`.
 	 */
@@ -4205,7 +4205,7 @@ interface DebuggerLuaResponse extends Instance {
 interface DebuggerManager extends Instance {
 	DebuggingEnabled: boolean;
 	AddDebugger(script: Instance): Instance;
-	GetDebuggers(): Instances;
+	GetDebuggers(): Instance[];
 	Resume(): undefined;
 	/** @deprecated Deprecated. */
 	StepIn(): undefined;
@@ -4257,7 +4257,7 @@ interface Dialog extends Instance {
 	/** Sets the offset of the dialog relative to the dialog's parent. */
 	TriggerOffset: Vector3;
 	/** Returns a list of players currently using the Dialog. */
-	GetCurrentPlayers(): Instances;
+	GetCurrentPlayers(): Instance[];
 	/** Fired when a player chooses something to say, through a `Dialog` instance. */
 	readonly DialogChoiceSelected: RBXScriptSignal<(player: Instance, dialogChoice: Instance) => void>;
 }
@@ -4284,7 +4284,7 @@ interface Dragger extends Instance {
 	/** Rotates the currently dragged part(s) by 90 degrees on the given axis. */
 	AxisRotate(axis?: Enum.Axis): undefined;
 	/** Initializes a dragging action, specifying which parts to use when dragging. */
-	MouseDown(mousePart?: Instance, pointOnMousePart?: Vector3, parts?: Instances): undefined;
+	MouseDown(mousePart?: Instance, pointOnMousePart?: Vector3, parts?: Instance[]): undefined;
 	/**
 	 * Tries to move the currently dragged part to the point where MouseRay hits another part.
 	 */
@@ -5536,7 +5536,7 @@ interface VideoDisplay extends GuiObject {
 	/** Determines the transparency of the rendered video. */
 	VideoTransparency: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -7252,7 +7252,7 @@ interface InstanceExtensionsService extends Instance {
 /** A service for interacting with file sync from a plugin. */
 interface InstanceFileSyncService extends Instance {
 	/** Returns an array of all instances currently involved in file synchronization. */
-	GetAllInstances(): Instances;
+	GetAllInstances(): Instance[];
 	/** Returns the synchronization status of a specific instance. */
 	GetStatus(instance?: Instance): Enum.InstanceFileSyncStatus;
 	/** Returns the instance corresponding to a given file path. */
@@ -7415,9 +7415,9 @@ interface Keyframe extends Instance {
 	/**
 	 * Returns an array containing all `KeyframeMarkers` that have been added to the `Keyframe`.
 	 */
-	GetMarkers(): Instances;
+	GetMarkers(): Instance[];
 	/** Returns an array containing all `Poses` that have been added to a `Keyframe`. */
-	GetPoses(): Instances;
+	GetPoses(): Instance[];
 	/**
 	 * Removes a `KeyframeMarker` from the `Keyframe` by settings its `Instance.Parent` to `nil`.
 	 */
@@ -7471,7 +7471,7 @@ interface LSPFileSyncService extends Instance {
 }
 
 interface LanguageService extends Instance {
-	GetCapabilitiesUsedInPackageAsync(instances: Instances): unknown;
+	GetCapabilitiesUsedInPackageAsync(instances: Instance[]): unknown;
 }
 
 /** Light is a root class for dynamic lighting related objects. */
@@ -7630,7 +7630,7 @@ interface LocalizationService extends Instance {
 	/** The locale ID that the local player has set for their operating system. */
 	SystemLocaleId: string;
 	/** Returns a list of `LocalizationTable` objects used for localizing core scripts. */
-	GetCorescriptLocalizations(): Instances;
+	GetCorescriptLocalizations(): Instance[];
 	/** Gets all entries used for automated localization. */
 	GetTableEntries(instance?: Instance): unknown;
 	/**
@@ -8193,7 +8193,7 @@ interface PlayerMouse extends Mouse {
  */
 interface PluginMouse extends Mouse {
 	/** Fired when Instances are being selected while the mouse is dragging. */
-	readonly DragEnter: RBXScriptSignal<(instances: Instances) => void>;
+	readonly DragEnter: RBXScriptSignal<(instances: Instance[]) => void>;
 }
 
 interface MouseService extends Instance {
@@ -8438,9 +8438,9 @@ interface BasePart extends PVInstance {
 	CanSetNetworkOwnership(): unknown;
 	GetClosestPointOnSurface(position?: Vector3): Vector3;
 	/** Returns a table of parts connected to the object by any kind of rigid joint. */
-	GetConnectedParts(recursive?: boolean): Instances;
+	GetConnectedParts(recursive?: boolean): Instance[];
 	/** Return all Joints or Constraints that is connected to this Part. */
-	GetJoints(): Instances;
+	GetJoints(): Instance[];
 	/** Returns the value of the `Mass` property. */
 	GetMass(): number;
 	/**
@@ -8451,7 +8451,7 @@ interface BasePart extends PVInstance {
 	 * Returns true if the game engine automatically decides the network owner for this part.
 	 */
 	GetNetworkOwnershipAuto(): boolean;
-	GetNoCollisionConstraints(): Instances;
+	GetNoCollisionConstraints(): Instance[];
 	/**
 	 * OBSOLETE. Returns a CFrame describing where the part is being rendered at.
 	 * @deprecated Deprecated.
@@ -8465,7 +8465,7 @@ interface BasePart extends PVInstance {
 	/**
 	 * Returns a table of all `BasePart.CanCollide` true parts that intersect with this part.
 	 */
-	GetTouchingParts(): Instances;
+	GetTouchingParts(): Instance[];
 	/**
 	 * Returns the linear velocity of the part's assembly at the given position relative to this part.
 	 */
@@ -8499,15 +8499,15 @@ interface BasePart extends PVInstance {
 	/**
 	 * Creates a new `IntersectOperation` from the overlapping geometry of the part and the other parts in the given array.
 	 */
-	IntersectAsync(parts?: Instances, collisionfidelity?: Enum.CollisionFidelity, renderFidelity?: Enum.RenderFidelity): Instance;
+	IntersectAsync(parts?: Instance[], collisionfidelity?: Enum.CollisionFidelity, renderFidelity?: Enum.RenderFidelity): Instance;
 	/**
 	 * Creates a new `UnionOperation` from the part, minus the geometry occupied by the parts in the given array.
 	 */
-	SubtractAsync(parts?: Instances, collisionfidelity?: Enum.CollisionFidelity, renderFidelity?: Enum.RenderFidelity): Instance;
+	SubtractAsync(parts?: Instance[], collisionfidelity?: Enum.CollisionFidelity, renderFidelity?: Enum.RenderFidelity): Instance;
 	/**
 	 * Creates a new `UnionOperation` from the part, plus the geometry occupied by the parts in the given array.
 	 */
-	UnionAsync(parts?: Instances, collisionfidelity?: Enum.CollisionFidelity, renderFidelity?: Enum.RenderFidelity): Instance;
+	UnionAsync(parts?: Instance[], collisionfidelity?: Enum.CollisionFidelity, renderFidelity?: Enum.RenderFidelity): Instance;
 	/** @deprecated Deprecated. */
 	readonly LocalSimulationTouched: RBXScriptSignal<(part: BasePart) => void>;
 	/** @deprecated Deprecated. */
@@ -8924,7 +8924,7 @@ interface Camera extends PVInstance {
 	 * Returns how much the `Camera` needs to be pushed towards its `Focus` in order to make sure there is no obstructions between the `Focus` and `CFrame`.
 	 * @deprecated Deprecated.
 	 */
-	GetLargestCutoffDistance(ignoreList?: Instances): number;
+	GetLargestCutoffDistance(ignoreList?: Instance[]): number;
 	/**
 	 * Returns the current 'pan' speed of the `Camera`.
 	 * @deprecated Deprecated.
@@ -8933,7 +8933,7 @@ interface Camera extends PVInstance {
 	/**
 	 * Returns an array of `BaseParts` that are obscuring the lines of sight between the camera's `CFrame` and the cast points.
 	 */
-	GetPartsObscuringTarget(castPoints?: unknown, ignoreList?: Instances): Instances;
+	GetPartsObscuringTarget(castPoints?: unknown, ignoreList?: Instance[]): Instance[];
 	/**
 	 * Returns the actual `CFrame`where the `Camera` is being rendered, accounting for any roll applied and the impact of VR devices.
 	 */
@@ -9039,7 +9039,7 @@ interface Model extends PVInstance {
 	/**
 	 * Returns all the `Player` objects that this model object is persistent for. Behavior varies based on whether this method is called from a `Script` or a `LocalScript`.
 	 */
-	GetPersistentPlayers(): Instances;
+	GetPersistentPlayers(): Instance[];
 	/**
 	 * Returns the `CFrame` of the model's `Model.PrimaryPart`. This function will throw an error if no primary part exists for the `Model`.
 	 * @deprecated Deprecated.
@@ -9182,13 +9182,13 @@ interface Status extends Model {
 /** Base class for handling physics simulation and 3D spatial queries. */
 interface WorldRoot extends Model {
 	/** Returns true if any of the given `BasePart` are touching any other parts. */
-	ArePartsTouchingOthers(partList?: Instances, overlapIgnored?: number): boolean;
+	ArePartsTouchingOthers(partList?: Instance[], overlapIgnored?: number): boolean;
 	/**
 	 * Casts a block shape in a given direction and returns a `RaycastResult` if the shape hits a `BasePart` or `Terrain` cell.
 	 */
 	Blockcast(cframe?: CFrame, size?: Vector3, direction?: Vector3, params?: RaycastParams): RaycastResult?;
 	/** Moves a table of `BaseParts` to a table of `CFrames`. */
-	BulkMoveTo(partList?: Instances, cframeList?: unknown, eventMode?: Enum.BulkMoveMode): undefined;
+	BulkMoveTo(partList?: Instance[], cframeList?: unknown, eventMode?: Enum.BulkMoveMode): undefined;
 	/**
 	 * Returns the first `BasePart` or `Terrain` cell intersecting with the given `Ray`.
 	 * @deprecated Deprecated.
@@ -9198,33 +9198,33 @@ interface WorldRoot extends Model {
 	 * Returns the first `BasePart` or `Terrain` cell intersecting with the given `Ray` that isn't in, nor is a descendant of an object in, the given ignore list.
 	 * @deprecated Deprecated.
 	 */
-	FindPartOnRayWithIgnoreList(ray?: Ray, ignoreDescendantsTable?: Instances, terrainCellsAreCubes?: boolean, ignoreWater?: boolean): unknown;
+	FindPartOnRayWithIgnoreList(ray?: Ray, ignoreDescendantsTable?: Instance[], terrainCellsAreCubes?: boolean, ignoreWater?: boolean): unknown;
 	/**
 	 * Returns the first `BasePart` or `Terrain` cell intersecting with the given `Ray` that is in, or is a descendant of an object in, the given inclusion list.
 	 * @deprecated Deprecated.
 	 */
-	FindPartOnRayWithWhitelist(ray?: Ray, whitelistDescendantsTable?: Instances, ignoreWater?: boolean): unknown;
+	FindPartOnRayWithWhitelist(ray?: Ray, whitelistDescendantsTable?: Instance[], ignoreWater?: boolean): unknown;
 	/**
 	 * Returns an array of `BaseParts` in the given `Region3`.
 	 * @deprecated Deprecated.
 	 */
-	FindPartsInRegion3(region?: Region3, ignoreDescendantsInstance?: Instance, maxParts?: number): Instances;
+	FindPartsInRegion3(region?: Region3, ignoreDescendantsInstance?: Instance, maxParts?: number): Instance[];
 	/**
 	 * Returns an array of `BaseParts` in the given `Region3` that aren't in, or a descendant of an entry in, the given ignore list.
 	 * @deprecated Deprecated.
 	 */
-	FindPartsInRegion3WithIgnoreList(region?: Region3, ignoreDescendantsTable?: Instances, maxParts?: number): Instances;
+	FindPartsInRegion3WithIgnoreList(region?: Region3, ignoreDescendantsTable?: Instance[], maxParts?: number): Instance[];
 	/**
 	 * Returns an array of `BaseParts` in the given `Region3` that are in, or descendant of an entry in, the given inclusion list.
 	 * @deprecated Deprecated.
 	 */
-	FindPartsInRegion3WithWhiteList(region?: Region3, whitelistDescendantsTable?: Instances, maxParts?: number): Instances;
+	FindPartsInRegion3WithWhiteList(region?: Region3, whitelistDescendantsTable?: Instance[], maxParts?: number): Instance[];
 	/** Returns an array of parts whose **bounding boxes** overlap a given box. */
-	GetPartBoundsInBox(cframe?: CFrame, size?: Vector3, overlapParams?: OverlapParams): Instances;
+	GetPartBoundsInBox(cframe?: CFrame, size?: Vector3, overlapParams?: OverlapParams): Instance[];
 	/** Returns an array of parts whose **bounding boxes** overlap a given sphere. */
-	GetPartBoundsInRadius(position?: Vector3, radius?: number, overlapParams?: OverlapParams): Instances;
+	GetPartBoundsInRadius(position?: Vector3, radius?: number, overlapParams?: OverlapParams): Instance[];
 	/** Returns an array of parts whose occupied space is shared with the given part. */
-	GetPartsInPart(part?: BasePart, overlapParams?: OverlapParams): Instances;
+	GetPartsInPart(part?: BasePart, overlapParams?: OverlapParams): Instance[];
 	/**
 	 * Moves the specified part to the specified location via inverse kinematics rather than moving it there directly, to ensure any joints, constraints, or collisions that part is participating in remain physically satisfied.
 	 */
@@ -9238,7 +9238,7 @@ interface WorldRoot extends Model {
 	 * Returns a boolean indicating whether there are no `BaseParts` within the given `Region3`, ignoring any `BaseParts` that are descendants of the objects within the given ignore list.
 	 * @deprecated Deprecated.
 	 */
-	IsRegion3EmptyWithIgnoreList(region?: Region3, ignoreDescendentsTable?: Instances): boolean;
+	IsRegion3EmptyWithIgnoreList(region?: Region3, ignoreDescendentsTable?: Instance[]): boolean;
 	/**
 	 * Casts a ray using an origin, direction, and optional `RaycastParams`, then returns a `RaycastResult` if an eligible object or terrain intersects the ray.
 	 */
@@ -9251,11 +9251,11 @@ interface WorldRoot extends Model {
 	/**
 	 * Advances the simulation for parts in the world forward based on a specified time increment and an optional set of `BaseParts`.
 	 */
-	StepPhysics(dt?: number, parts?: Instances): undefined;
+	StepPhysics(dt?: number, parts?: Instance[]): undefined;
 	/** @deprecated Deprecated. */
 	findPartOnRay(ray?: Ray, ignoreDescendantsInstance?: Instance, terrainCellsAreCubes?: boolean, ignoreWater?: boolean): unknown;
 	/** @deprecated Deprecated. */
-	findPartsInRegion3(region?: Region3, ignoreDescendantsInstance?: Instance, maxParts?: number): Instances;
+	findPartsInRegion3(region?: Region3, ignoreDescendantsInstance?: Instance, maxParts?: number): Instance[];
 }
 
 /**
@@ -9298,7 +9298,7 @@ interface Workspace extends WorldRoot {
 	 * Goes through all `BaseParts` given, breaking any joints connected to these parts.
 	 * @deprecated Deprecated.
 	 */
-	BreakJoints(objects?: Instances): undefined;
+	BreakJoints(objects?: Instance[]): undefined;
 	/**
 	 * Returns the number of `BaseParts` that are deemed physically active, due to being recently under the influence of physics.
 	 */
@@ -9316,16 +9316,16 @@ interface Workspace extends WorldRoot {
 	/**
 	 * Creates joints between the specified `Parts` and any touching parts depending on the parts' surfaces and the specified joint creation mode.
 	 */
-	JoinToOutsiders(objects?: Instances, jointType?: Enum.JointCreationMode): undefined;
+	JoinToOutsiders(objects?: Instance[], jointType?: Enum.JointCreationMode): undefined;
 	/**
 	 * Goes through all `BaseParts` given. If any part's side has a `Enum.SurfaceType` that can make a joint it will create a joint with any adjacent parts.
 	 * @deprecated Deprecated.
 	 */
-	MakeJoints(objects?: Instances): undefined;
+	MakeJoints(objects?: Instance[]): undefined;
 	/** Returns `true` if the game has the PGS Physics solver enabled. */
 	PGSIsEnabled(): boolean;
 	/** Breaks all joints between the specified `BaseParts` and other `BaseParts`. */
-	UnjoinFromOutsiders(objects?: Instances): undefined;
+	UnjoinFromOutsiders(objects?: Instance[]): undefined;
 	/**
 	 * Positions and zooms the `Workspace.CurrentCamera` to show the extent of `BaseParts` currently in the `Workspace`.
 	 */
@@ -10192,7 +10192,7 @@ interface Players extends Instance {
 	 */
 	GetPlayerFromCharacter(character?: Model): Player;
 	/** Returns a table of all presently connected `Player` objects. */
-	GetPlayers(): Instances;
+	GetPlayers(): Instance[];
 	/**
 	 * Sets whether BubbleChat and ClassicChat are being used, and tells TeamChat and `Chat` what to do.
 	 */
@@ -10202,14 +10202,14 @@ interface Players extends Instance {
 	 */
 	TeamChat(message?: string): undefined;
 	/** @deprecated Deprecated. */
-	getPlayers(): Instances;
+	getPlayers(): Instance[];
 	/** @deprecated Deprecated. */
 	playerFromCharacter(character?: Model): Player;
 	/**
 	 * Returns a list of players in an experience.
 	 * @deprecated Deprecated.
 	 */
-	players(): Instances;
+	players(): Instance[];
 	/**
 	 * Bans users from your experience, with options to specify duration, reason, whether the ban applies to the entire universe or just the current place, and more. This method is enabled and disabled by the `Players.BanningEnabled` property, which you can toggle in Studio.
 	 */
@@ -10328,7 +10328,7 @@ interface Plugin extends Instance {
 	 */
 	GetStudioUserId(): number;
 	/** Intersects the given parts and returns the resulting `IntersectOperation`. */
-	Intersect(objects?: Instances): Instance;
+	Intersect(objects?: Instance[]): Instance;
 	/**
 	 * Returns `true` if this plugin is currently active, after having been activated via the `Activate()` function.
 	 */
@@ -10336,7 +10336,7 @@ interface Plugin extends Instance {
 	/** Returns `true` if this plugin is currently active with an exclusive mouse. */
 	IsActivatedWithExclusiveMouse(): boolean;
 	/** Negates the given parts and returns the resulting `NegateOperations`. */
-	Negate(objects?: Instances): Instances;
+	Negate(objects?: Instance[]): Instance[];
 	/**
 	 * Used to open the given script instance in an editor window, in Roblox studio, at the given line. If no line is given as an argument it will default to 1.
 	 * @deprecated Deprecated.
@@ -10349,7 +10349,7 @@ interface Plugin extends Instance {
 	/** Activates the specified Roblox Studio tool. */
 	SelectRibbonTool(tool?: Enum.RibbonTool, position?: UDim2): undefined;
 	/** Separates the given `UnionOperations` and returns the resulting parts. */
-	Separate(objects?: Instances): Instances;
+	Separate(objects?: Instance[]): Instance[];
 	/**
 	 * Stores a given value for later use under the given key. The value will persist even after Studio is closed.
 	 */
@@ -10357,7 +10357,7 @@ interface Plugin extends Instance {
 	/** Starts a drag action given a dictionary of parameters. */
 	StartDrag(dragData?: unknown): undefined;
 	/** Unions the given parts and returns the resulting `UnionOperation`. */
-	Union(objects?: Instances): Instance;
+	Union(objects?: Instance[]): Instance;
 	/**
 	 * Creates a `DockWidgetPluginGui` given a `DockWidgetPluginGuiInfo`.
 	 * @deprecated Deprecated.
@@ -10583,7 +10583,7 @@ interface Pose extends PoseBase {
 	/** Adds a sub `Pose` to the `Pose` by parenting it. */
 	AddSubPose(pose?: Instance): undefined;
 	/** Returns an array containing all sub `Poses` that have been added to a `Pose`. */
-	GetSubPoses(): Instances;
+	GetSubPoses(): Instance[];
 	/** Removes a sub `Pose` from the `Pose` by parenting it to `nil`. */
 	RemoveSubPose(pose?: Instance): undefined;
 }
@@ -11198,13 +11198,13 @@ interface ScriptDebugger extends Instance {
 	IsPaused: boolean;
 	Script: Instance;
 	AddWatch(expression: string): Instance;
-	GetBreakpoints(): Instances;
+	GetBreakpoints(): Instance[];
 	GetGlobals(stackFrame?: number): unknown;
 	GetLocals(stackFrame?: number): unknown;
 	GetStack(): unknown;
 	GetUpvalues(stackFrame?: number): unknown;
 	GetWatchValue(watch: Instance): unknown;
-	GetWatches(): Instances;
+	GetWatches(): Instance[];
 	SetBreakpoint(line: number, isContextDependentBreakpoint: boolean): Instance;
 	SetGlobal(name: string, value: unknown, stackFrame: number): undefined;
 	SetLocal(name: string, value: unknown, stackFrame?: number): undefined;
@@ -11288,7 +11288,7 @@ interface ScriptEditorService extends Instance {
 	/**
 	 * Returns an array of the currently open script documents, including the command bar.
 	 */
-	GetScriptDocuments(): Instances;
+	GetScriptDocuments(): Instance[];
 	/**
 	 * Registers an autocomplete callback `callbackFunction` named `name` with priority `priority`.
 	 */
@@ -11345,14 +11345,14 @@ interface ScriptService extends Instance {
  */
 interface Selection extends Instance {
 	SelectionThickness: number;
-	Add(instancesToAdd?: Instances): undefined;
+	Add(instancesToAdd?: Instance[]): undefined;
 	/** Returns an array of currently selected `Instances` in Roblox Studio. */
-	Get(): Instances;
-	Remove(instancesToRemove?: Instances): undefined;
+	Get(): Instance[];
+	Remove(instancesToRemove?: Instance[]): undefined;
 	/**
 	 * Sets the currently selected objects in Roblox Studio to `Instances` in the given array.
 	 */
-	Set(selection?: Instances): undefined;
+	Set(selection?: Instance[]): undefined;
 	/** Fires when the `Instances` selected in Roblox Studio changes. */
 	readonly SelectionChanged: RBXScriptSignal<() => void>;
 }
@@ -11436,11 +11436,11 @@ interface SerializationService extends Instance {
 	/**
 	 * Deserializes a `Library.buffer` containing `.rbxm` content, returning a list of `instances`.
 	 */
-	DeserializeInstancesAsync(buffer?: buffer): Instances;
+	DeserializeInstancesAsync(buffer?: buffer): Instance[];
 	/**
 	 * Serializes a list of `instances` to the `.rbxm` format, returning a `Library.buffer` or `.rbxm` content.
 	 */
-	SerializeInstancesAsync(inputInstances?: Instances): buffer;
+	SerializeInstancesAsync(inputInstances?: Instance[]): buffer;
 }
 
 /** A container service for server-only `Script` objects. */
@@ -11550,7 +11550,7 @@ interface DataModel extends ServiceProvider {
 	/** Returns true if the client has finished loading the game for the first time. */
 	IsLoaded(): boolean;
 	/** Returns an array of `Instances` associated with the given content URL. */
-	GetObjects(url?: ContentId): Instances;
+	GetObjects(url?: ContentId): Instance[];
 	/** Sets the `DataModel.PlaceId` of the current game instance. */
 	SetPlaceId(placeId?: number): undefined;
 	/**
@@ -11705,7 +11705,7 @@ interface SocialService extends Instance {
 	/**
 	 * Returns a table of all presently connected `Player` objects whose `Player.PartyId` property matches the passed `partyId`.
 	 */
-	GetPlayersByPartyId(partyId?: string): Instances;
+	GetPlayersByPartyId(partyId?: string): Instance[];
 	/** Hides the calling player's self view. */
 	HideSelfView(): undefined;
 	/** Prompts the given `Player` with the invite screen. */
@@ -12030,11 +12030,11 @@ interface SoundService extends Instance {
 	/**
 	 * Opens the attenuation curve editor in Studio for the provided `AudioEmitter` or `AudioListener` instances.
 	 */
-	OpenAttenuationCurveEditor(selectedCurveObjects?: Instances): undefined;
+	OpenAttenuationCurveEditor(selectedCurveObjects?: Instance[]): undefined;
 	/**
 	 * Opens the directional curve editor in Studio for the provided `AudioEmitter` or `AudioListener` instances.
 	 */
-	OpenDirectionalCurveEditor(selectedCurveObjects?: Instances): undefined;
+	OpenDirectionalCurveEditor(selectedCurveObjects?: Instance[]): undefined;
 	/**
 	 * Plays a copy of a `Sound` locally, such that it will only be heard by the client calling this method.
 	 */
@@ -12572,9 +12572,9 @@ interface StudioService extends Instance {
 	 * Prompts the current Studio user to select files to add as `Files`.
 	 * @deprecated Deprecated.
 	 */
-	PromptImportFiles(fileTypeFilter?: unknown): Instances;
+	PromptImportFiles(fileTypeFilter?: unknown): Instance[];
 	/** Prompts the current Studio user to select files to add as `Files`. */
-	PromptImportFilesAsync(fileTypeFilter?: unknown): Instances;
+	PromptImportFilesAsync(fileTypeFilter?: unknown): Instance[];
 }
 
 /** Service allowing plugins to automate and customize Test and Run mode testing. */
@@ -12599,13 +12599,13 @@ interface StudioWidgetsService extends Instance {
 /** The base class for `StyleSheet` and `StyleRule`. */
 interface StyleBase extends Instance {
 	/** Returns an array of associated `StyleRules`. */
-	GetStyleRules(): Instances;
+	GetStyleRules(): Instance[];
 	/** Inserts a new `StyleRule` into the array of rules. */
 	InsertStyleRule(rule?: StyleRule, priority?: unknown): undefined;
 	/**
 	 * Similar to `InsertStyleRule()` but lets you declare and set multiple `StyleRules` at once.
 	 */
-	SetStyleRules(rules?: Instances): undefined;
+	SetStyleRules(rules?: Instance[]): undefined;
 	/**
 	 * Fires when one or more `StyleRules` is explicitly changed on the connected `StyleSheet` or `StyleRule`.
 	 */
@@ -12644,11 +12644,11 @@ interface StyleSheet extends StyleBase {
 	/**
 	 * Returns an array of other `StyleSheets` from which the `StyleSheet` is deriving `StyleRules` and token definitions.
 	 */
-	GetDerives(): Instances;
+	GetDerives(): Instance[];
 	/**
 	 * Sets the `StyleSheet` to derive `StyleRules` and token definitions from one or more other `StyleSheets`.
 	 */
-	SetDerives(derives?: Instances): undefined;
+	SetDerives(derives?: Instance[]): undefined;
 }
 
 /**
@@ -12754,7 +12754,7 @@ interface Team extends Instance {
 	/**
 	 * Returns a list of `Players` who are assigned to the `Team`. A `Player` is considered assigned if their `Player.Team` property is equal to the `Team` and `Player.Neutral` is false.
 	 */
-	GetPlayers(): Instances;
+	GetPlayers(): Instance[];
 	/**
 	 * Fires whenever a `Player` is assigned to the `Team`. A player is considered assigned if their `Player.Team` property is equal to the `Team` and `Player.Neutral` is false.
 	 */
@@ -12781,7 +12781,7 @@ interface Teams extends Instance {
 	/**
 	 * Returns a table containing the game's `Team` objects. Will only return `Team` objects that are parented to the `Teams` service.
 	 */
-	GetTeams(): Instances;
+	GetTeams(): Instance[];
 	/**
 	 * Evens the number of people on each team. This function does not work correctly and should not be used.
 	 * @deprecated Deprecated.
@@ -12862,7 +12862,7 @@ interface TeleportService extends Instance {
 	/**
 	 * Teleport a group of `Players` to a reserved server created using `TeleportService:ReserveServerAsync()`.
 	 */
-	TeleportToPrivateServer(placeId?: number, reservedServerAccessCode?: string, players?: Instances, spawnName?: string, teleportData?: unknown, customLoadingScreen?: Instance): undefined;
+	TeleportToPrivateServer(placeId?: number, reservedServerAccessCode?: string, players?: Instance[], spawnName?: string, teleportData?: unknown, customLoadingScreen?: Instance): undefined;
 	/**
 	 * A variant of `TeleportService:Teleport()` that causes the `Player` to spawn at a `SpawnLocation` of the given name at the destination place.
 	 */
@@ -12887,11 +12887,11 @@ interface TeleportService extends Instance {
 	/**
 	 * The all-encompassing method to teleport a player or group of players from one server to another.
 	 */
-	TeleportAsync(placeId?: number, players?: Instances, teleportOptions?: Instance): Instance;
+	TeleportAsync(placeId?: number, players?: Instance[], teleportOptions?: Instance): Instance;
 	/**
 	 * Teleports a group of `Players` to the same server of the place with the given `PlaceId`, returning the `JobId` of the server instance they were teleported to.
 	 */
-	TeleportPartyAsync(placeId?: number, players?: Instances, teleportData?: unknown, customLoadingScreen?: Instance): string;
+	TeleportPartyAsync(placeId?: number, players?: Instance[], teleportData?: unknown, customLoadingScreen?: Instance): string;
 	/** Fires when the `LocalPlayer` enters the place following a teleport. */
 	readonly LocalPlayerArrivedFromTeleport: RBXScriptSignal<(loadingGui: Instance, dataTable: unknown) => void>;
 	/**
@@ -13323,7 +13323,7 @@ interface TextChatService extends Instance {
 	/**
 	 * Returns chat group IDs that indicate which players can synchronously text chat together.
 	 */
-	GetChatGroupsAsync(players?: Instances): unknown;
+	GetChatGroupsAsync(players?: Instance[]): unknown;
 	/** Fires when `TextChatService:DisplayBubble()` is called. */
 	readonly BubbleDisplayed: RBXScriptSignal<(partOrCharacter: Instance, textChatMessage: TextChatMessage) => void>;
 	/**
@@ -14108,19 +14108,19 @@ interface UserInputService extends Instance {
 	/**
 	 * Returns an array of `InputObjects` for all available inputs on the given gamepad, representing each input's last input state.
 	 */
-	GetGamepadState(gamepadNum?: Enum.UserInputType): Instances;
+	GetGamepadState(gamepadNum?: Enum.UserInputType): Instance[];
 	/** Returns an image for the requested `Enum.KeyCode`. */
 	GetImageForKeyCode(keyCode?: Enum.KeyCode): ContentId;
 	/**
 	 * Returns an array of `InputObjects` associated with the `keys` currently being pressed down.
 	 */
-	GetKeysPressed(): Instances;
+	GetKeysPressed(): Instance[];
 	/** Returns the `Enum.UserInputType` associated with the user's most recent input. */
 	GetLastInputType(): Enum.UserInputType;
 	/**
 	 * Returns an array of `InputObjects` associated with the mouse buttons currently being held down.
 	 */
-	GetMouseButtonsPressed(): Instances;
+	GetMouseButtonsPressed(): Instance[];
 	/**
 	 * Returns the change, in pixels, of the position of the player's `Mouse` in the last rendered frame. Only works if the mouse is locked.
 	 */
@@ -14535,7 +14535,7 @@ interface VideoPlayer extends Instance {
 	/** Controls how loudly the audio track will be played. */
 	Volume: number;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
-	GetConnectedWires(pin?: string): Instances;
+	GetConnectedWires(pin?: string): Instance[];
 	/**
 	 * Gets the list of pins that `Wire` can use in `Wire.TargetName` to connect to this instance via its `Wire.TargetInstance` property.
 	 */
@@ -14653,7 +14653,7 @@ interface VoiceChatService extends Instance {
 	 */
 	UseAudioApi: Enum.AudioApiRollout;
 	/** Returns chat group IDs that indicate which players can voice chat together. */
-	GetChatGroupsAsync(players?: Instances): unknown;
+	GetChatGroupsAsync(players?: Instance[]): unknown;
 	/** Returns whether or not the given user has voice enabled. */
 	IsVoiceEnabledForUserIdAsync(userId?: number): boolean;
 }
@@ -15398,4 +15398,877 @@ interface CheckableServices {
 interface ServiceProvider {
 	/** Returns the service with the requested class name, creating it if it does not exist. */
 	GetService<T extends keyof CheckableServices>(className: T): CheckableServices[T];
+}
+
+interface CheckableInstances {
+	Object: Object;
+	AnimationNode: AnimationNode;
+	Capture: Capture;
+	ScreenshotCapture: ScreenshotCapture;
+	VideoCapture: VideoCapture;
+	ConfigSnapshot: ConfigSnapshot;
+	EditableImage: EditableImage;
+	EditableMesh: EditableMesh;
+	ExecutedRemoteCommand: ExecutedRemoteCommand;
+	Instance: Instance;
+	AccessoryDescription: AccessoryDescription;
+	AccountService: AccountService;
+	Accoutrement: Accoutrement;
+	Accessory: Accessory;
+	Hat: Hat;
+	AchievementService: AchievementService;
+	ActivityHistoryEventService: ActivityHistoryEventService;
+	AdPortal: AdPortal;
+	AdService: AdService;
+	AdvancedDragger: AdvancedDragger;
+	AnalyticsService: AnalyticsService;
+	Animation: Animation;
+	AnimationClip: AnimationClip;
+	AnimationGraphDefinition: AnimationGraphDefinition;
+	CurveAnimation: CurveAnimation;
+	KeyframeSequence: KeyframeSequence;
+	AnimationClipProvider: AnimationClipProvider;
+	AnimationController: AnimationController;
+	AnimationFromVideoCreatorService: AnimationFromVideoCreatorService;
+	AnimationFromVideoCreatorStudioService: AnimationFromVideoCreatorStudioService;
+	AnimationNodeDefinition: AnimationNodeDefinition;
+	AnimationRigData: AnimationRigData;
+	AnimationStreamTrack: AnimationStreamTrack;
+	AnimationTrack: AnimationTrack;
+	Animator: Animator;
+	Annotation: Annotation;
+	WorkspaceAnnotation: WorkspaceAnnotation;
+	AnnotationsService: AnnotationsService;
+	AppLifecycleObserverService: AppLifecycleObserverService;
+	AppRatingPromptService: AppRatingPromptService;
+	AppUpdateService: AppUpdateService;
+	AssetCounterService: AssetCounterService;
+	AssetDeliveryProxy: AssetDeliveryProxy;
+	AssetImportService: AssetImportService;
+	AssetManagerService: AssetManagerService;
+	AssetPatchSettings: AssetPatchSettings;
+	AssetQualityService: AssetQualityService;
+	AssetService: AssetService;
+	Atmosphere: Atmosphere;
+	Attachment: Attachment;
+	Bone: Bone;
+	AudioAnalyzer: AudioAnalyzer;
+	AudioChannelMixer: AudioChannelMixer;
+	AudioChannelSplitter: AudioChannelSplitter;
+	AudioChorus: AudioChorus;
+	AudioCompressor: AudioCompressor;
+	AudioDeviceInput: AudioDeviceInput;
+	AudioDeviceOutput: AudioDeviceOutput;
+	AudioDistortion: AudioDistortion;
+	AudioEcho: AudioEcho;
+	AudioEmitter: AudioEmitter;
+	AudioEqualizer: AudioEqualizer;
+	AudioFader: AudioFader;
+	AudioFilter: AudioFilter;
+	AudioFlanger: AudioFlanger;
+	AudioFocusService: AudioFocusService;
+	AudioGate: AudioGate;
+	AudioLimiter: AudioLimiter;
+	AudioListener: AudioListener;
+	AudioPitchShifter: AudioPitchShifter;
+	AudioPlayer: AudioPlayer;
+	AudioRecorder: AudioRecorder;
+	AudioReverb: AudioReverb;
+	AudioSearchParams: AudioSearchParams;
+	AudioSpeechToText: AudioSpeechToText;
+	AudioTextToSpeech: AudioTextToSpeech;
+	AudioTremolo: AudioTremolo;
+	AuroraScriptObject: AuroraScriptObject;
+	AvatarAccessoryRules: AvatarAccessoryRules;
+	AvatarAnimationRules: AvatarAnimationRules;
+	AvatarBodyRules: AvatarBodyRules;
+	AvatarChatService: AvatarChatService;
+	AvatarClothingRules: AvatarClothingRules;
+	AvatarCollisionRules: AvatarCollisionRules;
+	AvatarCreationService: AvatarCreationService;
+	AvatarEditorService: AvatarEditorService;
+	AvatarImportService: AvatarImportService;
+	AvatarRules: AvatarRules;
+	AvatarSettings: AvatarSettings;
+	Backpack: Backpack;
+	BadgeService: BadgeService;
+	BaseCoreGuiConfiguration: BaseCoreGuiConfiguration;
+	CapturesViewConfiguration: CapturesViewConfiguration;
+	PlayerListConfiguration: PlayerListConfiguration;
+	SelfViewConfiguration: SelfViewConfiguration;
+	BaseImportData: BaseImportData;
+	AnimationImportData: AnimationImportData;
+	FacsImportData: FacsImportData;
+	GroupImportData: GroupImportData;
+	JointImportData: JointImportData;
+	MaterialImportData: MaterialImportData;
+	MeshImportData: MeshImportData;
+	RootImportData: RootImportData;
+	BasePlayerGui: BasePlayerGui;
+	CoreGui: CoreGui;
+	PlayerGui: PlayerGui;
+	StarterGui: StarterGui;
+	BaseRemoteEvent: BaseRemoteEvent;
+	RemoteEvent: RemoteEvent;
+	UnreliableRemoteEvent: UnreliableRemoteEvent;
+	BaseWrap: BaseWrap;
+	WrapDeformer: WrapDeformer;
+	WrapLayer: WrapLayer;
+	WrapTarget: WrapTarget;
+	Beam: Beam;
+	BindableEvent: BindableEvent;
+	BindableFunction: BindableFunction;
+	BodyMover: BodyMover;
+	BodyAngularVelocity: BodyAngularVelocity;
+	BodyForce: BodyForce;
+	BodyGyro: BodyGyro;
+	BodyPosition: BodyPosition;
+	BodyThrust: BodyThrust;
+	BodyVelocity: BodyVelocity;
+	RocketPropulsion: RocketPropulsion;
+	BodyPartDescription: BodyPartDescription;
+	Breakpoint: Breakpoint;
+	BrowserService: BrowserService;
+	BugReporterService: BugReporterService;
+	BulkImportService: BulkImportService;
+	CacheableContentProvider: CacheableContentProvider;
+	HSRDataContentProvider: HSRDataContentProvider;
+	MeshContentProvider: MeshContentProvider;
+	SlimContentProvider: SlimContentProvider;
+	SolidModelContentProvider: SolidModelContentProvider;
+	CalloutService: CalloutService;
+	CaptureService: CaptureService;
+	ChangeHistoryService: ChangeHistoryService;
+	ChangeHistoryStreamingService: ChangeHistoryStreamingService;
+	CharacterAppearance: CharacterAppearance;
+	BodyColors: BodyColors;
+	CharacterMesh: CharacterMesh;
+	Clothing: Clothing;
+	Pants: Pants;
+	Shirt: Shirt;
+	ShirtGraphic: ShirtGraphic;
+	Skin: Skin;
+	Chat: Chat;
+	ClickDetector: ClickDetector;
+	DragDetector: DragDetector;
+	CloudCRUDService: CloudCRUDService;
+	Clouds: Clouds;
+	ClusterPacketCache: ClusterPacketCache;
+	Collaborator: Collaborator;
+	CollaboratorsService: CollaboratorsService;
+	CollectionService: CollectionService;
+	CommerceService: CommerceService;
+	CompositeValueCurve: CompositeValueCurve;
+	ConfigService: ConfigService;
+	Configuration: Configuration;
+	ConfigureServerService: ConfigureServerService;
+	ConnectivityService: ConnectivityService;
+	Constraint: Constraint;
+	AlignOrientation: AlignOrientation;
+	AlignPosition: AlignPosition;
+	AngularVelocity: AngularVelocity;
+	AnimationConstraint: AnimationConstraint;
+	BallSocketConstraint: BallSocketConstraint;
+	HingeConstraint: HingeConstraint;
+	LineForce: LineForce;
+	LinearVelocity: LinearVelocity;
+	PlaneConstraint: PlaneConstraint;
+	Plane: Plane;
+	RigidConstraint: RigidConstraint;
+	RodConstraint: RodConstraint;
+	RopeConstraint: RopeConstraint;
+	SlidingBallConstraint: SlidingBallConstraint;
+	CylindricalConstraint: CylindricalConstraint;
+	PrismaticConstraint: PrismaticConstraint;
+	SpringConstraint: SpringConstraint;
+	Torque: Torque;
+	TorsionSpringConstraint: TorsionSpringConstraint;
+	UniversalConstraint: UniversalConstraint;
+	VectorForce: VectorForce;
+	ContentProvider: ContentProvider;
+	ContextActionService: ContextActionService;
+	Controller: Controller;
+	HumanoidController: HumanoidController;
+	SkateboardController: SkateboardController;
+	VehicleController: VehicleController;
+	ControllerBase: ControllerBase;
+	AirController: AirController;
+	ClimbController: ClimbController;
+	GroundController: GroundController;
+	SwimController: SwimController;
+	ControllerManager: ControllerManager;
+	ControllerService: ControllerService;
+	ConversationalAIAcceptanceService: ConversationalAIAcceptanceService;
+	CookiesService: CookiesService;
+	CoreGuiConfiguration: CoreGuiConfiguration;
+	CorePackages: CorePackages;
+	CoreScriptDebuggingManagerHelper: CoreScriptDebuggingManagerHelper;
+	CoreScriptSyncService: CoreScriptSyncService;
+	CreationDBService: CreationDBService;
+	CreatorStoreService: CreatorStoreService;
+	CrossDMScriptChangeListener: CrossDMScriptChangeListener;
+	CustomEvent: CustomEvent;
+	CustomEventReceiver: CustomEventReceiver;
+	CustomLog: CustomLog;
+	DataModelMesh: DataModelMesh;
+	BevelMesh: BevelMesh;
+	BlockMesh: BlockMesh;
+	CylinderMesh: CylinderMesh;
+	FileMesh: FileMesh;
+	SpecialMesh: SpecialMesh;
+	DataModelPatchService: DataModelPatchService;
+	DataModelSession: DataModelSession;
+	DataStoreGetOptions: DataStoreGetOptions;
+	DataStoreIncrementOptions: DataStoreIncrementOptions;
+	DataStoreInfo: DataStoreInfo;
+	DataStoreKey: DataStoreKey;
+	DataStoreKeyInfo: DataStoreKeyInfo;
+	DataStoreObjectVersionInfo: DataStoreObjectVersionInfo;
+	DataStoreOptions: DataStoreOptions;
+	DataStoreService: DataStoreService;
+	DataStoreSetOptions: DataStoreSetOptions;
+	Debris: Debris;
+	DebugSettings: DebugSettings;
+	DebuggablePluginWatcher: DebuggablePluginWatcher;
+	DebuggerBreakpoint: DebuggerBreakpoint;
+	DebuggerConnection: DebuggerConnection;
+	LocalDebuggerConnection: LocalDebuggerConnection;
+	DebuggerConnectionManager: DebuggerConnectionManager;
+	DebuggerLuaResponse: DebuggerLuaResponse;
+	DebuggerManager: DebuggerManager;
+	DebuggerUIService: DebuggerUIService;
+	DebuggerVariable: DebuggerVariable;
+	DebuggerWatch: DebuggerWatch;
+	DeviceIdService: DeviceIdService;
+	Dialog: Dialog;
+	DialogChoice: DialogChoice;
+	DraftsService: DraftsService;
+	Dragger: Dragger;
+	DraggerService: DraggerService;
+	EditableService: EditableService;
+	EncodingService: EncodingService;
+	EulerRotationCurve: EulerRotationCurve;
+	EventIngestService: EventIngestService;
+	ExampleV2Service: ExampleV2Service;
+	ExperienceAuthService: ExperienceAuthService;
+	ExperienceInviteOptions: ExperienceInviteOptions;
+	ExperienceNotificationService: ExperienceNotificationService;
+	ExperienceService: ExperienceService;
+	ExperienceStateCaptureService: ExperienceStateCaptureService;
+	ExperienceStateRecordingService: ExperienceStateRecordingService;
+	ExplorerFilter: ExplorerFilter;
+	ExplorerFilterAutocompleter: ExplorerFilterAutocompleter;
+	ExplorerServiceVisibilityService: ExplorerServiceVisibilityService;
+	Explosion: Explosion;
+	FaceAnimatorService: FaceAnimatorService;
+	FaceControls: FaceControls;
+	FaceInstance: FaceInstance;
+	Decal: Decal;
+	Texture: Texture;
+	FacialAgeEstimationService: FacialAgeEstimationService;
+	FacialAnimationRecordingService: FacialAnimationRecordingService;
+	FacialAnimationStreamingServiceStats: FacialAnimationStreamingServiceStats;
+	FacialAnimationStreamingServiceV2: FacialAnimationStreamingServiceV2;
+	FacialAnimationStreamingSubsessionStats: FacialAnimationStreamingSubsessionStats;
+	Feature: Feature;
+	Hole: Hole;
+	MotorFeature: MotorFeature;
+	FeatureRestrictionManager: FeatureRestrictionManager;
+	File: File;
+	FileManagerService: FileManagerService;
+	Fire: Fire;
+	FlagStandService: FlagStandService;
+	FloatCurve: FloatCurve;
+	FlyweightService: FlyweightService;
+	CSGDictionaryService: CSGDictionaryService;
+	NonReplicatedCSGDictionaryService: NonReplicatedCSGDictionaryService;
+	Folder: Folder;
+	ForceField: ForceField;
+	FriendService: FriendService;
+	FunctionalTest: FunctionalTest;
+	GamePassService: GamePassService;
+	GameSettings: GameSettings;
+	GamepadService: GamepadService;
+	GenerationService: GenerationService;
+	GenericChallengeService: GenericChallengeService;
+	Geometry: Geometry;
+	GeometryService: GeometryService;
+	GetTextBoundsParams: GetTextBoundsParams;
+	GlobalDataStore: GlobalDataStore;
+	DataStore: DataStore;
+	OrderedDataStore: OrderedDataStore;
+	GroupService: GroupService;
+	GuiBase: GuiBase;
+	GuiBase2d: GuiBase2d;
+	GuiObject: GuiObject;
+	CanvasGroup: CanvasGroup;
+	Frame: Frame;
+	GuiButton: GuiButton;
+	ImageButton: ImageButton;
+	TextButton: TextButton;
+	GuiLabel: GuiLabel;
+	ImageLabel: ImageLabel;
+	TextLabel: TextLabel;
+	RelativeGui: RelativeGui;
+	ScrollingFrame: ScrollingFrame;
+	TextBox: TextBox;
+	VideoDisplay: VideoDisplay;
+	VideoFrame: VideoFrame;
+	ViewportFrame: ViewportFrame;
+	LayerCollector: LayerCollector;
+	BillboardGui: BillboardGui;
+	PluginGui: PluginGui;
+	DockWidgetPluginGui: DockWidgetPluginGui;
+	QWidgetPluginGui: QWidgetPluginGui;
+	ScreenGui: ScreenGui;
+	GuiMain: GuiMain;
+	SurfaceGuiBase: SurfaceGuiBase;
+	AdGui: AdGui;
+	SurfaceGui: SurfaceGui;
+	GuiBase3d: GuiBase3d;
+	FloorWire: FloorWire;
+	InstanceAdornment: InstanceAdornment;
+	SelectionBox: SelectionBox;
+	PVAdornment: PVAdornment;
+	HandleAdornment: HandleAdornment;
+	BoxHandleAdornment: BoxHandleAdornment;
+	ConeHandleAdornment: ConeHandleAdornment;
+	CylinderHandleAdornment: CylinderHandleAdornment;
+	ImageHandleAdornment: ImageHandleAdornment;
+	LineHandleAdornment: LineHandleAdornment;
+	PyramidHandleAdornment: PyramidHandleAdornment;
+	SphereHandleAdornment: SphereHandleAdornment;
+	WireframeHandleAdornment: WireframeHandleAdornment;
+	ParabolaAdornment: ParabolaAdornment;
+	SelectionSphere: SelectionSphere;
+	PartAdornment: PartAdornment;
+	HandlesBase: HandlesBase;
+	ArcHandles: ArcHandles;
+	Handles: Handles;
+	SurfaceSelection: SurfaceSelection;
+	SelectionLasso: SelectionLasso;
+	SelectionPartLasso: SelectionPartLasso;
+	SelectionPointLasso: SelectionPointLasso;
+	Path2D: Path2D;
+	GuiService: GuiService;
+	GuidRegistryService: GuidRegistryService;
+	HandRigDescription: HandRigDescription;
+	HapticEffect: HapticEffect;
+	HapticService: HapticService;
+	HarmonyService: HarmonyService;
+	HeapProfilerService: HeapProfilerService;
+	HeatmapService: HeatmapService;
+	HeightmapImporterService: HeightmapImporterService;
+	HiddenSurfaceRemovalAsset: HiddenSurfaceRemovalAsset;
+	Highlight: Highlight;
+	Hopper: Hopper;
+	HttpRbxApiService: HttpRbxApiService;
+	HttpRequest: HttpRequest;
+	HttpService: HttpService;
+	Humanoid: Humanoid;
+	HumanoidDescription: HumanoidDescription;
+	HumanoidRigDescription: HumanoidRigDescription;
+	IKControl: IKControl;
+	ILegacyStudioBridge: ILegacyStudioBridge;
+	LegacyStudioBridge: LegacyStudioBridge;
+	IXPService: IXPService;
+	ImportSession: ImportSession;
+	AssetImportSession: AssetImportSession;
+	IncrementalPatchBuilder: IncrementalPatchBuilder;
+	InputAction: InputAction;
+	InputBinding: InputBinding;
+	InputContext: InputContext;
+	InputObject: InputObject;
+	InsertService: InsertService;
+	InstanceExtensionsService: InstanceExtensionsService;
+	InstanceFileSyncService: InstanceFileSyncService;
+	JointInstance: JointInstance;
+	DynamicRotate: DynamicRotate;
+	RotateP: RotateP;
+	RotateV: RotateV;
+	Glue: Glue;
+	ManualSurfaceJointInstance: ManualSurfaceJointInstance;
+	ManualGlue: ManualGlue;
+	ManualWeld: ManualWeld;
+	Motor: Motor;
+	Motor6D: Motor6D;
+	Rotate: Rotate;
+	Snap: Snap;
+	VelocityMotor: VelocityMotor;
+	Weld: Weld;
+	JointsService: JointsService;
+	KeyboardService: KeyboardService;
+	Keyframe: Keyframe;
+	KeyframeMarker: KeyframeMarker;
+	KeyframeSequenceProvider: KeyframeSequenceProvider;
+	LSPFileSyncService: LSPFileSyncService;
+	LanguageService: LanguageService;
+	Light: Light;
+	PointLight: PointLight;
+	SpotLight: SpotLight;
+	SurfaceLight: SurfaceLight;
+	Lighting: Lighting;
+	LinkingService: LinkingService;
+	LiveScriptingService: LiveScriptingService;
+	LiveSyncService: LiveSyncService;
+	LocalStorageService: LocalStorageService;
+	AppStorageService: AppStorageService;
+	UserStorageService: UserStorageService;
+	LocalizationService: LocalizationService;
+	LocalizationTable: LocalizationTable;
+	CloudLocalizationTable: CloudLocalizationTable;
+	LodDataEntity: LodDataEntity;
+	LodDataService: LodDataService;
+	LogReporterService: LogReporterService;
+	LogService: LogService;
+	LoginService: LoginService;
+	LuaSettings: LuaSettings;
+	LuaSourceContainer: LuaSourceContainer;
+	BaseScript: BaseScript;
+	CoreScript: CoreScript;
+	Script: Script;
+	LocalScript: LocalScript;
+	ModuleScript: ModuleScript;
+	LuaWebService: LuaWebService;
+	LuauScriptAnalyzerService: LuauScriptAnalyzerService;
+	MLModelDeliveryService: MLModelDeliveryService;
+	MLService: MLService;
+	MakeupDescription: MakeupDescription;
+	MarkerCurve: MarkerCurve;
+	MarketplaceService: MarketplaceService;
+	MatchmakingService: MatchmakingService;
+	MaterialGenerationService: MaterialGenerationService;
+	MaterialService: MaterialService;
+	MaterialVariant: MaterialVariant;
+	MemStorageConnection: MemStorageConnection;
+	MemStorageService: MemStorageService;
+	MemoryStoreHashMap: MemoryStoreHashMap;
+	MemoryStoreQueue: MemoryStoreQueue;
+	MemoryStoreService: MemoryStoreService;
+	MemoryStoreSortedMap: MemoryStoreSortedMap;
+	Message: Message;
+	Hint: Hint;
+	MessageBusConnection: MessageBusConnection;
+	MessageBusService: MessageBusService;
+	MessagingService: MessagingService;
+	MetaBreakpoint: MetaBreakpoint;
+	MetaBreakpointContext: MetaBreakpointContext;
+	MetaBreakpointManager: MetaBreakpointManager;
+	MicroProfilerService: MicroProfilerService;
+	ModerationService: ModerationService;
+	Mouse: Mouse;
+	PlayerMouse: PlayerMouse;
+	PluginMouse: PluginMouse;
+	MouseService: MouseService;
+	MultipleDocumentInterfaceInstance: MultipleDocumentInterfaceInstance;
+	NetworkMarker: NetworkMarker;
+	NetworkPeer: NetworkPeer;
+	NetworkClient: NetworkClient;
+	NetworkServer: NetworkServer;
+	NetworkReplicator: NetworkReplicator;
+	ClientReplicator: ClientReplicator;
+	ServerReplicator: ServerReplicator;
+	NetworkSettings: NetworkSettings;
+	NoCollisionConstraint: NoCollisionConstraint;
+	Noise: Noise;
+	NotificationService: NotificationService;
+	OmniRecommendationsService: OmniRecommendationsService;
+	OpenCloudApiV1: OpenCloudApiV1;
+	OpenCloudService: OpenCloudService;
+	OperationGraph: OperationGraph;
+	PVInstance: PVInstance;
+	BasePart: BasePart;
+	CornerWedgePart: CornerWedgePart;
+	FormFactorPart: FormFactorPart;
+	Part: Part;
+	FlagStand: FlagStand;
+	Platform: Platform;
+	Seat: Seat;
+	SkateboardPlatform: SkateboardPlatform;
+	SpawnLocation: SpawnLocation;
+	WedgePart: WedgePart;
+	Terrain: Terrain;
+	TriangleMeshPart: TriangleMeshPart;
+	MeshPart: MeshPart;
+	PartOperation: PartOperation;
+	IntersectOperation: IntersectOperation;
+	NegateOperation: NegateOperation;
+	UnionOperation: UnionOperation;
+	TrussPart: TrussPart;
+	VehicleSeat: VehicleSeat;
+	Camera: Camera;
+	Model: Model;
+	Actor: Actor;
+	BackpackItem: BackpackItem;
+	HopperBin: HopperBin;
+	Tool: Tool;
+	Flag: Flag;
+	Status: Status;
+	WorldRoot: WorldRoot;
+	Workspace: Workspace;
+	WorldModel: WorldModel;
+	PackageLink: PackageLink;
+	PackageService: PackageService;
+	PackageUIService: PackageUIService;
+	Pages: Pages;
+	AudioPages: AudioPages;
+	BanHistoryPages: BanHistoryPages;
+	CapturesPages: CapturesPages;
+	CatalogPages: CatalogPages;
+	DataStoreKeyPages: DataStoreKeyPages;
+	DataStoreListingPages: DataStoreListingPages;
+	DataStorePages: DataStorePages;
+	DataStoreVersionPages: DataStoreVersionPages;
+	FriendPages: FriendPages;
+	InventoryPages: InventoryPages;
+	EmotesPages: EmotesPages;
+	MemoryStoreHashMapPages: MemoryStoreHashMapPages;
+	OutfitPages: OutfitPages;
+	RecommendationPages: RecommendationPages;
+	StandardPages: StandardPages;
+	PartOperationAsset: PartOperationAsset;
+	ParticleEmitter: ParticleEmitter;
+	PartyEmulatorService: PartyEmulatorService;
+	PatchBundlerFileWatch: PatchBundlerFileWatch;
+	PatchMapping: PatchMapping;
+	Path: Path;
+	PathfindingLink: PathfindingLink;
+	PathfindingModifier: PathfindingModifier;
+	PathfindingService: PathfindingService;
+	PausedState: PausedState;
+	PausedStateBreakpoint: PausedStateBreakpoint;
+	PausedStateException: PausedStateException;
+	PerformanceControlService: PerformanceControlService;
+	PermissionsService: PermissionsService;
+	PhysicsService: PhysicsService;
+	PhysicsSettings: PhysicsSettings;
+	PlaceAssetIdsService: PlaceAssetIdsService;
+	PlaceStatsService: PlaceStatsService;
+	PlacesService: PlacesService;
+	PlatformCloudStorageService: PlatformCloudStorageService;
+	PlatformFriendsService: PlatformFriendsService;
+	PlatformLibraries: PlatformLibraries;
+	Player: Player;
+	PlayerData: PlayerData;
+	PlayerDataRecord: PlayerDataRecord;
+	PlayerDataRecordConfig: PlayerDataRecordConfig;
+	PlayerDataService: PlayerDataService;
+	PlayerEmulatorService: PlayerEmulatorService;
+	PlayerHydrationService: PlayerHydrationService;
+	PlayerScripts: PlayerScripts;
+	PlayerViewService: PlayerViewService;
+	Players: Players;
+	Plugin: Plugin;
+	PluginAction: PluginAction;
+	PluginCapabilities: PluginCapabilities;
+	PluginDebugService: PluginDebugService;
+	PluginDragEvent: PluginDragEvent;
+	PluginGuiService: PluginGuiService;
+	PluginManagementService: PluginManagementService;
+	PluginManager: PluginManager;
+	PluginManagerInterface: PluginManagerInterface;
+	PluginMenu: PluginMenu;
+	PluginPolicyService: PluginPolicyService;
+	PluginToolbar: PluginToolbar;
+	PluginToolbarButton: PluginToolbarButton;
+	PointsService: PointsService;
+	PolicyService: PolicyService;
+	PoseBase: PoseBase;
+	NumberPose: NumberPose;
+	Pose: Pose;
+	PostEffect: PostEffect;
+	BloomEffect: BloomEffect;
+	BlurEffect: BlurEffect;
+	ColorCorrectionEffect: ColorCorrectionEffect;
+	ColorGradingEffect: ColorGradingEffect;
+	DepthOfFieldEffect: DepthOfFieldEffect;
+	SunRaysEffect: SunRaysEffect;
+	ProcessInstancePhysicsService: ProcessInstancePhysicsService;
+	ProximityPrompt: ProximityPrompt;
+	ProximityPromptService: ProximityPromptService;
+	PublishService: PublishService;
+	RTAnimationTracker: RTAnimationTracker;
+	RbxAnalyticsService: RbxAnalyticsService;
+	RecommendationService: RecommendationService;
+	ReflectionMetadata: ReflectionMetadata;
+	ReflectionMetadataCallbacks: ReflectionMetadataCallbacks;
+	ReflectionMetadataClasses: ReflectionMetadataClasses;
+	ReflectionMetadataEnums: ReflectionMetadataEnums;
+	ReflectionMetadataEvents: ReflectionMetadataEvents;
+	ReflectionMetadataFunctions: ReflectionMetadataFunctions;
+	ReflectionMetadataItem: ReflectionMetadataItem;
+	ReflectionMetadataClass: ReflectionMetadataClass;
+	ReflectionMetadataEnum: ReflectionMetadataEnum;
+	ReflectionMetadataEnumItem: ReflectionMetadataEnumItem;
+	ReflectionMetadataMember: ReflectionMetadataMember;
+	ReflectionMetadataProperties: ReflectionMetadataProperties;
+	ReflectionMetadataYieldFunctions: ReflectionMetadataYieldFunctions;
+	ReflectionService: ReflectionService;
+	RemoteCommandService: RemoteCommandService;
+	RemoteCursorService: RemoteCursorService;
+	RemoteDebuggerServer: RemoteDebuggerServer;
+	RemoteFunction: RemoteFunction;
+	RenderSettings: RenderSettings;
+	RenderingTest: RenderingTest;
+	ReplicatedFirst: ReplicatedFirst;
+	ReplicatedStorage: ReplicatedStorage;
+	RibbonNotificationService: RibbonNotificationService;
+	RobloxPluginGuiService: RobloxPluginGuiService;
+	RobloxReplicatedStorage: RobloxReplicatedStorage;
+	RobloxSerializableInstance: RobloxSerializableInstance;
+	RobloxServerStorage: RobloxServerStorage;
+	RolloutValidation: RolloutValidation;
+	RolloutValidationService: RolloutValidationService;
+	RomarkRbxAnalyticsService: RomarkRbxAnalyticsService;
+	RomarkService: RomarkService;
+	RotationCurve: RotationCurve;
+	RtMessagingService: RtMessagingService;
+	RunService: RunService;
+	RuntimeContentService: RuntimeContentService;
+	RuntimeScriptService: RuntimeScriptService;
+	SafetyService: SafetyService;
+	ScreenshotHud: ScreenshotHud;
+	ScriptBuilder: ScriptBuilder;
+	SyncScriptBuilder: SyncScriptBuilder;
+	ScriptChangeService: ScriptChangeService;
+	ScriptCloneWatcher: ScriptCloneWatcher;
+	ScriptCloneWatcherHelper: ScriptCloneWatcherHelper;
+	ScriptCommitService: ScriptCommitService;
+	ScriptContext: ScriptContext;
+	ScriptDebugger: ScriptDebugger;
+	ScriptDocument: ScriptDocument;
+	ScriptEditorService: ScriptEditorService;
+	ScriptProfilerService: ScriptProfilerService;
+	ScriptRegistrationService: ScriptRegistrationService;
+	ScriptRuntime: ScriptRuntime;
+	ScriptService: ScriptService;
+	Selection: Selection;
+	SelectionHighlightManager: SelectionHighlightManager;
+	SensorBase: SensorBase;
+	AtmosphereSensor: AtmosphereSensor;
+	BuoyancySensor: BuoyancySensor;
+	ControllerSensor: ControllerSensor;
+	ControllerPartSensor: ControllerPartSensor;
+	FluidForceSensor: FluidForceSensor;
+	SerializationService: SerializationService;
+	ServerScriptService: ServerScriptService;
+	ServerStorage: ServerStorage;
+	ServiceProvider: ServiceProvider;
+	DataModel: DataModel;
+	GenericSettings: GenericSettings;
+	GlobalSettings: GlobalSettings;
+	UserSettings: UserSettings;
+	ServiceVisibilityService: ServiceVisibilityService;
+	SessionCheckService: SessionCheckService;
+	SessionService: SessionService;
+	SharedTableRegistry: SharedTableRegistry;
+	Sky: Sky;
+	SlimAnimationDataEntity: SlimAnimationDataEntity;
+	SlimAnimationReplicationService: SlimAnimationReplicationService;
+	SlimReplicationService: SlimReplicationService;
+	SlimService: SlimService;
+	Smoke: Smoke;
+	SmoothVoxelsUpgraderService: SmoothVoxelsUpgraderService;
+	SnippetService: SnippetService;
+	SocialService: SocialService;
+	Sound: Sound;
+	SoundEffect: SoundEffect;
+	ChorusSoundEffect: ChorusSoundEffect;
+	CompressorSoundEffect: CompressorSoundEffect;
+	CustomSoundEffect: CustomSoundEffect;
+	AssetSoundEffect: AssetSoundEffect;
+	ChannelSelectorSoundEffect: ChannelSelectorSoundEffect;
+	DistortionSoundEffect: DistortionSoundEffect;
+	EchoSoundEffect: EchoSoundEffect;
+	EqualizerSoundEffect: EqualizerSoundEffect;
+	FlangeSoundEffect: FlangeSoundEffect;
+	PitchShiftSoundEffect: PitchShiftSoundEffect;
+	ReverbSoundEffect: ReverbSoundEffect;
+	TremoloSoundEffect: TremoloSoundEffect;
+	SoundGroup: SoundGroup;
+	SoundService: SoundService;
+	SoundShimService: SoundShimService;
+	Sparkles: Sparkles;
+	SpawnerService: SpawnerService;
+	StackFrame: StackFrame;
+	StandalonePluginScripts: StandalonePluginScripts;
+	StartPageService: StartPageService;
+	StarterGear: StarterGear;
+	StarterPack: StarterPack;
+	StarterPlayer: StarterPlayer;
+	StarterPlayerScripts: StarterPlayerScripts;
+	StarterCharacterScripts: StarterCharacterScripts;
+	StartupMessageService: StartupMessageService;
+	Stats: Stats;
+	StatsItem: StatsItem;
+	RunningAverageItemDouble: RunningAverageItemDouble;
+	RunningAverageItemInt: RunningAverageItemInt;
+	RunningAverageTimeIntervalItem: RunningAverageTimeIntervalItem;
+	TotalCountTimeIntervalItem: TotalCountTimeIntervalItem;
+	StopWatchReporter: StopWatchReporter;
+	Studio: Studio;
+	StudioAssetService: StudioAssetService;
+	StudioAttachment: StudioAttachment;
+	StudioCallout: StudioCallout;
+	StudioCameraService: StudioCameraService;
+	StudioData: StudioData;
+	StudioDeviceEmulatorService: StudioDeviceEmulatorService;
+	StudioObjectBase: StudioObjectBase;
+	StudioWidget: StudioWidget;
+	StudioPublishService: StudioPublishService;
+	StudioScriptDebugEventListener: StudioScriptDebugEventListener;
+	StudioSdkService: StudioSdkService;
+	StudioService: StudioService;
+	StudioTestService: StudioTestService;
+	StudioTheme: StudioTheme;
+	StudioUserService: StudioUserService;
+	StudioWidgetsService: StudioWidgetsService;
+	StyleBase: StyleBase;
+	StyleRule: StyleRule;
+	StyleSheet: StyleSheet;
+	StyleDerive: StyleDerive;
+	StyleLink: StyleLink;
+	StyleQuery: StyleQuery;
+	StylingService: StylingService;
+	SurfaceAppearance: SurfaceAppearance;
+	SystemThemeService: SystemThemeService;
+	TaskScheduler: TaskScheduler;
+	Team: Team;
+	TeamCreateData: TeamCreateData;
+	TeamCreatePublishService: TeamCreatePublishService;
+	TeamCreateService: TeamCreateService;
+	Teams: Teams;
+	TelemetryService: TelemetryService;
+	TeleportAsyncResult: TeleportAsyncResult;
+	TeleportOptions: TeleportOptions;
+	TeleportService: TeleportService;
+	TemporaryCageMeshProvider: TemporaryCageMeshProvider;
+	TemporaryScriptService: TemporaryScriptService;
+	TerrainDetail: TerrainDetail;
+	TerrainRegion: TerrainRegion;
+	TestService: TestService;
+	TextBoxService: TextBoxService;
+	TextChannel: TextChannel;
+	TextChatCommand: TextChatCommand;
+	TextChatConfigurations: TextChatConfigurations;
+	BubbleChatConfiguration: BubbleChatConfiguration;
+	ChannelTabsConfiguration: ChannelTabsConfiguration;
+	ChatInputBarConfiguration: ChatInputBarConfiguration;
+	ChatWindowConfiguration: ChatWindowConfiguration;
+	TextChatMessage: TextChatMessage;
+	TextChatMessageProperties: TextChatMessageProperties;
+	BubbleChatMessageProperties: BubbleChatMessageProperties;
+	ChatWindowMessageProperties: ChatWindowMessageProperties;
+	TextChatService: TextChatService;
+	TextFilterResult: TextFilterResult;
+	TextFilterTranslatedResult: TextFilterTranslatedResult;
+	TextGenerator: TextGenerator;
+	TextService: TextService;
+	TextSource: TextSource;
+	TextureGenerationPartGroup: TextureGenerationPartGroup;
+	TextureGenerationService: TextureGenerationService;
+	TextureGenerationUnwrappingRequest: TextureGenerationUnwrappingRequest;
+	ThirdPartyUserService: ThirdPartyUserService;
+	ThreadState: ThreadState;
+	TimerService: TimerService;
+	ToastNotificationService: ToastNotificationService;
+	TouchInputService: TouchInputService;
+	TouchTransmitter: TouchTransmitter;
+	TraceRouteService: TraceRouteService;
+	TracerService: TracerService;
+	TrackerLodController: TrackerLodController;
+	TrackerStreamAnimation: TrackerStreamAnimation;
+	Trail: Trail;
+	Translator: Translator;
+	TutorialService: TutorialService;
+	TweenBase: TweenBase;
+	Tween: Tween;
+	TweenService: TweenService;
+	UGCAvatarService: UGCAvatarService;
+	UGCValidationService: UGCValidationService;
+	UIBase: UIBase;
+	UIComponent: UIComponent;
+	UIConstraint: UIConstraint;
+	UIAspectRatioConstraint: UIAspectRatioConstraint;
+	UISizeConstraint: UISizeConstraint;
+	UITextSizeConstraint: UITextSizeConstraint;
+	UICorner: UICorner;
+	UIDragDetector: UIDragDetector;
+	UIFlexItem: UIFlexItem;
+	UIGradient: UIGradient;
+	UILayout: UILayout;
+	UIGridStyleLayout: UIGridStyleLayout;
+	UIGridLayout: UIGridLayout;
+	UIListLayout: UIListLayout;
+	UIPageLayout: UIPageLayout;
+	UITableLayout: UITableLayout;
+	UIPadding: UIPadding;
+	UIScale: UIScale;
+	UIStroke: UIStroke;
+	UIDragDetectorService: UIDragDetectorService;
+	UniqueIdLookupService: UniqueIdLookupService;
+	UnvalidatedAssetService: UnvalidatedAssetService;
+	UserGameSettings: UserGameSettings;
+	UserInputService: UserInputService;
+	UserService: UserService;
+	VRService: VRService;
+	VRStatusService: VRStatusService;
+	ValueBase: ValueBase;
+	BinaryStringValue: BinaryStringValue;
+	BoolValue: BoolValue;
+	BrickColorValue: BrickColorValue;
+	CFrameValue: CFrameValue;
+	Color3Value: Color3Value;
+	DoubleConstrainedValue: DoubleConstrainedValue;
+	IntConstrainedValue: IntConstrainedValue;
+	IntValue: IntValue;
+	NumberValue: NumberValue;
+	ObjectValue: ObjectValue;
+	RayValue: RayValue;
+	StringValue: StringValue;
+	Vector3Value: Vector3Value;
+	ValueCurve: ValueCurve;
+	Vector3Curve: Vector3Curve;
+	VersionControlService: VersionControlService;
+	VideoCaptureService: VideoCaptureService;
+	VideoDeviceInput: VideoDeviceInput;
+	VideoPlayer: VideoPlayer;
+	VideoScreenCaptureService: VideoScreenCaptureService;
+	VideoService: VideoService;
+	VirtualInputManager: VirtualInputManager;
+	VirtualUser: VirtualUser;
+	VisibilityCheckDispatcher: VisibilityCheckDispatcher;
+	Visit: Visit;
+	VisualizationMode: VisualizationMode;
+	VisualizationModeCategory: VisualizationModeCategory;
+	VisualizationModeService: VisualizationModeService;
+	VoiceChatInternal: VoiceChatInternal;
+	VoiceChatService: VoiceChatService;
+	WebSocketClient: WebSocketClient;
+	WebSocketService: WebSocketService;
+	WebViewService: WebViewService;
+	WeldConstraint: WeldConstraint;
+	Wire: Wire;
+	WrapDeformMeshProvider: WrapDeformMeshProvider;
+	WrapTextureTransfer: WrapTextureTransfer;
+	MLSession: MLSession;
+	TerrainIterateOperation: TerrainIterateOperation;
+	TerrainModifyOperation: TerrainModifyOperation;
+	TerrainReadOperation: TerrainReadOperation;
+	TerrainWriteOperation: TerrainWriteOperation;
+	VideoSampler: VideoSampler;
+	VoxelBuffer: VoxelBuffer;
+	WebStreamClient: WebStreamClient;
+}
+
+interface Object {
+	/** Returns true if this object's class matches or inherits from the given class. */
+	IsA<T extends keyof CheckableInstances>(className: T): this is CheckableInstances[T];
+}
+
+interface Instance {
+	FindFirstChildOfClass<T extends keyof CheckableInstances>(className: T): CheckableInstances[T] | undefined;
+	FindFirstChildWhichIsA<T extends keyof CheckableInstances>(className: T, recursive?: boolean): CheckableInstances[T] | undefined;
+	FindFirstAncestorOfClass<T extends keyof CheckableInstances>(className: T): CheckableInstances[T] | undefined;
+	FindFirstAncestorWhichIsA<T extends keyof CheckableInstances>(className: T): CheckableInstances[T] | undefined;
 }

@@ -496,7 +496,8 @@ export function transformFunctionExpression(
   } else {
     // Arrow with expression body: () => expr
     const expr = transformExpression(node.body as ts.Expression, ctx);
-    body = [{ type: "return", value: expr }];
+    const pre = ctx.flushPreStatements();
+    body = [...pre, { type: "return", value: expr }];
   }
 
   return funcExpr(params, body, returnType);
@@ -542,7 +543,12 @@ function transformCallExpression(
 
   // Optional call: a?.()
   if (node.questionDotToken) {
-    const callee = transformExpression(node.expression, ctx);
+    let callee = transformExpression(node.expression, ctx);
+    if (callee.type === "if-expr") {
+      const tmp = ctx.nextTempVar();
+      ctx.pushPreStatement({ type: "local", name: tmp, value: callee });
+      callee = ident(tmp);
+    }
     return ifExpr(binary(callee, "~=", nil()), call(callee, args), nil());
   }
 
@@ -554,7 +560,19 @@ function transformCallExpression(
       args,
       ctx
     );
-    if (special) return special;
+    if (special) {
+      // Handle optional chaining: a?.method() where ?. is on the property access
+      if (node.expression.questionDotToken) {
+        let obj = transformExpression(node.expression.expression, ctx);
+        if (obj.type === "if-expr") {
+          const tmp = ctx.nextTempVar();
+          ctx.pushPreStatement({ type: "local", name: tmp, value: obj });
+          obj = ident(tmp);
+        }
+        return ifExpr(binary(obj, "~=", nil()), special, nil());
+      }
+      return special;
+    }
   }
 
   // Simple identifier calls
@@ -571,15 +589,28 @@ function transformCallExpression(
 
   // Method/property calls
   if (ts.isPropertyAccessExpression(node.expression)) {
-    const obj = transformExpression(node.expression.expression, ctx);
+    let obj = transformExpression(node.expression.expression, ctx);
     const method = node.expression.name.text;
+    const isOptional = node.expression.questionDotToken;
 
-    // Check if this is a Roblox method call (use : syntax)
-    if (ROBLOX_METHODS.has(method)) {
-      return methodCall(obj, method, args);
+    if (isOptional && obj.type === "if-expr") {
+      const tmp = ctx.nextTempVar();
+      ctx.pushPreStatement({ type: "local", name: tmp, value: obj });
+      obj = ident(tmp);
     }
 
-    return call(index(obj, method), args);
+    let result: LuauExpression;
+    // Check if this is a Roblox method call (use : syntax)
+    if (ROBLOX_METHODS.has(method)) {
+      result = methodCall(obj, method, args);
+    } else {
+      result = call(index(obj, method), args);
+    }
+
+    if (isOptional) {
+      return ifExpr(binary(obj, "~=", nil()), result, nil());
+    }
+    return result;
   }
 
   const callee = transformExpression(node.expression, ctx);
@@ -1305,8 +1336,14 @@ function transformOptionalChain(
   node: ts.PropertyAccessExpression,
   ctx: TransformContext
 ): LuauExpression {
-  const obj = transformExpression(node.expression, ctx);
+  let obj = transformExpression(node.expression, ctx);
   const propName = node.name.text;
+
+  if (obj.type === "if-expr") {
+    const tmp = ctx.nextTempVar();
+    ctx.pushPreStatement({ type: "local", name: tmp, value: obj });
+    obj = ident(tmp);
+  }
 
   // a?.b → if a ~= nil then a.b else nil
   return ifExpr(binary(obj, "~=", nil()), index(obj, propName), nil());
@@ -1318,11 +1355,16 @@ function transformElementAccess(
   node: ts.ElementAccessExpression,
   ctx: TransformContext
 ): LuauExpression {
-  const obj = transformExpression(node.expression, ctx);
+  let obj = transformExpression(node.expression, ctx);
   const argExpr = node.argumentExpression;
 
   // Optional element access: a?.[b]
   if (node.questionDotToken) {
+    if (obj.type === "if-expr") {
+      const tmp = ctx.nextTempVar();
+      ctx.pushPreStatement({ type: "local", name: tmp, value: obj });
+      obj = ident(tmp);
+    }
     const idx = transformExpression(argExpr, ctx);
     return ifExpr(binary(obj, "~=", nil()), bracketIndex(obj, idx), nil());
   }

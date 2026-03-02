@@ -256,6 +256,7 @@ function mapValueType(vt: ValueType): string {
     case "Class":
       return vt.Name;
     case "DataType":
+      if (vt.Name === "Instances" || vt.Name === "Objects") return "Instance[]";
       if (generatedDatatypes.has(vt.Name)) return vt.Name;
       if (vt.Name === "Content") return "string";
       if (vt.Name === "BinaryString") return "string";
@@ -620,6 +621,31 @@ function generateInstances(classes: ApiClass[], docs: ClassDocsMap): string {
   lines.push("interface ServiceProvider {");
   lines.push("\t/** Returns the service with the requested class name, creating it if it does not exist. */");
   lines.push("\tGetService<T extends keyof CheckableServices>(className: T): CheckableServices[T];");
+  lines.push("}\n");
+
+  // ── CheckableInstances map + typed IsA / FindFirstChild* overloads ──
+  const checkableClasses = classes.filter(
+    (c) => !hasTag(c.Tags, "NotScriptable"),
+  );
+
+  lines.push("interface CheckableInstances {");
+  for (const cls of checkableClasses) {
+    lines.push(`\t${cls.Name}: ${cls.Name};`);
+  }
+  lines.push("}\n");
+
+  // Augment Object with a typed IsA overload (type predicate for narrowing)
+  lines.push("interface Object {");
+  lines.push("\t/** Returns true if this object's class matches or inherits from the given class. */");
+  lines.push("\tIsA<T extends keyof CheckableInstances>(className: T): this is CheckableInstances[T];");
+  lines.push("}\n");
+
+  // Augment Instance with typed FindFirstChild*/FindFirstAncestor* overloads
+  lines.push("interface Instance {");
+  lines.push("\tFindFirstChildOfClass<T extends keyof CheckableInstances>(className: T): CheckableInstances[T] | undefined;");
+  lines.push("\tFindFirstChildWhichIsA<T extends keyof CheckableInstances>(className: T, recursive?: boolean): CheckableInstances[T] | undefined;");
+  lines.push("\tFindFirstAncestorOfClass<T extends keyof CheckableInstances>(className: T): CheckableInstances[T] | undefined;");
+  lines.push("\tFindFirstAncestorWhichIsA<T extends keyof CheckableInstances>(className: T): CheckableInstances[T] | undefined;");
   lines.push("}\n");
 
   return lines.join("\n");

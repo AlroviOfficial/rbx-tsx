@@ -153,7 +153,9 @@ export function transformSourceFile(
   // Phase 3: Transform body statements (this populates ctx.requiredServices, ctx.requiredHelpers, ctx.needsPromise)
   const transformedBody: LuauStatement[] = [];
   for (const stmt of bodyStatements) {
-    transformedBody.push(...transformStatement(stmt, ctx));
+    const stmts = transformStatement(stmt, ctx);
+    const pre = ctx.flushPreStatements();
+    transformedBody.push(...pre, ...stmts);
   }
 
   // Now emit services (after body transform so we know which ones are needed)
