@@ -406,3 +406,16 @@ describe("0-to-1 based indexing", () => {
     expect(result).toContain("i + 1");
   });
 });
+
+describe("dynamic import", () => {
+  test("import('./module') → Promise:resolve(require(path))", () => {
+    const result = compileStmt('const m = import("./Card");');
+    expect(result).toContain("Promise:resolve");
+    expect(result).toContain("require(script.Parent.Card)");
+  });
+
+  test("dynamic import triggers Promise require", () => {
+    const result = compileStmt('const m = import("./Card");');
+    expect(result).toContain("require(game:GetService(\"ReplicatedStorage\").Packages.Promise)");
+  });
+});

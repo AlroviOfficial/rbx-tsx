@@ -68,6 +68,16 @@ describe("relative imports", () => {
   });
 });
 
+describe("dynamic import", () => {
+  test("import('./module') compiles to Promise:resolve(require(path))", () => {
+    const result = compileTS(`
+      const mod = import("./Card");
+    `);
+    expect(result).toContain("Promise:resolve");
+    expect(result).toContain("require(script.Parent.Card)");
+  });
+});
+
 describe("exports", () => {
   test("default-only export", () => {
     const result = compileTS(`

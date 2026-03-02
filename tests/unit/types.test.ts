@@ -28,6 +28,16 @@ describe("complex types", () => {
     expect(result).toContain("type ID = string | number");
   });
 
+  test("intersection type", () => {
+    const result = compileTS("type A = { x: number }; type B = { y: string }; type AB = A & B;");
+    expect(result).toContain("type AB = A & B");
+  });
+
+  test("intersection with union parenthesizes correctly", () => {
+    const result = compileTS("type T = (string | number) & { tag: string };");
+    expect(result).toContain("(string | number) & { tag: string }");
+  });
+
   test("optional type (T | null)", () => {
     const result = compileTS("type MaybeString = string | null;");
     expect(result).toContain("string?");

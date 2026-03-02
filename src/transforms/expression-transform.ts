@@ -31,6 +31,7 @@ import type { TransformContext } from "./transform-context.ts";
 import { transformType } from "./type-transform.ts";
 import { transformJSX } from "./jsx-transform.ts";
 import { transformStatements } from "./statement-transform.ts";
+import { resolveModuleSpecifierToRequirePath } from "./path-resolution.ts";
 
 export function transformExpression(
   node: ts.Expression,
@@ -642,6 +643,24 @@ function transformCallExpression(
   node: ts.CallExpression,
   ctx: TransformContext
 ): LuauExpression {
+  // Dynamic import(): import("./module") → Promise.resolve(require(path))
+  if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+    const arg = node.arguments[0];
+    if (arg && ts.isStringLiteral(arg)) {
+      ctx.needsPromise = true;
+      const requirePath = resolveModuleSpecifierToRequirePath(arg.text, ctx);
+      return methodCall(ident("Promise"), "resolve", [
+        call(ident("require"), [raw(requirePath)]),
+      ]);
+    }
+    ctx.warnAtNode(
+      "unsupported-syntax",
+      "Dynamic import() requires a string literal path",
+      node
+    );
+    return raw("--[[ unsupported: dynamic import with non-literal path ]] nil");
+  }
+
   const args = node.arguments.map((a) => transformExpression(a, ctx));
 
   // Optional call: a?.()

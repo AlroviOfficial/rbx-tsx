@@ -50,11 +50,9 @@ export function transformType(
     return transformUnionType(node, ctx);
   }
 
-  // Intersection type (A & B) → flatten to table
+  // Intersection type (A & B)
   if (ts.isIntersectionTypeNode(node)) {
-    // Luau doesn't have intersection types — use any or first type
-    const types = node.types.map((t) => transformType(t, ctx));
-    return types[0] ?? "any";
+    return transformIntersectionType(node, ctx);
   }
 
   // Array type (T[])
@@ -292,6 +290,20 @@ function transformUnionType(
   }
 
   return types.join(" | ");
+}
+
+function transformIntersectionType(
+  node: ts.IntersectionTypeNode,
+  ctx: TransformContext
+): string {
+  const types = node.types.map((t) => transformType(t, ctx));
+  // Wrap types containing | in parentheses so (A | B) & C parses correctly
+  const wrapped = types.map((t) => {
+    if (!t.includes(" | ")) return t;
+    if (t.startsWith("(") && t.endsWith(")")) return t;
+    return `(${t})`;
+  });
+  return wrapped.join(" & ");
 }
 
 function transformFunctionType(

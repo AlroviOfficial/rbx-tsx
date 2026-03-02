@@ -398,6 +398,32 @@ describe("namespace declarations", () => {
   });
 });
 
+describe("decorators", () => {
+  test("class decorator compiles as wrapper call", () => {
+    const result = compileStmt(`
+      function dec(target: any) { return target; }
+      @dec
+      class Foo { x = 1; }
+    `);
+    expect(result).toContain("local Foo = {}");
+    expect(result).toContain("Foo.__index = Foo");
+    expect(result).toContain("dec(");
+  });
+
+  test("method decorator compiles as descriptor modification", () => {
+    const result = compileStmt(`
+      function log(target: any, key: string, desc: any) { return desc; }
+      class Bar {
+        @log
+        greet() { return "hi"; }
+      }
+    `);
+    expect(result).toContain("local Bar = {}");
+    expect(result).toContain("log(Bar");
+    expect(result).toContain("value");
+  });
+});
+
 describe("generator functions", () => {
   test("function* compiles to __generatorAdapter", () => {
     const result = compileStmt(`

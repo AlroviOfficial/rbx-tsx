@@ -1502,6 +1502,54 @@ function transformEnumDeclaration(
 
 // ── Class Declarations ──
 
+function getDecoratorExpressions(
+  node: ts.Node,
+  ctx: TransformContext
+): LuauExpression[] {
+  // TypeScript 5+: decorators are in modifiers as Decorator nodes
+  const modifiers = (node as { modifiers?: ts.NodeArray<ts.ModifierLike> })
+    .modifiers;
+  if (!modifiers?.length) return [];
+  const decoratorMods = modifiers.filter(
+    (m) => m.kind === ts.SyntaxKind.Decorator
+  ) as ts.Decorator[];
+  return decoratorMods.map((d) => transformExpression(d.expression, ctx));
+}
+
+function applyClassDecorators(
+  className: string,
+  decoratorExprs: LuauExpression[],
+  ctx: TransformContext
+): LuauStatement[] {
+  if (decoratorExprs.length === 0) return [];
+  // Decorators called bottom-to-top (innermost first)
+  const stmts: LuauStatement[] = [];
+  const temp = ctx.nextTempVar();
+  stmts.push({
+    type: "local",
+    name: temp,
+    value: ident(className),
+  });
+  for (let i = decoratorExprs.length - 1; i >= 0; i--) {
+    const dec = decoratorExprs[i]!;
+    stmts.push({
+      type: "assignment",
+      target: ident(temp),
+      value: binary(
+        call(dec, [ident(temp)]),
+        "or",
+        ident(temp)
+      ),
+    });
+  }
+  stmts.push({
+    type: "assignment",
+    target: ident(className),
+    value: ident(temp),
+  });
+  return stmts;
+}
+
 function transformClassDeclaration(
   node: ts.ClassDeclaration,
   ctx: TransformContext
@@ -1536,6 +1584,8 @@ function transformClassDeclaration(
       node
     );
   }
+
+  const classDecorators = getDecoratorExpressions(node, ctx);
 
   // Extract parent class from heritage clause
   let parentClassName: string | null = null;
@@ -1660,6 +1710,11 @@ function transformClassDeclaration(
         });
       }
     }
+  }
+
+  // Apply class decorators (wrapper calls)
+  if (classDecorators.length > 0) {
+    result.push(...applyClassDecorators(className, classDecorators, ctx));
   }
 
   // Export tracking
@@ -1884,6 +1939,53 @@ function emitClassMethod(
 
   const methodTypeParams =
     method.typeParameters?.map((p) => p.name.getText()) ?? classTypeParams;
+
+  const methodDecorators = getDecoratorExpressions(method, ctx);
+
+  if (methodDecorators.length > 0) {
+    // Method decorators: descriptor modifications
+    const methodVar = ctx.nextTempVar();
+    const descVar = ctx.nextTempVar();
+    const methodFn = funcExpr(finalParams, body, returnType, methodTypeParams);
+
+    const stmts: LuauStatement[] = [
+      { type: "local", name: methodVar, value: methodFn },
+      {
+        type: "local",
+        name: descVar,
+        value: table([{ key: str("value"), value: ident(methodVar) }]),
+      },
+    ];
+
+    for (let i = methodDecorators.length - 1; i >= 0; i--) {
+      const dec = methodDecorators[i]!;
+      stmts.push({
+        type: "assignment",
+        target: ident(descVar),
+        value: binary(
+          call(dec, [
+            ident(className),
+            str(methodName),
+            ident(descVar),
+          ]),
+          "or",
+          ident(descVar)
+        ),
+      });
+    }
+
+    stmts.push({
+      type: "assignment",
+      target: index(ident(className), methodName),
+      value: ifExpr(
+        binary(ident(descVar), "and", index(ident(descVar), "value")),
+        index(ident(descVar), "value"),
+        ident(methodVar)
+      ),
+    });
+
+    return stmts;
+  }
 
   return [
     {
