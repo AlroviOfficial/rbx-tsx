@@ -18,6 +18,7 @@ import { startWatch } from "./watch.ts";
 import type { WarningLevel } from "./warnings.ts";
 import { execSync } from "child_process";
 import { handleInit, type InitOptions } from "./init.ts";
+import { findPackageManifest } from "./package-manifest.ts";
 
 export function createCLI(): Command {
   const program = new Command();
@@ -32,16 +33,8 @@ export function createCLI(): Command {
     .argument("<input>", "Input file or directory")
     .option("-o, --output <path>", "Output file or directory")
     .option("--css", "Also compile .css files via rbx-css", false)
-    .option(
-      "--react-path <path>",
-      "Require path for react-lua",
-      "ReplicatedStorage.Packages.React"
-    )
-    .option(
-      "--react-roblox-path <path>",
-      "Require path for react-roblox",
-      "ReplicatedStorage.Packages.ReactRoblox"
-    )
+    .option("--react-path <path>", "Require path for react-lua")
+    .option("--react-roblox-path <path>", "Require path for react-roblox")
     .option("--strict", "Treat warnings as errors", false)
     .option("--sourcemap", "Emit source map comments", false)
     .option("--warn <level>", "Warning level: all, unsupported, none", "all")
@@ -54,16 +47,8 @@ export function createCLI(): Command {
     .description("Watch files and recompile on changes")
     .argument("<path>", "Directory or file to watch")
     .option("-o, --output <path>", "Output directory")
-    .option(
-      "--react-path <path>",
-      "Require path for react-lua",
-      "ReplicatedStorage.Packages.React"
-    )
-    .option(
-      "--react-roblox-path <path>",
-      "Require path for react-roblox",
-      "ReplicatedStorage.Packages.ReactRoblox"
-    )
+    .option("--react-path <path>", "Require path for react-lua")
+    .option("--react-roblox-path <path>", "Require path for react-roblox")
     .option("--warn <level>", "Warning level", "all")
     .action((watchPath: string, opts) => {
       handleWatch(watchPath, opts);
@@ -74,6 +59,7 @@ export function createCLI(): Command {
     .description("Scaffold a new rbx-tsx project")
     .argument("[directory]", "Project directory (defaults to current dir)")
     .option("-n, --name <name>", "Project name (defaults to directory name)")
+    .option("--pm <manager>", "Package manager: wally or pesde", "wally")
     .action((directory: string | undefined, opts: InitOptions) => {
       handleInit(directory, opts);
     });
@@ -176,8 +162,8 @@ function handleCompile(
   opts: {
     output?: string;
     css: boolean;
-    reactPath: string;
-    reactRobloxPath: string;
+    reactPath?: string;
+    reactRobloxPath?: string;
     strict: boolean;
     sourcemap: boolean;
     warn: string;
@@ -186,12 +172,19 @@ function handleCompile(
   const absInput = resolve(input);
   const stat = statSync(absInput);
 
+  // Auto-detect package manifest (wally.toml or pesde.toml)
+  const manifest = findPackageManifest(absInput);
+  if (manifest) {
+    console.log(`Packages: ${manifest.pm}`);
+  }
+
   const compilerOpts: CompilerOptions = {
-    reactPath: opts.reactPath,
-    reactRobloxPath: opts.reactRobloxPath,
+    ...(opts.reactPath ? { reactPath: opts.reactPath } : {}),
+    ...(opts.reactRobloxPath ? { reactRobloxPath: opts.reactRobloxPath } : {}),
     strict: opts.strict,
     sourcemap: opts.sourcemap,
     warnLevel: opts.warn as WarningLevel,
+    packageManifest: manifest ?? undefined,
   };
 
   if (stat.isFile()) {
@@ -330,19 +323,26 @@ function handleWatch(
   watchPath: string,
   opts: {
     output?: string;
-    reactPath: string;
-    reactRobloxPath: string;
+    reactPath?: string;
+    reactRobloxPath?: string;
     warn: string;
   }
 ): void {
   const absPath = resolve(watchPath);
   const outputDir = opts.output ? resolve(opts.output) : dirname(absPath);
 
+  // Auto-detect package manifest (wally.toml or pesde.toml)
+  const manifest = findPackageManifest(absPath);
+  if (manifest) {
+    console.log(`Packages: ${manifest.pm}`);
+  }
+
   const compilerOpts: CompilerOptions = {
-    reactPath: opts.reactPath,
-    reactRobloxPath: opts.reactRobloxPath,
+    ...(opts.reactPath ? { reactPath: opts.reactPath } : {}),
+    ...(opts.reactRobloxPath ? { reactRobloxPath: opts.reactRobloxPath } : {}),
     strict: false,
     warnLevel: opts.warn as WarningLevel,
+    packageManifest: manifest ?? undefined,
   };
 
   startWatch(absPath, (files) => {

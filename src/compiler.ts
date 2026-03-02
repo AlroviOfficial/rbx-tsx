@@ -8,17 +8,21 @@ import {
 import { generateLuau } from "./codegen/luau-codegen.ts";
 import { WarningCollector, type WarningLevel } from "./warnings.ts";
 import type { CSSManifest } from "./css-manifest.ts";
+import type { PackageManifest } from "./package-manifest.ts";
 
 export interface CompilerOptions {
   reactPath?: string;
   reactRobloxPath?: string;
   regExpPath?: string;
+  promisePath?: string;
   strict?: boolean;
   sourcemap?: boolean;
   warnLevel?: WarningLevel;
   cssManifest?: CSSManifest;
   /** Directory-to-Luau-path mappings for cross-boundary imports */
   pathAliases?: Map<string, string>;
+  /** Package manifest for resolving import specifiers to correct dependency keys */
+  packageManifest?: PackageManifest;
 }
 
 export interface CompileResult {
@@ -45,11 +49,13 @@ export function compile(
     reactPath: options.reactPath ?? DEFAULT_OPTIONS.reactPath,
     reactRobloxPath: options.reactRobloxPath ?? DEFAULT_OPTIONS.reactRobloxPath,
     regExpPath: options.regExpPath ?? DEFAULT_OPTIONS.regExpPath,
+    promisePath: options.promisePath ?? DEFAULT_OPTIONS.promisePath,
     strict: options.strict ?? false,
     sourcemap: options.sourcemap ?? false,
     filename,
     cssManifest: options.cssManifest ?? null,
     pathAliases: options.pathAliases,
+    packageManifest: options.packageManifest ?? null,
   };
 
   // Parse TSX/TS with TypeScript compiler API

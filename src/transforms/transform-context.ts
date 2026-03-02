@@ -2,23 +2,31 @@ import ts from "typescript";
 import type { WarningCollector, WarningCode } from "../warnings.ts";
 import type { LuauStatement, LuauExpression } from "../ast/luau-ast.ts";
 import type { CSSManifest } from "../css-manifest.ts";
+import {
+  type PackageManifest,
+  resolvePackageName,
+} from "../package-manifest.ts";
 
 export interface CompileOptions {
   reactPath: string;
   reactRobloxPath: string;
   regExpPath: string;
+  promisePath: string;
   strict: boolean;
   sourcemap: boolean;
   filename?: string;
   cssManifest?: CSSManifest | null;
   /** Directory-to-Luau-path mappings for cross-boundary imports */
   pathAliases?: Map<string, string>;
+  /** Package manifest for resolving import specifiers to correct dependency keys */
+  packageManifest?: PackageManifest | null;
 }
 
 export const DEFAULT_OPTIONS: CompileOptions = {
   reactPath: "ReplicatedStorage.Packages.React",
   reactRobloxPath: "ReplicatedStorage.Packages.ReactRoblox",
   regExpPath: "ReplicatedStorage.Packages.RegExp",
+  promisePath: "ReplicatedStorage.Packages.Promise",
   strict: false,
   sourcemap: false,
 };
@@ -84,6 +92,9 @@ export class TransformContext {
   /** Directory-to-Luau-path mappings for cross-boundary imports */
   readonly pathAliases: Map<string, string>;
 
+  /** Package manifest for resolving import specifiers to correct dependency keys */
+  readonly packageManifest: PackageManifest | null;
+
   /** Source file reference for line/column extraction */
   sourceFile?: ts.SourceFile;
 
@@ -132,6 +143,7 @@ export class TransformContext {
     this.filename = options.filename ?? "unknown";
     this.cssManifest = options.cssManifest ?? null;
     this.pathAliases = options.pathAliases ?? new Map();
+    this.packageManifest = options.packageManifest ?? null;
     this.isIndexFile =
       /(?:^|[\\/])index(?:\.(?:client|server))?\.[tj]sx?$/.test(this.filename);
   }
@@ -180,6 +192,12 @@ export class TransformContext {
   /** Check if a CSS className triggers ScrollingFrame upgrade */
   isScrollingFrameClass(className: string): boolean {
     return this.cssManifest?.classes[className]?.overflowScroll === true;
+  }
+
+  /** Resolve a package import specifier to its Luau require path */
+  resolvePackageRequirePath(specifier: string): string {
+    const packageName = resolvePackageName(specifier, this.packageManifest);
+    return `ReplicatedStorage.Packages.${packageName}`;
   }
 
   /** Generate a unique temp variable name for optional chain extraction */

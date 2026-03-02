@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import { compile } from "../../src/compiler.ts";
+import type { PackageManifest } from "../../src/package-manifest.ts";
 
 function compileTSX(source: string): string {
   return compile(source, "test.tsx", { warnLevel: "none" }).luau;
@@ -190,5 +191,61 @@ describe("file naming", () => {
   test("types.ts → types.luau", () => {
     const { getOutputPath } = require("../../src/compiler.ts");
     expect(getOutputPath("types/index.ts")).toBe("types/init.luau");
+  });
+});
+
+describe("package imports with manifest", () => {
+  const wallyManifest: PackageManifest = {
+    pm: "wally",
+    dependencyKeys: new Map([
+      ["mycoollib", "MyCoolLib"],
+      ["react", "React"],
+    ]),
+  };
+
+  test("resolves correct casing from wally manifest", () => {
+    const result = compile(
+      `import MyCoolLib from "my-cool-lib";\nconst x = MyCoolLib;`,
+      "test.ts",
+      { warnLevel: "none", packageManifest: wallyManifest }
+    ).luau;
+    expect(result).toContain("Packages.MyCoolLib");
+    expect(result).not.toContain("Mycoollib");
+  });
+
+  test("named imports with manifest", () => {
+    const result = compile(
+      `import { helper } from "my-cool-lib";\nconst x = helper;`,
+      "test.ts",
+      { warnLevel: "none", packageManifest: wallyManifest }
+    ).luau;
+    expect(result).toContain("Packages.MyCoolLib");
+  });
+
+  test("re-exports with manifest", () => {
+    const result = compile(
+      `export { foo } from "my-cool-lib";`,
+      "test.ts",
+      { warnLevel: "none", packageManifest: wallyManifest }
+    ).luau;
+    expect(result).toContain("Packages.MyCoolLib");
+  });
+
+  test("type imports with manifest", () => {
+    const result = compile(
+      `import type { Foo } from "my-cool-lib";\nconst x: Foo = {} as any;`,
+      "test.ts",
+      { warnLevel: "none", packageManifest: wallyManifest }
+    ).luau;
+    expect(result).toContain("Packages.MyCoolLib");
+  });
+
+  test("falls back without manifest (backwards compat)", () => {
+    const result = compile(
+      `import something from "some-lib";\nconst x = something;`,
+      "test.ts",
+      { warnLevel: "none" }
+    ).luau;
+    expect(result).toContain("Packages.Somelib");
   });
 });

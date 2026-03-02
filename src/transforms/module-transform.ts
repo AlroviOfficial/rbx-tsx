@@ -380,9 +380,7 @@ function transformPackageImport(
 ): LuauStatement[] {
   // Generic package import → require from Packages folder
   const results: LuauStatement[] = [];
-  const packageName = capitalize(moduleSpecifier.replace(/[^a-zA-Z0-9]/g, ""));
-
-  const requirePath = `ReplicatedStorage.Packages.${packageName}`;
+  const requirePath = ctx.resolvePackageRequirePath(moduleSpecifier);
 
   if (node.importClause?.name) {
     results.push({
@@ -397,7 +395,7 @@ function transformPackageImport(
     node.importClause?.namedBindings &&
     ts.isNamedImports(node.importClause.namedBindings)
   ) {
-    const moduleName = `_${packageName}`;
+    const moduleName = `_${sanitizeName(moduleSpecifier)}`;
     results.push({
       type: "local",
       name: moduleName,
@@ -438,7 +436,7 @@ function transformTypeImport(
   const requirePath = aliasPath ??
     (moduleSpecifier.startsWith("./") || moduleSpecifier.startsWith("../")
       ? relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile)
-      : `ReplicatedStorage.Packages.${capitalize(moduleSpecifier)}`);
+      : ctx.resolvePackageRequirePath(moduleSpecifier));
 
   if (
     node.importClause?.namedBindings &&
@@ -508,9 +506,7 @@ export function processExportDeclaration(
     ) {
       requirePath = relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile);
     } else {
-      requirePath =
-        "ReplicatedStorage.Packages." +
-        capitalize(moduleSpecifier.replace(/[^a-zA-Z0-9]/g, ""));
+      requirePath = ctx.resolvePackageRequirePath(moduleSpecifier);
     }
 
     const results: LuauStatement[] = [];
@@ -635,6 +631,3 @@ function sanitizeName(specifier: string): string {
   return specifier.replace(/[^a-zA-Z0-9]/g, "_").replace(/^_+|_+$/g, "");
 }
 
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}

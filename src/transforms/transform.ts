@@ -200,7 +200,7 @@ export function transformSourceFile(
       type: "local",
       name: "Promise",
       value: call(ident("require"), [
-        raw(buildRequirePath("ReplicatedStorage.Packages.Promise")),
+        raw(buildRequirePath(ctx.options.promisePath)),
       ]),
     });
   }

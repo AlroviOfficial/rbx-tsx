@@ -4,6 +4,7 @@ import { execSync } from "child_process";
 
 export interface InitOptions {
   name?: string;
+  pm?: "wally" | "pesde";
 }
 
 export function handleInit(
@@ -12,6 +13,7 @@ export function handleInit(
 ): void {
   const targetDir = directory ? resolve(directory) : process.cwd();
   const projectName = opts.name || basename(targetDir);
+  const isPesde = opts.pm === "pesde";
 
   console.log(`\nInitializing rbx-tsx project: ${projectName}\n`);
 
@@ -25,8 +27,14 @@ export function handleInit(
   const files: [string, string][] = [
     ["package.json", packageJson(projectName)],
     ["tsconfig.json", TSCONFIG],
-    ["wally.toml", wallyToml(projectName)],
-    ["default.project.json", projectJson(projectName)],
+    [
+      isPesde ? "pesde.toml" : "wally.toml",
+      isPesde ? pesdeToml(projectName) : wallyToml(projectName),
+    ],
+    [
+      "default.project.json",
+      projectJson(projectName, isPesde ? "roblox_packages" : "Packages"),
+    ],
     ["src/client/index.client.tsx", CLIENT_INDEX],
     ["src/client/App.tsx", CLIENT_APP],
     ["src/server/index.server.ts", SERVER_INDEX],
@@ -57,15 +65,27 @@ export function handleInit(
     }
   }
 
-  // Try to run wally install
-  console.log("\nInstalling Roblox packages with wally...");
-  try {
-    execSync("wally install", { cwd: targetDir, stdio: "inherit" });
-  } catch {
-    console.log(
-      "Could not run wally. Install it from https://github.com/UpliftGames/wally"
-    );
-    console.log("Then run: wally install");
+  // Install Roblox packages
+  if (isPesde) {
+    console.log("\nInstalling Roblox packages with pesde...");
+    try {
+      execSync("pesde install", { cwd: targetDir, stdio: "inherit" });
+    } catch {
+      console.log(
+        "Could not run pesde. Install it from https://pesde.dev"
+      );
+      console.log("Then run: pesde install");
+    }
+  } else {
+    console.log("\nInstalling Roblox packages with wally...");
+    try {
+      execSync("wally install", { cwd: targetDir, stdio: "inherit" });
+    } catch {
+      console.log(
+        "Could not run wally. Install it from https://github.com/UpliftGames/wally"
+      );
+      console.log("Then run: wally install");
+    }
   }
 
   // Print next steps
@@ -124,7 +144,24 @@ ReactRoblox = "jsdotlua/react-roblox@17.1.0"
 `;
 }
 
-function projectJson(name: string): string {
+function pesdeToml(name: string): string {
+  return `[package]
+name = "developer/${name}"
+version = "0.1.0"
+
+[target]
+environment = "roblox"
+
+[indices]
+default = "https://registry.pesde.dev"
+
+[dependencies]
+React = { name = "jsdotlua/react", version = "^17.1.0" }
+ReactRoblox = { name = "jsdotlua/react-roblox", version = "^17.1.0" }
+`;
+}
+
+function projectJson(name: string, packagesDir: string): string {
   const project = {
     name,
     tree: {
@@ -150,7 +187,7 @@ function projectJson(name: string): string {
           $path: "out/shared",
         },
         Packages: {
-          $path: "Packages",
+          $path: packagesDir,
         },
       },
     },

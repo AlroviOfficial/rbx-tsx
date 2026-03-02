@@ -48,10 +48,6 @@ function relativePathToRequirePath(
   return base;
 }
 
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 /**
  * Resolve a module specifier to a Luau require path.
  * Uses the same logic as static imports (path aliases, relative paths, packages).
@@ -68,6 +64,5 @@ export function resolveModuleSpecifierToRequirePath(
   ) {
     return relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile);
   }
-  const packageName = capitalize(moduleSpecifier.replace(/[^a-zA-Z0-9]/g, ""));
-  return `ReplicatedStorage.Packages.${packageName}`;
+  return ctx.resolvePackageRequirePath(moduleSpecifier);
 }
