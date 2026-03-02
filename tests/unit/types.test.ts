@@ -57,6 +57,17 @@ describe("complex types", () => {
     const result = compileTS("type Callback = (x: number) => void;");
     expect(result).toContain("((number) -> ())");
   });
+
+  test("Partial<T> makes object fields optional", () => {
+    const result = compileTS("type Opt = Partial<{ a: number; b: string }>;");
+    expect(result).toContain("a: number?");
+    expect(result).toContain("b: string?");
+  });
+
+  test("NonNullable<T> strips nil from union", () => {
+    const result = compileTS("type T = NonNullable<string | null | undefined>;");
+    expect(result).toContain("type T = string");
+  });
 });
 
 describe("interface declarations", () => {

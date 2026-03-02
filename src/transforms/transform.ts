@@ -49,6 +49,7 @@ export function transformSourceFile(
 
   // Phase 1: Process imports (determines what React/services/modules we need)
   const importStatements: LuauStatement[] = [];
+  const reExportStatements: LuauStatement[] = [];
   const bodyStatements: ts.Statement[] = [];
   const exportDeclarations: ts.ExportDeclaration[] = [];
   const exportAssignments: ts.ExportAssignment[] = [];
@@ -58,7 +59,7 @@ export function transformSourceFile(
       importStatements.push(...transformImport(stmt, ctx));
     } else if (ts.isExportDeclaration(stmt)) {
       exportDeclarations.push(stmt);
-      processExportDeclaration(stmt, ctx);
+      reExportStatements.push(...processExportDeclaration(stmt, ctx));
     } else if (ts.isExportAssignment(stmt)) {
       exportAssignments.push(stmt);
     } else {
@@ -212,6 +213,11 @@ export function transformSourceFile(
   // Emit module import statements (after services so React/services come first)
   if (importStatements.length > 0) {
     allStatements.push(...importStatements);
+  }
+
+  // Emit re-exports (export { X } from "./module" — require + locals)
+  if (reExportStatements.length > 0) {
+    allStatements.push(...reExportStatements);
   }
 
   // Emit helper functions

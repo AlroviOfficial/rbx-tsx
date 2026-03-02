@@ -494,6 +494,48 @@ export function processExportDeclaration(
     return [];
   }
 
+  const isReExport =
+    node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier);
+  if (isReExport && node.exportClause && ts.isNamedExports(node.exportClause)) {
+    const moduleSpecifier = (node.moduleSpecifier as ts.StringLiteral).text;
+    const aliasPath = resolvePathAlias(moduleSpecifier, ctx);
+    let requirePath: string;
+    if (aliasPath) {
+      requirePath = aliasPath;
+    } else if (
+      moduleSpecifier.startsWith("./") ||
+      moduleSpecifier.startsWith("../")
+    ) {
+      requirePath = relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile);
+    } else {
+      requirePath =
+        "ReplicatedStorage.Packages." +
+        capitalize(moduleSpecifier.replace(/[^a-zA-Z0-9]/g, ""));
+    }
+
+    const results: LuauStatement[] = [];
+    const moduleName = `_reexport_${sanitizeName(moduleSpecifier)}`;
+    results.push({
+      type: "local",
+      name: moduleName,
+      value: call(ident("require"), [raw(requirePath)]),
+    });
+    ctx.requiredModulePaths.set(requirePath, moduleName);
+
+    for (const spec of node.exportClause.elements) {
+      const name = spec.name.text;
+      const originalName = spec.propertyName?.text ?? name;
+      results.push({
+        type: "local",
+        name,
+        value: index(ident(moduleName), originalName),
+      });
+      ctx.namedExports.set(name, name);
+      ctx.hasNamedExports = true;
+    }
+    return results;
+  }
+
   if (node.exportClause && ts.isNamedExports(node.exportClause)) {
     for (const spec of node.exportClause.elements) {
       const name = spec.name.text;

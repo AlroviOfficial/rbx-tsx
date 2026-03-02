@@ -120,6 +120,9 @@ export class TransformContext {
   /** When transforming a generator function body, yields become coroutine.yield */
   isGenerator = false;
 
+  /** Stack of (label, flagVar) for labeled loops — used for break label */
+  breakLabelStack: Array<{ label: string; flag: string }> = [];
+
   constructor(warnings: WarningCollector, options: CompileOptions) {
     this.warnings = warnings;
     this.options = options;

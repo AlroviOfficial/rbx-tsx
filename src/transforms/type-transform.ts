@@ -231,9 +231,22 @@ function transformTypeReference(
 
     case "Partial": {
       // Partial<T> → T with all fields optional
-      // Can't easily express in Luau, just use the inner type
+      // If T is an object type literal, re-emit with optional fields
       const arg = node.typeArguments?.[0];
-      return arg ? transformType(arg, ctx) : "any";
+      if (!arg) return "any";
+      const inner = transformType(arg, ctx);
+      if (inner.startsWith("{")) {
+        return makeFieldsOptional(inner);
+      }
+      return inner;
+    }
+
+    case "NonNullable": {
+      // NonNullable<T> → strip nil from union
+      const arg = node.typeArguments?.[0];
+      if (!arg) return "any";
+      const inner = transformType(arg, ctx);
+      return stripNilFromUnion(inner);
     }
 
     case "Required":
@@ -246,7 +259,6 @@ function transformTypeReference(
     case "Omit":
     case "Exclude":
     case "Extract":
-    case "NonNullable":
     case "ReturnType":
     case "Parameters":
     case "InstanceType":
@@ -272,6 +284,25 @@ function transformTypeReference(
       }
       return typeName;
   }
+}
+
+/** Strip nil from union type string (for NonNullable<T>) */
+function stripNilFromUnion(s: string): string {
+  if (s === "nil") return "any";
+  // Remove trailing ? (optional)
+  let result = s.replace(/\?$/, "");
+  // Remove " | nil" and "nil | " from union
+  result = result.replace(/\s*\|\s*nil\s*/g, " | ").replace(/\s*nil\s*\|\s*/g, " | ");
+  result = result.replace(/^\s*\|\s*|\s*\|\s*$/g, "").trim();
+  return result || "any";
+}
+
+/** Make all fields optional (for Partial<T> on type literals) */
+function makeFieldsOptional(s: string): string {
+  return s.replace(
+    /(\w+): ([^,}]+?)(\?)?(?=[,}])/g,
+    (_, key, type, opt) => `${key}: ${type.trim()}${opt ?? "?"}`
+  );
 }
 
 function transformUnionType(

@@ -54,6 +54,19 @@ describe("control flow", () => {
 });
 
 describe("loops", () => {
+  test("labeled break uses flag pattern", () => {
+    const result = compileStmt(`
+      outer: for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          if (i === 1 && j === 1) break outer;
+        }
+      }
+    `);
+    expect(result).toContain("_breakouter");
+    expect(result).toContain("_breakouter = true");
+    expect(result).toContain("if _breakouter then");
+  });
+
   test("for (let i = 0; i < 10; i++) → for i = 0, 9", () => {
     const result = compileStmt("for (let i = 0; i < 10; i++) { doSomething(i); }");
     expect(result).toContain("for i = 0, ");
@@ -149,6 +162,15 @@ describe("try/catch", () => {
     const result = compileStmt("try { doSomething(); } catch (err) { handleError(err); }");
     expect(result).toContain("pcall");
     expect(result).toContain("not _ok");
+  });
+
+  test("try/finally without catch re-throws after finally", () => {
+    const result = compileStmt("try { risky(); } finally { cleanup(); }");
+    expect(result).toContain("_ok");
+    expect(result).toContain("_err");
+    expect(result).toContain("not _ok");
+    expect(result).toContain("error(_err)");
+    expect(result).toContain("cleanup()");
   });
 });
 

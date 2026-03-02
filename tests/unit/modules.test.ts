@@ -98,6 +98,17 @@ describe("exports", () => {
     expect(result).toContain("CONSTANT = CONSTANT");
   });
 
+  test("re-exports emit require and locals", () => {
+    const result = compileTS(`
+      export { foo, bar } from "./utils";
+    `);
+    expect(result).toContain("require(script.Parent.utils)");
+    expect(result).toContain("local foo = ");
+    expect(result).toContain("local bar = ");
+    expect(result).toContain("foo = foo");
+    expect(result).toContain("bar = bar");
+  });
+
   test("mixed default + named exports", () => {
     const result = compileTS(`
       export function helper() { return 42; }

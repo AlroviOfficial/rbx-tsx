@@ -138,12 +138,28 @@ export function transformStatement(
     ];
   }
 
-  // Break
+  // Break (with optional label for labeled break)
   if (ts.isBreakStatement(node)) {
+    const label = node.label?.text;
+    if (label && ctx.breakLabelStack.length > 0) {
+      const idx = ctx.breakLabelStack.findIndex((e) => e.label === label);
+      if (idx >= 0) {
+        const stmts: LuauStatement[] = [];
+        for (let i = idx; i < ctx.breakLabelStack.length; i++) {
+          stmts.push({
+            type: "assignment",
+            target: ident(ctx.breakLabelStack[i]!.flag),
+            value: bool(true),
+          });
+        }
+        stmts.push({ type: "break" });
+        return stmts;
+      }
+    }
     return [{ type: "break" }];
   }
 
-  // Continue
+  // Continue (labels silently stripped — Luau has no labeled continue)
   if (ts.isContinueStatement(node)) {
     return [{ type: "continue" }];
   }
@@ -213,9 +229,27 @@ export function transformStatement(
     return [{ type: "comment", text: "debugger" }];
   }
 
-  // Labeled statement
+  // Labeled statement (for labeled break: wrap loops with flag pattern)
   if (ts.isLabeledStatement(node)) {
-    return transformStatement(node.statement, ctx);
+    const label = node.label.text;
+    const inner = node.statement;
+    const isLoop =
+      ts.isForStatement(inner) ||
+      ts.isForInStatement(inner) ||
+      ts.isForOfStatement(inner) ||
+      ts.isWhileStatement(inner) ||
+      ts.isDoStatement(inner);
+    if (isLoop) {
+      const flag = `_break${label}`;
+      ctx.breakLabelStack.push({ label, flag });
+      const stmts = transformStatement(inner, ctx);
+      ctx.breakLabelStack.pop();
+      return [
+        { type: "local", name: flag, value: bool(false) },
+        ...stmts,
+      ];
+    }
+    return transformStatement(inner, ctx);
   }
 
   // With statement — unsupported
@@ -1167,18 +1201,6 @@ function transformExpressionStatement(
         },
       ];
     }
-
-    // String concat assignment: +=  when used with strings → ..=
-    if (expr.operatorToken.kind === ts.SyntaxKind.PlusEqualsToken) {
-      return [
-        {
-          type: "compound-assignment",
-          target: transformExpression(expr.left, ctx),
-          op: "+=",
-          value: transformExpression(expr.right, ctx),
-        },
-      ];
-    }
   }
 
   // Increment/decrement at statement level
@@ -2091,14 +2113,30 @@ function transformTryStatement(
       body: catchBody,
     });
   } else {
+    // try { ... } finally { ... } — capture pcall result so we can re-throw after finally
     results.push({
-      type: "expression-statement",
-      expr: call(ident("pcall"), [funcExpr([], tryBody)]),
+      type: "multi-local",
+      names: ["_ok", "_err"],
+      values: [call(ident("pcall"), [funcExpr([], tryBody)])],
     });
   }
 
   if (node.finallyBlock) {
     results.push(...transformStatements(node.finallyBlock.statements, ctx));
+  }
+
+  // Re-throw if no catch clause — errors must not be silently swallowed
+  if (!node.catchClause) {
+    results.push({
+      type: "if",
+      condition: unary("not", ident("_ok")),
+      body: [
+        {
+          type: "expression-statement",
+          expr: call(ident("error"), [ident("_err")]),
+        },
+      ],
+    });
   }
 
   return results;
@@ -2161,7 +2199,54 @@ function transformBlockOrStatement(
   ctx: TransformContext
 ): LuauStatement[] {
   if (ts.isBlock(node)) {
-    return transformStatements(node.statements, ctx);
+    return transformStatementsWithBreakCheck(node.statements, ctx);
+  }
+  if (ctx.breakLabelStack.length > 0) {
+    const result: LuauStatement[] = [];
+    const top = ctx.breakLabelStack[ctx.breakLabelStack.length - 1]!;
+    result.push({
+      type: "assignment",
+      target: ident(top.flag),
+      value: bool(false),
+    });
+    result.push(...transformStatement(node, ctx));
+    for (const { flag } of ctx.breakLabelStack) {
+      result.push({
+        type: "if",
+        condition: ident(flag),
+        body: [{ type: "break" }],
+      });
+    }
+    return result;
   }
   return transformStatement(node, ctx);
+}
+
+/** Transform statements, adding break-flag reset and check when in labeled loop context */
+function transformStatementsWithBreakCheck(
+  statements: ts.NodeArray<ts.Statement> | ReadonlyArray<ts.Statement>,
+  ctx: TransformContext
+): LuauStatement[] {
+  const result: LuauStatement[] = [];
+  if (ctx.breakLabelStack.length > 0) {
+    const top = ctx.breakLabelStack[ctx.breakLabelStack.length - 1]!;
+    result.push({
+      type: "assignment",
+      target: ident(top.flag),
+      value: bool(false),
+    });
+  }
+  for (const stmt of statements) {
+    const stmts = transformStatement(stmt, ctx);
+    const pre = ctx.flushPreStatements();
+    result.push(...pre, ...stmts);
+    for (const { flag } of ctx.breakLabelStack) {
+      result.push({
+        type: "if",
+        condition: ident(flag),
+        body: [{ type: "break" }],
+      });
+    }
+  }
+  return result;
 }
