@@ -362,7 +362,9 @@ function emitExpr(
 
     case "type-assertion": {
       const inner = emitExpr(expr.expr, ctx, depth);
-      return `${inner} :: ${expr.annotation}`;
+      // Wrap in parens if the inner expression is also a type assertion
+      const wrapped = expr.expr.type === "type-assertion" ? `(${inner})` : inner;
+      return `${wrapped} :: ${expr.annotation}`;
     }
   }
 }

@@ -86,6 +86,22 @@ export function transformSourceFile(
           }
         }
       }
+      // Track exports on class declarations
+      if (ts.isClassDeclaration(stmt) && stmt.name) {
+        const isClassDefault = stmt.modifiers?.some(
+          (m) => m.kind === ts.SyntaxKind.DefaultKeyword
+        );
+        if (isClassDefault) {
+          ctx.defaultExport = stmt.name.text;
+        }
+        const isClassExported = stmt.modifiers?.some(
+          (m) => m.kind === ts.SyntaxKind.ExportKeyword
+        );
+        if (isClassExported && !isClassDefault) {
+          ctx.namedExports.set(stmt.name.text, stmt.name.text);
+          ctx.hasNamedExports = true;
+        }
+      }
     }
   }
 

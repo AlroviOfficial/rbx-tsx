@@ -229,3 +229,133 @@ describe("async/await", () => {
     expect(result).toContain("Promise");
   });
 });
+
+describe("class declarations", () => {
+  test("basic class with constructor and method", () => {
+    const result = compileStmt(`
+      class Animal {
+        name: string;
+        constructor(name: string) { this.name = name; }
+        speak(): string { return this.name + " makes a noise"; }
+      }
+    `);
+    expect(result).toContain("({} :: any) :: Animal");
+    expect(result).toContain("Animal.__index = Animal");
+    expect(result).toContain("function Animal.new(name: string)");
+    expect(result).toContain("local self = setmetatable({}, Animal) :: any");
+    expect(result).toContain("self.name = name");
+    expect(result).toContain("return self");
+    expect(result).toContain("function Animal:speak(): string");
+  });
+
+  test("class with inheritance", () => {
+    const result = compileStmt(`
+      class Animal {
+        name: string;
+        constructor(name: string) { this.name = name; }
+      }
+      class Dog extends Animal {
+        constructor(name: string) { super(name); }
+        speak(): string { return this.name + " barks"; }
+      }
+    `);
+    expect(result).toContain(":: Dog");
+    expect(result).toContain("Dog.__index = Dog");
+    expect(result).toContain("function Dog.new(name: string)");
+    expect(result).toContain("local self = setmetatable(Animal.new(name), Dog) :: any");
+    expect(result).toContain("function Dog:speak(): string");
+  });
+
+  test("static methods use dot syntax", () => {
+    const result = compileStmt(`
+      class Factory {
+        static create(): Factory { return new Factory(); }
+      }
+    `);
+    expect(result).toContain("function Factory.create(): Factory");
+    expect(result).not.toContain("function Factory:create");
+  });
+
+  test("property declarations with default values", () => {
+    const result = compileStmt(`
+      class Counter {
+        count: number = 0;
+        constructor() {}
+      }
+    `);
+    expect(result).toContain("self.count = 0");
+  });
+
+  test("class generates type alias", () => {
+    const result = compileStmt(`
+      class Point {
+        x: number;
+        y: number;
+        constructor(x: number, y: number) { this.x = x; this.y = y; }
+        distanceTo(other: Point): number { return 0; }
+      }
+    `);
+    expect(result).toContain("type Point = {");
+    expect(result).toContain("x: number");
+    expect(result).toContain("y: number");
+    expect(result).toContain("distanceTo:");
+    expect(result).toContain("new: ((number, number) -> Point)");
+    expect(result).toContain("__index: Point");
+  });
+
+  test("class without explicit constructor generates default", () => {
+    const result = compileStmt(`
+      class Simple {
+        value: number;
+      }
+    `);
+    expect(result).toContain("function Simple.new()");
+    expect(result).toContain("local self = setmetatable({}, Simple) :: any");
+    expect(result).toContain("return self");
+  });
+
+  test("inherited class type extends parent type", () => {
+    const result = compileStmt(`
+      class Base {
+        id: number;
+        constructor(id: number) { this.id = id; }
+      }
+      class Child extends Base {
+        name: string;
+        constructor(id: number, name: string) { super(id); this.name = name; }
+      }
+    `);
+    expect(result).toContain("type Child = Base & {");
+  });
+
+  test("super.method() calls parent with self", () => {
+    const result = compileStmt(`
+      class Base {
+        greet(): string { return "hello"; }
+      }
+      class Child extends Base {
+        greet(): string { return super.greet() + " world"; }
+      }
+    `);
+    expect(result).toContain("Base.greet(self)");
+  });
+
+  test("static property initializers", () => {
+    const result = compileStmt(`
+      class Config {
+        static defaultValue: number = 42;
+      }
+    `);
+    expect(result).toContain("Config.defaultValue = 42");
+  });
+
+  test("export default class", () => {
+    const result = compileStmt(`
+      export default class MyClass {
+        constructor() {}
+      }
+    `);
+    expect(result).toContain("local MyClass = ({} :: any) :: MyClass");
+    expect(result).toContain("return MyClass");
+  });
+});

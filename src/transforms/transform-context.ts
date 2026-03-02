@@ -104,6 +104,12 @@ export class TransformContext {
   /** Counter for generating unique temp variable names */
   private _tempCounter = 0;
 
+  /** The class currently being transformed (null when outside a class) */
+  currentClassName: string | null = null;
+
+  /** The parent class name (from extends clause) of the class being transformed */
+  currentParentClassName: string | null = null;
+
   constructor(warnings: WarningCollector, options: CompileOptions) {
     this.warnings = warnings;
     this.options = options;

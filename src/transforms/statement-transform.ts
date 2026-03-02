@@ -197,13 +197,9 @@ export function transformStatement(
     return [];
   }
 
-  // Class declaration — not supported for React functional components
+  // Class declaration
   if (ts.isClassDeclaration(node)) {
-    ctx.warn(
-      "unsupported-syntax",
-      "Class declarations are not supported (functional components only)"
-    );
-    return [{ type: "comment", text: "unsupported: class declaration" }];
+    return transformClassDeclaration(node, ctx);
   }
 
   // Debugger
@@ -1319,6 +1315,483 @@ function transformEnumDeclaration(
   }
 
   return result;
+}
+
+// ── Class Declarations ──
+
+function transformClassDeclaration(
+  node: ts.ClassDeclaration,
+  ctx: TransformContext
+): LuauStatement[] {
+  const result: LuauStatement[] = [];
+
+  // Anonymous classes unsupported
+  if (!node.name) {
+    ctx.warn(
+      "unsupported-syntax",
+      "Anonymous class declarations are not supported"
+    );
+    return [{ type: "comment", text: "unsupported: anonymous class" }];
+  }
+  const className = node.name.text;
+
+  // Check modifiers
+  const isExported = node.modifiers?.some(
+    (m) => m.kind === ts.SyntaxKind.ExportKeyword
+  );
+  const isDefault = node.modifiers?.some(
+    (m) => m.kind === ts.SyntaxKind.DefaultKeyword
+  );
+  const isAbstract = node.modifiers?.some(
+    (m) => m.kind === ts.SyntaxKind.AbstractKeyword
+  );
+
+  if (isAbstract) {
+    ctx.warnAtNode(
+      "lossy-transform",
+      `Abstract modifier on class '${className}' stripped (no Luau equivalent)`,
+      node
+    );
+  }
+
+  // Extract parent class from heritage clause
+  let parentClassName: string | null = null;
+  if (node.heritageClauses) {
+    for (const clause of node.heritageClauses) {
+      if (
+        clause.token === ts.SyntaxKind.ExtendsKeyword &&
+        clause.types.length > 0
+      ) {
+        const extendsExpr = clause.types[0]!.expression;
+        if (ts.isIdentifier(extendsExpr)) {
+          parentClassName = extendsExpr.text;
+        } else {
+          ctx.warnAtNode(
+            "unsupported-syntax",
+            "Complex extends expressions are not supported",
+            extendsExpr
+          );
+        }
+      }
+      // implements has no runtime effect — ignored silently
+    }
+  }
+
+  // Set context for super resolution inside class body
+  ctx.currentClassName = className;
+  ctx.currentParentClassName = parentClassName;
+
+  // Categorize members (needed before type alias)
+  const properties: ts.PropertyDeclaration[] = [];
+  let constructorDecl: ts.ConstructorDeclaration | null = null;
+  const methods: ts.MethodDeclaration[] = [];
+
+  for (const member of node.members) {
+    if (ts.isConstructorDeclaration(member)) {
+      constructorDecl = member;
+    } else if (ts.isMethodDeclaration(member)) {
+      methods.push(member);
+    } else if (ts.isPropertyDeclaration(member)) {
+      properties.push(member);
+    } else if (
+      ts.isGetAccessorDeclaration(member) ||
+      ts.isSetAccessorDeclaration(member)
+    ) {
+      ctx.warnAtNode(
+        "unsupported-syntax",
+        `Get/set accessors are not supported in class '${className}'`,
+        member
+      );
+    }
+  }
+
+  // Emit type alias FIRST — Luau hoists types, and we need the type
+  // available for the `:: ClassName` cast on the table declaration
+  result.push(
+    ...emitClassTypeAlias(
+      className,
+      parentClassName,
+      constructorDecl,
+      properties,
+      methods,
+      isExported,
+      ctx
+    )
+  );
+
+  // Emit: local ClassName = ({} :: any) :: ClassName
+  // The double-cast avoids metatable type conversion errors
+  const castToAny = (expr: LuauExpression): LuauExpression => ({
+    type: "type-assertion",
+    expr,
+    annotation: "any",
+  });
+  const castToClass = (expr: LuauExpression): LuauExpression => ({
+    type: "type-assertion",
+    expr,
+    annotation: className,
+  });
+
+  if (parentClassName) {
+    result.push({
+      type: "local",
+      name: className,
+      value: castToClass(
+        castToAny(
+          call(ident("setmetatable"), [
+            table([]),
+            table([{ key: str("__index"), value: ident(parentClassName) }]),
+          ])
+        )
+      ),
+    });
+  } else {
+    result.push({
+      type: "local",
+      name: className,
+      value: castToClass(castToAny(table([]))),
+    });
+  }
+
+  // Emit: ClassName.__index = ClassName
+  result.push({
+    type: "assignment",
+    target: index(ident(className), "__index"),
+    value: ident(className),
+  });
+
+  // Emit constructor as ClassName.new()
+  result.push(
+    ...emitClassConstructor(
+      className,
+      parentClassName,
+      constructorDecl,
+      properties,
+      ctx
+    )
+  );
+
+  // Emit instance and static methods
+  for (const method of methods) {
+    result.push(...emitClassMethod(className, method, ctx));
+  }
+
+  // Emit static property initializers
+  for (const prop of properties) {
+    if (prop.initializer && ts.isIdentifier(prop.name)) {
+      const isStatic = prop.modifiers?.some(
+        (m) => m.kind === ts.SyntaxKind.StaticKeyword
+      );
+      if (isStatic) {
+        result.push({
+          type: "assignment",
+          target: index(ident(className), prop.name.text),
+          value: transformExpression(prop.initializer, ctx),
+        });
+      }
+    }
+  }
+
+  // Export tracking
+  if (isDefault) {
+    ctx.defaultExport = className;
+  }
+  if (isExported && !isDefault) {
+    ctx.namedExports.set(className, className);
+    ctx.hasNamedExports = true;
+  }
+
+  // Clear class context
+  ctx.currentClassName = null;
+  ctx.currentParentClassName = null;
+
+  return result;
+}
+
+function emitClassConstructor(
+  className: string,
+  parentClassName: string | null,
+  constructorDecl: ts.ConstructorDeclaration | null,
+  properties: ts.PropertyDeclaration[],
+  ctx: TransformContext
+): LuauStatement[] {
+  const body: LuauStatement[] = [];
+  let params: LuauParam[] = [];
+
+  // Helper: setmetatable(...) :: any — avoids metatable type conversion errors
+  const setmetatableAny = (obj: LuauExpression, mt: LuauExpression): LuauExpression => ({
+    type: "type-assertion",
+    expr: call(ident("setmetatable"), [obj, mt]),
+    annotation: "any",
+  });
+
+  if (constructorDecl) {
+    params = transformFunctionParams(constructorDecl.parameters, ctx);
+    const preamble = getDestructuringPreamble(constructorDecl.parameters, ctx);
+
+    if (parentClassName && constructorDecl.body) {
+      // Inherited: scan body for super(args) call, emit the rest normally
+      body.push(...preamble);
+
+      for (const stmt of constructorDecl.body.statements) {
+        // Detect super(args) call at statement level
+        if (
+          ts.isExpressionStatement(stmt) &&
+          ts.isCallExpression(stmt.expression) &&
+          stmt.expression.expression.kind === ts.SyntaxKind.SuperKeyword
+        ) {
+          const superArgs = stmt.expression.arguments.map((a) =>
+            transformExpression(a, ctx)
+          );
+          body.push({
+            type: "local",
+            name: "self",
+            value: setmetatableAny(
+              call(index(ident(parentClassName), "new"), superArgs),
+              ident(className)
+            ),
+          });
+        } else {
+          const stmts = transformStatement(stmt, ctx);
+          const pre = ctx.flushPreStatements();
+          body.push(...pre, ...stmts);
+        }
+      }
+    } else {
+      // No parent
+      body.push({
+        type: "local",
+        name: "self",
+        value: setmetatableAny(table([]), ident(className)),
+      });
+
+      // Instance property defaults
+      for (const prop of properties) {
+        if (prop.initializer && ts.isIdentifier(prop.name)) {
+          const isStatic = prop.modifiers?.some(
+            (m) => m.kind === ts.SyntaxKind.StaticKeyword
+          );
+          if (!isStatic) {
+            body.push({
+              type: "assignment",
+              target: index(ident("self"), prop.name.text),
+              value: transformExpression(prop.initializer, ctx),
+            });
+          }
+        }
+      }
+
+      // Constructor body
+      if (constructorDecl.body) {
+        body.push(...preamble);
+        body.push(...transformStatements(constructorDecl.body.statements, ctx));
+      }
+    }
+  } else {
+    // No constructor — synthesize default
+    if (parentClassName) {
+      body.push({
+        type: "local",
+        name: "self",
+        value: setmetatableAny(
+          call(index(ident(parentClassName), "new"), []),
+          ident(className)
+        ),
+      });
+    } else {
+      body.push({
+        type: "local",
+        name: "self",
+        value: setmetatableAny(table([]), ident(className)),
+      });
+    }
+
+    // Instance property defaults
+    for (const prop of properties) {
+      if (prop.initializer && ts.isIdentifier(prop.name)) {
+        const isStatic = prop.modifiers?.some(
+          (m) => m.kind === ts.SyntaxKind.StaticKeyword
+        );
+        if (!isStatic) {
+          body.push({
+            type: "assignment",
+            target: index(ident("self"), prop.name.text),
+            value: transformExpression(prop.initializer, ctx),
+          });
+        }
+      }
+    }
+  }
+
+  // Ensure return self at end
+  body.push({ type: "return", value: ident("self") });
+
+  return [
+    {
+      type: "function-decl",
+      local: false,
+      name: `${className}.new`,
+      params,
+      body,
+    },
+  ];
+}
+
+function emitClassMethod(
+  className: string,
+  method: ts.MethodDeclaration,
+  ctx: TransformContext
+): LuauStatement[] {
+  if (!ts.isIdentifier(method.name)) {
+    ctx.warn("unsupported-syntax", "Computed method names are not supported");
+    return [{ type: "comment", text: "unsupported: computed method name" }];
+  }
+
+  const methodName = method.name.text;
+  const isStatic = method.modifiers?.some(
+    (m) => m.kind === ts.SyntaxKind.StaticKeyword
+  );
+  const isAsync = method.modifiers?.some(
+    (m) => m.kind === ts.SyntaxKind.AsyncKeyword
+  );
+
+  const params = transformFunctionParams(method.parameters, ctx);
+  const additionalBodyStmts = getDestructuringPreamble(method.parameters, ctx);
+
+  let returnType: string | undefined;
+  if (method.type) {
+    returnType = transformType(method.type, ctx);
+  }
+
+  let innerBody: LuauStatement[] = [];
+  if (method.body) {
+    innerBody = [
+      ...additionalBodyStmts,
+      ...transformStatements(method.body.statements, ctx),
+    ];
+  }
+
+  let body: LuauStatement[];
+  if (isAsync) {
+    ctx.needsPromise = true;
+    const promiseBody = rewriteReturnsToResolve(innerBody);
+    body = [
+      {
+        type: "return",
+        value: call(index(ident("Promise"), "new"), [
+          funcExpr([{ name: "resolve" }, { name: "reject" }], promiseBody),
+        ]),
+      },
+    ];
+  } else {
+    body = innerBody;
+  }
+
+  // Static → dot syntax, instance → colon syntax
+  const qualifiedName = isStatic
+    ? `${className}.${methodName}`
+    : `${className}:${methodName}`;
+
+  return [
+    {
+      type: "function-decl",
+      local: false,
+      name: qualifiedName,
+      params,
+      body,
+      returnType,
+    },
+  ];
+}
+
+function emitClassTypeAlias(
+  className: string,
+  parentClassName: string | null,
+  constructorDecl: ts.ConstructorDeclaration | null,
+  properties: ts.PropertyDeclaration[],
+  methods: ts.MethodDeclaration[],
+  isExported: boolean | undefined,
+  ctx: TransformContext
+): LuauStatement[] {
+  const members: string[] = [];
+
+  // Instance properties (non-static)
+  for (const prop of properties) {
+    if (!ts.isIdentifier(prop.name)) continue;
+    const isStatic = prop.modifiers?.some(
+      (m) => m.kind === ts.SyntaxKind.StaticKeyword
+    );
+    if (isStatic) continue;
+
+    const propName = prop.name.text;
+    const propType = prop.type ? transformType(prop.type, ctx) : "any";
+    const optional = prop.questionToken ? "?" : "";
+    members.push(`${propName}: ${propType}${optional}`);
+  }
+
+  // Instance methods (non-static)
+  for (const method of methods) {
+    if (!ts.isIdentifier(method.name)) continue;
+    const isStatic = method.modifiers?.some(
+      (m) => m.kind === ts.SyntaxKind.StaticKeyword
+    );
+    if (isStatic) continue;
+
+    const methodName = method.name.text;
+    const paramTypes = method.parameters.map((p) => {
+      return p.type ? transformType(p.type, ctx) : "any";
+    });
+    const returnType = method.type ? transformType(method.type, ctx) : "()";
+    const allParams =
+      paramTypes.length > 0
+        ? `self: ${className}, ${paramTypes.join(", ")}`
+        : `self: ${className}`;
+    members.push(`${methodName}: ((${allParams}) -> ${returnType})`);
+  }
+
+  // Static methods
+  for (const method of methods) {
+    if (!ts.isIdentifier(method.name)) continue;
+    const isStatic = method.modifiers?.some(
+      (m) => m.kind === ts.SyntaxKind.StaticKeyword
+    );
+    if (!isStatic) continue;
+
+    const methodName = method.name.text;
+    const paramTypes = method.parameters.map((p) => {
+      return p.type ? transformType(p.type, ctx) : "any";
+    });
+    const returnType = method.type ? transformType(method.type, ctx) : "()";
+    const paramStr = paramTypes.length > 0 ? paramTypes.join(", ") : "";
+    members.push(`${methodName}: ((${paramStr}) -> ${returnType})`);
+  }
+
+  // Constructor signature: new: (...) -> ClassName
+  if (constructorDecl) {
+    const paramTypes = constructorDecl.parameters.map((p) => {
+      return p.type ? transformType(p.type, ctx) : "any";
+    });
+    const paramStr = paramTypes.length > 0 ? paramTypes.join(", ") : "";
+    members.push(`new: ((${paramStr}) -> ${className})`);
+  } else {
+    members.push(`new: (() -> ${className})`);
+  }
+
+  // __index self-reference
+  members.push(`__index: ${className}`);
+
+  const memberStr = members.join(",\n    ");
+  const typeBody = `{\n    ${memberStr},\n}`;
+  const definition = parentClassName
+    ? `${parentClassName} & ${typeBody}`
+    : typeBody;
+
+  if (isExported) {
+    ctx.typeExports.add(className);
+    return [{ type: "export-type-alias", name: className, definition }];
+  }
+
+  return [{ type: "type-alias", name: className, definition }];
 }
 
 // ── Try/Catch ──

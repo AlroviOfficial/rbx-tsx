@@ -171,6 +171,18 @@ export function transformExpression(
     return ident("self");
   }
 
+  // super → parent class reference
+  if (node.kind === ts.SyntaxKind.SuperKeyword) {
+    if (ctx.currentParentClassName) {
+      return ident(ctx.currentParentClassName);
+    }
+    ctx.warn(
+      "unsupported-syntax",
+      "'super' used outside of a class with a parent"
+    );
+    return raw("--[[ super ]] nil");
+  }
+
   // JSX
   if (
     ts.isJsxElement(node) ||
@@ -423,12 +435,27 @@ function transformBinaryExpression(
 
   const luauOp = opMap[op];
   if (luauOp) {
-    // Special case: string + for concatenation is handled via context
-    return binary(
-      transformExpression(node.left, ctx),
-      luauOp,
-      transformExpression(node.right, ctx)
-    );
+    const left = transformExpression(node.left, ctx);
+    const right = transformExpression(node.right, ctx);
+
+    // string + → .. concatenation
+    if (op === ts.SyntaxKind.PlusToken) {
+      const leftIsString =
+        ts.isStringLiteral(node.left) ||
+        ts.isNoSubstitutionTemplateLiteral(node.left) ||
+        ts.isTemplateExpression(node.left) ||
+        isLikelyStringResult(left);
+      const rightIsString =
+        ts.isStringLiteral(node.right) ||
+        ts.isNoSubstitutionTemplateLiteral(node.right) ||
+        ts.isTemplateExpression(node.right) ||
+        isLikelyStringResult(right);
+      if (leftIsString || rightIsString) {
+        return binary(left, "..", right);
+      }
+    }
+
+    return binary(left, luauOp, right);
   }
 
   // Assignment operators are handled at the statement level
@@ -573,6 +600,27 @@ function transformCallExpression(
       callee = ident(tmp);
     }
     return ifExpr(binary(callee, "~=", nil()), call(callee, args), nil());
+  }
+
+  // super.method(args) → Parent.method(self, args)
+  if (
+    ts.isPropertyAccessExpression(node.expression) &&
+    node.expression.expression.kind === ts.SyntaxKind.SuperKeyword &&
+    ctx.currentParentClassName
+  ) {
+    const methodName = node.expression.name.text;
+    return call(index(ident(ctx.currentParentClassName), methodName), [
+      ident("self"),
+      ...args,
+    ]);
+  }
+
+  // super(args) as expression → Parent.new(args)
+  if (
+    node.expression.kind === ts.SyntaxKind.SuperKeyword &&
+    ctx.currentParentClassName
+  ) {
+    return call(index(ident(ctx.currentParentClassName), "new"), args);
   }
 
   // Special built-in transforms
