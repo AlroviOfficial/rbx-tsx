@@ -1,6 +1,6 @@
 import ts from "typescript";
 import type { WarningCollector, WarningCode } from "../warnings.ts";
-import type { LuauStatement } from "../ast/luau-ast.ts";
+import type { LuauStatement, LuauExpression } from "../ast/luau-ast.ts";
 import type { CSSManifest } from "../css-manifest.ts";
 
 export interface CompileOptions {
@@ -109,6 +109,12 @@ export class TransformContext {
 
   /** The parent class name (from extends clause) of the class being transformed */
   currentParentClassName: string | null = null;
+
+  /** When transforming a namespace body, the table expression to assign exports to */
+  namespacePrefix: LuauExpression | null = null;
+
+  /** When transforming a generator function body, yields become coroutine.yield */
+  isGenerator = false;
 
   constructor(warnings: WarningCollector, options: CompileOptions) {
     this.warnings = warnings;

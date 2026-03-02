@@ -361,3 +361,75 @@ describe("class declarations", () => {
     expect(result).toContain("return MyClass");
   });
 });
+
+describe("namespace declarations", () => {
+  test("namespace compiles to local table", () => {
+    const result = compileStmt(`
+      namespace Utils {
+        const x = 1;
+        function add(a: number, b: number) { return a + b; }
+      }
+    `);
+    expect(result).toContain("local Utils = Utils or {}");
+    expect(result).toContain("Utils.x = x");
+    expect(result).toContain("function Utils.add");
+  });
+
+  test("nested namespace compiles to nested table", () => {
+    const result = compileStmt(`
+      namespace Outer {
+        namespace Inner {
+          const value = 42;
+        }
+      }
+    `);
+    expect(result).toContain("Outer.Inner = Outer.Inner or {}");
+    expect(result).toContain("Outer.Inner.value = value");
+  });
+
+  test("merged namespace declarations", () => {
+    const result = compileStmt(`
+      namespace Foo { const a = 1; }
+      namespace Foo { const b = 2; }
+    `);
+    expect(result).toContain("local Foo = Foo or {}");
+    expect(result).toContain("Foo.a = a");
+    expect(result).toContain("Foo.b = b");
+  });
+});
+
+describe("generator functions", () => {
+  test("function* compiles to coroutine.wrap", () => {
+    const result = compileStmt(`
+      function* gen() {
+        yield 1;
+        yield 2;
+      }
+    `);
+    expect(result).toContain("coroutine.wrap");
+    expect(result).toContain("coroutine.yield(1)");
+    expect(result).toContain("coroutine.yield(2)");
+  });
+
+  test("for..of on generator uses iterator", () => {
+    const result = compileStmt(`
+      function* range(n: number) {
+        for (let i = 0; i < n; i++) yield i;
+      }
+      for (const x of range(5)) { print(x); }
+    `);
+    expect(result).toContain("coroutine.wrap");
+    expect(result).toContain("for _, x in range(5)");
+  });
+
+  test("yield* delegates to iterable", () => {
+    const result = compileStmt(`
+      function* gen() {
+        yield* [1, 2, 3];
+      }
+    `);
+    expect(result).toContain("coroutine.wrap");
+    expect(result).toMatch(/for.*in.*do/);
+    expect(result).toContain("coroutine.yield");
+  });
+});

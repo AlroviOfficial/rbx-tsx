@@ -98,17 +98,23 @@ function emitStatement(
       if (stmt.sourceLine && stmt.sourceFile) {
         lines.push(`${t}-- source: ${stmt.sourceFile}:${stmt.sourceLine}`);
       }
-      const prefix = stmt.local ? "local function" : "function";
       const params = emitParams(stmt.params);
       const typeParams =
         stmt.typeParams && stmt.typeParams.length > 0
           ? `<${stmt.typeParams.join(", ")}>`
           : "";
-      let sig = `${t}${prefix} ${stmt.name}${typeParams}(${params})`;
-      if (stmt.returnType) {
-        sig += `: ${stmt.returnType}`;
+      const returnPart = stmt.returnType ? `: ${stmt.returnType}` : "";
+      if (stmt.tablePrefix) {
+        const fnRef = emitExpr(
+          { type: "index", object: stmt.tablePrefix, property: stmt.name },
+          ctx,
+          depth
+        );
+        lines.push(`${t}function ${fnRef}${typeParams}(${params})${returnPart}`);
+      } else {
+        const prefix = stmt.local ? "local function" : "function";
+        lines.push(`${t}${prefix} ${stmt.name}${typeParams}(${params})${returnPart}`);
       }
-      lines.push(sig);
       emitBody(stmt.body, lines, ctx, depth + 1);
       lines.push(`${t}end`);
       break;

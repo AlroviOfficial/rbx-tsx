@@ -202,6 +202,11 @@ export function transformStatement(
     return transformClassDeclaration(node, ctx);
   }
 
+  // Namespace / module declaration (namespace Foo { } or module Foo { })
+  if (ts.isModuleDeclaration(node)) {
+    return transformNamespaceDeclaration(node, ctx);
+  }
+
   // Debugger
   if (ts.isDebuggerStatement(node)) {
     return [{ type: "comment", text: "debugger" }];
@@ -225,6 +230,61 @@ export function transformStatement(
   return [
     { type: "comment", text: `unsupported: ${ts.SyntaxKind[node.kind]}` },
   ];
+}
+
+// ── Namespace / Module Declaration ──
+
+function transformNamespaceDeclaration(
+  node: ts.ModuleDeclaration,
+  ctx: TransformContext
+): LuauStatement[] {
+  // Skip ambient modules: declare module "path" { }
+  if (ts.isStringLiteral(node.name)) {
+    ctx.warnAtNode(
+      "unsupported-syntax",
+      "Ambient module declarations are not supported",
+      node
+    );
+    return [{ type: "comment", text: "unsupported: ambient module" }];
+  }
+  if (!node.body || !ts.isModuleBlock(node.body)) {
+    return [];
+  }
+
+  const name = node.name.text;
+  const parentPrefix = ctx.namespacePrefix;
+  const nsExpr = parentPrefix
+    ? index(parentPrefix, name)
+    : ident(name);
+
+  const results: LuauStatement[] = [];
+
+  // Merge support: Foo = Foo or {} (or Foo.Bar = Foo.Bar or {} for nested)
+  if (parentPrefix) {
+    results.push({
+      type: "assignment",
+      target: nsExpr,
+      value: binary(nsExpr, "or", table([])),
+    });
+  } else {
+    results.push({
+      type: "local",
+      name,
+      value: binary(ident(name), "or", table([])),
+    });
+  }
+
+  const prevPrefix = ctx.namespacePrefix;
+  ctx.namespacePrefix = nsExpr;
+
+  for (const stmt of node.body.statements) {
+    const stmts = transformStatement(stmt, ctx);
+    const pre = ctx.flushPreStatements();
+    results.push(...pre, ...stmts);
+  }
+
+  ctx.namespacePrefix = prevPrefix;
+  return results;
 }
 
 // ── Variable Statement ──
@@ -324,12 +384,13 @@ function transformVariableStatement(
         }
         results.push({
           type: "function-decl",
-          local: true,
+          local: !ctx.namespacePrefix,
           name,
           params,
           body,
           returnType,
           typeParams,
+          ...(ctx.namespacePrefix && { tablePrefix: ctx.namespacePrefix }),
         });
       } else {
         const value = rawInit
@@ -344,6 +405,13 @@ function transformVariableStatement(
           value,
           typeAnnotation,
         });
+        if (ctx.namespacePrefix) {
+          results.push({
+            type: "assignment",
+            target: index(ctx.namespacePrefix, name),
+            value: ident(name),
+          });
+        }
       }
 
       // Track Map/Set variables for method → table operation transforms
@@ -519,6 +587,11 @@ function transformFunctionDeclaration(
     returnType = transformType(node.type, ctx);
   }
 
+  const isGenerator = !!node.asteriskToken;
+
+  const prevGenerator = ctx.isGenerator;
+  if (isGenerator) ctx.isGenerator = true;
+
   const innerBody = node.body
     ? [
         ...additionalBodyStmts,
@@ -526,9 +599,20 @@ function transformFunctionDeclaration(
       ]
     : additionalBodyStmts;
 
-  // Async function: wrap body in Promise.new(function(resolve, reject) ... end)
+  if (isGenerator) ctx.isGenerator = prevGenerator;
+
+  // Generator: wrap body in coroutine.wrap and return the iterator
   let body: LuauStatement[];
-  if (isAsync) {
+  if (isGenerator) {
+    body = [
+      {
+        type: "return",
+        value: call(index(ident("coroutine"), "wrap"), [
+          funcExpr([], innerBody),
+        ]),
+      },
+    ];
+  } else if (isAsync) {
     ctx.needsPromise = true;
     // Replace return statements with resolve() calls (recursively through all blocks)
     const promiseBody = rewriteReturnsToResolve(innerBody);
@@ -558,7 +642,7 @@ function transformFunctionDeclaration(
   const result: LuauStatement[] = [
     {
       type: "function-decl",
-      local: true,
+      local: !ctx.namespacePrefix,
       name,
       params,
       body,
@@ -566,6 +650,7 @@ function transformFunctionDeclaration(
       ...(typeParams && typeParams.length > 0 && { typeParams }),
       sourceLine,
       sourceFile: sourceFileStr,
+      ...(ctx.namespacePrefix && { tablePrefix: ctx.namespacePrefix }),
     },
   ];
 
@@ -1367,6 +1452,14 @@ function transformEnumDeclaration(
     name,
     value: table(entries),
   });
+
+  if (ctx.namespacePrefix) {
+    result.push({
+      type: "assignment",
+      target: index(ctx.namespacePrefix, name),
+      value: ident(name),
+    });
+  }
 
   result.push({
     type: "type-alias",

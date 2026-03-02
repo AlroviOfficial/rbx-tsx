@@ -223,6 +223,14 @@ function transformTypeReference(
     case "Promise":
       return "any"; // Promises don't have a direct Luau type equivalent
 
+    case "Generator":
+    case "IterableIterator": {
+      // Generator<T, TReturn, TNext> → () -> T? (coroutine.wrap returns an iterator function)
+      const yieldType = node.typeArguments?.[0];
+      const inner = yieldType ? transformType(yieldType, ctx) : "any";
+      return `() -> ${inner}?`;
+    }
+
     case "Partial": {
       // Partial<T> → T with all fields optional
       // Can't easily express in Luau, just use the inner type

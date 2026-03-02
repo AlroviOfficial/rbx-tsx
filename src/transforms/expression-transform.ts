@@ -233,14 +233,36 @@ export function transformExpression(
     return methodCall(inner, "expect", []);
   }
 
-  // Yield — not supported
+  // Yield — supported inside generator functions
   if (ts.isYieldExpression(node)) {
-    ctx.warnAtNode(
-      "unsupported-syntax",
-      "Yield expressions are not supported",
-      node
-    );
-    return raw("--[[ unsupported: yield ]] nil");
+    if (!ctx.isGenerator) {
+      ctx.warnAtNode(
+        "unsupported-syntax",
+        "Yield expressions are only supported inside generator functions",
+        node
+      );
+      return raw("--[[ unsupported: yield outside generator ]] nil");
+    }
+    if (node.asteriskToken) {
+      // yield* expr — delegate to another iterable
+      const iterable = transformExpression(node.expression!, ctx);
+      ctx.pushPreStatement({
+        type: "for-in",
+        vars: ["_", "_v"],
+        iterators: [iterable],
+        body: [
+          {
+            type: "expression-statement",
+            expr: call(index(ident("coroutine"), "yield"), [ident("_v")]),
+          },
+        ],
+      });
+      return nil();
+    }
+    const value = node.expression
+      ? transformExpression(node.expression, ctx)
+      : nil();
+    return call(index(ident("coroutine"), "yield"), [value]);
   }
 
   // Delete — not directly supported
@@ -533,12 +555,17 @@ export function transformFunctionExpression(
   node: ts.ArrowFunction | ts.FunctionExpression,
   ctx: TransformContext
 ): LuauExpression {
+  const isGenerator = !ts.isArrowFunction(node) && !!node.asteriskToken;
+
   const params = transformParameters(node.parameters, ctx);
   let returnType: string | undefined;
 
   if (node.type) {
     returnType = transformType(node.type, ctx);
   }
+
+  const prevGenerator = ctx.isGenerator;
+  if (isGenerator) ctx.isGenerator = true;
 
   let body: LuauStatement[];
   if (ts.isBlock(node.body)) {
@@ -548,6 +575,17 @@ export function transformFunctionExpression(
     const expr = transformExpression(node.body as ts.Expression, ctx);
     const pre = ctx.flushPreStatements();
     body = [...pre, { type: "return", value: expr }];
+  }
+
+  if (isGenerator) ctx.isGenerator = prevGenerator;
+
+  if (isGenerator) {
+    return funcExpr(params, [
+      {
+        type: "return",
+        value: call(index(ident("coroutine"), "wrap"), [funcExpr([], body)]),
+      },
+    ], returnType);
   }
 
   return funcExpr(params, body, returnType);

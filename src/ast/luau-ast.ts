@@ -63,6 +63,8 @@ export interface LuauFunctionDecl {
   typeParams?: string[];
   sourceLine?: number;
   sourceFile?: string;
+  /** When set, emit as function prefix.name() instead of local function name() */
+  tablePrefix?: LuauExpression;
 }
 
 export interface LuauIf {
