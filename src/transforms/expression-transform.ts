@@ -255,14 +255,18 @@ export function transformExpression(
       ctx.pushPreStatement({ type: "local", name: tmp });
       ctx.pushPreStatement({
         type: "for-in",
-        vars: ["_", "_v"],
+        vars: ["_v"],
         iterators: [iterable],
         body: [
           {
             type: "expression-statement",
             expr: call(index(ident("coroutine"), "yield"), [ident("_v")]),
           },
-          { type: "assignment", target: ident(tmp), value: ident("_v") },
+          {
+            type: "assignment",
+            target: ident(tmp),
+            value: index(ident("_v"), "value"),
+          },
         ],
       });
       return call(funcExpr([], [{ type: "return", value: ident(tmp) }]), []);
@@ -754,8 +758,15 @@ function transformCallExpression(
     } else if (method === "test" || method === "exec") {
       // RegExp.test/exec need : syntax to pass self (luau-regexp)
       result = methodCall(obj, method, args);
-    } else {
+    } else if (
+      ts.isIdentifier(node.expression.expression) &&
+      ctx.knownClassNames.has(node.expression.expression.text)
+    ) {
+      // Static class method: ClassName.method() — use dot (no self)
       result = call(index(obj, method), args);
+    } else {
+      // Instance method: obj.method() — use colon to pass self
+      result = methodCall(obj, method, args);
     }
 
     if (isOptional) {

@@ -32,6 +32,10 @@ import {
   transformStatement,
   transformStatements,
 } from "./statement-transform.ts";
+import {
+  getLeadingComments,
+  getTrailingComments,
+} from "./comments.ts";
 import { transformExpression } from "./expression-transform.ts";
 
 /**
@@ -170,9 +174,11 @@ export function transformSourceFile(
   // Phase 3: Transform body statements (this populates ctx.requiredServices, ctx.requiredHelpers, ctx.needsPromise)
   const transformedBody: LuauStatement[] = [];
   for (const stmt of bodyStatements) {
+    transformedBody.push(...getLeadingComments(sourceFile, stmt));
     const stmts = transformStatement(stmt, ctx);
     const pre = ctx.flushPreStatements();
     transformedBody.push(...pre, ...stmts);
+    transformedBody.push(...getTrailingComments(sourceFile, stmt));
   }
 
   // Now emit services (after body transform so we know which ones are needed)

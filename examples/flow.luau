@@ -45,10 +45,11 @@ type FlowData = {}
 export type Flow<R, E, V> = typeof(setmetatable({} :: FlowData, Flow))
 function Flow.new<R, E, V>(runFlow: ((Context<R>) -> FlowResult<R, E, V>)): Flow<R, E, V>
     local self = {}
+    self.runFlow = runFlow
     return setmetatable(self, Flow)
 end
 function Flow.run<R, E, V>(self: Flow<R, E, V>, context: Context<R>): FlowResult<R, E, V>
-    return self.runFlow(if context ~= nil then context else {})
+    return self:runFlow(if context ~= nil then context else {})
 end
 function Flow.sync<V>(fn: (() -> V)): Flow<any, any, V>
     return Flow.new(function() return { success = true, value = fn() } end)
@@ -63,35 +64,37 @@ function Flow.gen<R, E, V>(generatorFunction: ((GenHelper<R, E, V>) -> () -> Flo
     return Flow.new(function(context: Context<R>)
         local gen = generatorFunction(function<R2, E2, V2>(eff: Flow<R2, E2, V2>): () -> FlowResult<R2, E2, V2>?
             return __generatorAdapter(function()
-                local result: FlowResult<R2, E2, V2> = eff.run(context)
+                local result: FlowResult<R2, E2, V2> = eff:run(context)
                 return coroutine.yield(result)
             end)
         end)
-        local iterResult = gen.next()
+        local iterResult = gen:next()
         while not iterResult.done do
             local flowResult = iterResult.value
             if not flowResult.success then
                 return flowResult
             end
-            iterResult = gen.next(flowResult.value)
+            iterResult = gen:next(flowResult.value)
         end
         return { success = true, value = iterResult.value }
     end)
 end
+-- --- Example usages ---
+-- 1. Simple sync flow with validation (run short-circuits on failure)
 local parseNumber = function(s: string): Flow<any, string, number>
     return Flow.gen(function(run)
         return __generatorAdapter(function()
             local _opt0
-            for _, _v in __generatorToIterator(run(Flow.sync(function() return tonumber(string.match(s, "^%s*(.-)%s*$"), 10) end))) do
+            for _v in __generatorToIterator(run(Flow.sync(function() return tonumber(string.match(s, "^%s*(.-)%s*$"), 10) end))) do
                 coroutine.yield(_v)
-                _opt0 = _v
+                _opt0 = _v.value
             end
             local n = (function() return _opt0 end)()
             if _numberIsNaN(n) then
                 local _opt1
-                for _, _v in __generatorToIterator(run(Flow.fail("invalid number"))) do
+                for _v in __generatorToIterator(run(Flow.fail("invalid number"))) do
                     coroutine.yield(_v)
-                    _opt1 = _v
+                    _opt1 = _v.value
                 end
                 (function() return _opt1 end)()
                 return 0
@@ -100,40 +103,43 @@ local parseNumber = function(s: string): Flow<any, string, number>
         end)
     end)
 end
+-- 2. Chaining flows
 local double = function(n: number) return Flow.succeed(n * 2) end
 local addOne = function(n: number) return Flow.succeed(n + 1) end
 local pipeline = Flow.gen(function(run)
     return __generatorAdapter(function()
         local _opt2
-        for _, _v in __generatorToIterator(run(Flow.sync(function() return 5 end))) do
+        for _v in __generatorToIterator(run(Flow.sync(function() return 5 end))) do
             coroutine.yield(_v)
-            _opt2 = _v
+            _opt2 = _v.value
         end
         local a = (function() return _opt2 end)()
         local _opt3
-        for _, _v in __generatorToIterator(run(double(a))) do
+        for _v in __generatorToIterator(run(double(a))) do
             coroutine.yield(_v)
-            _opt3 = _v
+            _opt3 = _v.value
         end
         local b = (function() return _opt3 end)()
         local _opt4
-        for _, _v in __generatorToIterator(run(addOne(b))) do
+        for _v in __generatorToIterator(run(addOne(b))) do
             coroutine.yield(_v)
-            _opt4 = _v
+            _opt4 = _v.value
         end
         local c = (function() return _opt4 end)()
         return c
     end)
 end)
-local r1 = parseNumber("42").run()
+-- 3. Match on result
+local r1 = parseNumber("42"):run()
 if r1.success then
     print(r1.value)
 else
     warn("[ERROR]", r1.error)
 end
-local r2 = pipeline.run()
+local r2 = pipeline:run()
 if r2.success then
     print(r2.value)
+    -- 11
 end
 -- 
 return { Flow = Flow }

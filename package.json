@@ -2,21 +2,47 @@
   "name": "rbx-tsx",
   "version": "0.1.0",
   "description": "TSX to Luau compiler targeting react-lua for Roblox",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AlroviOfficial/rbx-tsx.git"
+  },
+  "homepage": "https://github.com/AlroviOfficial/rbx-tsx",
+  "bugs": {
+    "url": "https://github.com/AlroviOfficial/rbx-tsx/issues"
+  },
+  "keywords": [
+    "roblox",
+    "tsx",
+    "luau",
+    "react",
+    "react-lua",
+    "compiler",
+    "transpiler",
+    "rojo",
+    "jsx"
+  ],
+  "main": "dist/index.js",
   "module": "src/index.ts",
   "type": "module",
   "bin": {
     "rbx-tsx": "./dist/index.js"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node --external typescript",
     "test": "bun test",
     "dev": "bun run src/index.ts",
-    "generate": "bun run scripts/generate-types.ts"
+    "generate": "bun run scripts/generate-types.ts",
+    "prepublishOnly": "bun run build"
   },
   "files": [
     "dist/",
     "types/",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.18",

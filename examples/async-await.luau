@@ -3,9 +3,11 @@
 
 local Promise = require(game:GetService("ReplicatedStorage").Packages.Promise)
 -- 
+-- *
+--  * Async/await patterns — compiles to Promise.new + :expect()
 local function fetchConfig(): any
     return Promise.new(function(resolve, reject)
-        resolve(Promise.resolve({ timeout = 5000 }))
+        resolve(Promise:resolve({ timeout = 5000 }))
         return
     end)
 end

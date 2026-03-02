@@ -3,14 +3,26 @@
 
 local RegExp = require(game:GetService("ReplicatedStorage").Packages.RegExp)
 -- 
+--[[
+    Regular expressions — compiles to luau-regexp (RegExp)
+    Requires: ReplicatedStorage.Packages.RegExp (Roblox/luau-regexp)
+]]
+-- Regex literal → RegExp(pattern, flags)
 local digitPattern = RegExp("\\d+", "g")
 local emailPattern = RegExp("^[a-z]+@[a-z]+\\.[a-z]+$", "i")
+-- .test(str) → regex:test(str)
 local hasDigits = digitPattern:test("abc123")
 local looksLikeEmail = emailPattern:test("user@example.com")
+-- .exec(str) → regex:exec(str)
 local match = digitPattern:exec("price: 99")
 if match then
+    -- luau-regexp returns 1-based: match[1] = full match, match.index = position
     print(match[2], match.index)
 end
+-- str.match(regex) → regex:exec(str)
 local parts = RegExp("l+", "g"):exec("hello world")
+-- new RegExp(pattern, flags)
 local dynamicPattern = RegExp("\\d{2,4}", "g")
+-- str.replace(regex, repl) — uses regex.source with string.gsub (Lua pattern)
+-- Complex regex patterns may need manual conversion
 local cleaned = string.gsub("  spaces  ", RegExp("\\s+", "g").source, " ", 1)

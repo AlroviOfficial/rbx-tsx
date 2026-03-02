@@ -35,6 +35,10 @@ import {
   transformInterfaceToLuauType,
   transformTypeAliasToLuauType,
 } from "./type-transform.ts";
+import {
+  getLeadingComments,
+  getTrailingComments,
+} from "./comments.ts";
 
 /**
  * Transform a list of TS statements to Luau statements.
@@ -46,9 +50,15 @@ export function transformStatements(
   const result: LuauStatement[] = [];
 
   for (const stmt of statements) {
+    if (ctx.sourceFile) {
+      result.push(...getLeadingComments(ctx.sourceFile, stmt));
+    }
     const stmts = transformStatement(stmt, ctx);
     const pre = ctx.flushPreStatements();
     result.push(...pre, ...stmts);
+    if (ctx.sourceFile) {
+      result.push(...getTrailingComments(ctx.sourceFile, stmt));
+    }
   }
 
   return result;
@@ -1587,6 +1597,7 @@ function transformClassDeclaration(
     return [{ type: "comment", text: "unsupported: anonymous class" }];
   }
   const className = node.name.text;
+  ctx.knownClassNames.add(className);
 
   // Check modifiers
   const isExported = node.modifiers?.some(
@@ -1755,6 +1766,41 @@ function transformClassDeclaration(
   return result;
 }
 
+function isParameterProperty(param: ts.ParameterDeclaration): boolean {
+  const modifiers = (
+    param as ts.ParameterDeclaration & { modifiers?: ts.NodeArray<ts.ModifierLike> }
+  ).modifiers;
+  if (!modifiers?.length) return false;
+  return modifiers.some(
+    (m) =>
+      m.kind === ts.SyntaxKind.PublicKeyword ||
+      m.kind === ts.SyntaxKind.PrivateKeyword ||
+      m.kind === ts.SyntaxKind.ProtectedKeyword ||
+      m.kind === ts.SyntaxKind.ReadonlyKeyword
+  );
+}
+
+function emitParameterPropertyAssignments(
+  constructorDecl: ts.ConstructorDeclaration,
+  body: LuauStatement[]
+): void {
+  for (const param of constructorDecl.parameters) {
+    if (
+      !isParameterProperty(param) ||
+      !ts.isIdentifier(param.name) ||
+      param.dotDotDotToken
+    ) {
+      continue;
+    }
+    const name = param.name.text;
+    body.push({
+      type: "assignment",
+      target: index(ident("self"), name),
+      value: ident(name),
+    });
+  }
+}
+
 function emitClassConstructor(
   className: string,
   parentClassName: string | null,
@@ -1792,6 +1838,7 @@ function emitClassConstructor(
               annotation: `${className}Data`,
             },
           });
+          emitParameterPropertyAssignments(constructorDecl, body);
         } else {
           const stmts = transformStatement(stmt, ctx);
           const pre = ctx.flushPreStatements();
@@ -1804,6 +1851,8 @@ function emitClassConstructor(
         name: "self",
         value: table([]),
       });
+
+      emitParameterPropertyAssignments(constructorDecl, body);
 
       for (const prop of properties) {
         if (prop.initializer && ts.isIdentifier(prop.name)) {
@@ -2237,9 +2286,15 @@ function transformStatementsWithBreakCheck(
     });
   }
   for (const stmt of statements) {
+    if (ctx.sourceFile) {
+      result.push(...getLeadingComments(ctx.sourceFile, stmt));
+    }
     const stmts = transformStatement(stmt, ctx);
     const pre = ctx.flushPreStatements();
     result.push(...pre, ...stmts);
+    if (ctx.sourceFile) {
+      result.push(...getTrailingComments(ctx.sourceFile, stmt));
+    }
     for (const { flag } of ctx.breakLabelStack) {
       result.push({
         type: "if",

@@ -5,9 +5,12 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 -- 
+-- *
+--  * Roblox services and Instance API usage
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+-- Create UI hierarchy
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AppUI"
 screenGui.ResetOnSpawn = false
@@ -20,9 +23,11 @@ textLabel.Name = "Title"
 textLabel.Size = UDim2.new(1, 0, 0, 50)
 textLabel.Text = "Hello from rbx-tsx"
 textLabel.Parent = frame
+-- Attach to PlayerGui
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 screenGui.Parent = playerGui
+-- Heartbeat connection
 RunService.Heartbeat:Connect(function(dt: number)
 
 end)

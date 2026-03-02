@@ -114,6 +114,9 @@ export class TransformContext {
   /** The parent class name (from extends clause) of the class being transformed */
   currentParentClassName: string | null = null;
 
+  /** Class names in this file — used to emit dot vs colon for static vs instance method calls */
+  readonly knownClassNames = new Set<string>();
+
   /** When transforming a namespace body, the table expression to assign exports to */
   namespacePrefix: LuauExpression | null = null;
 

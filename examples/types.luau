@@ -11,6 +11,7 @@ local function _arrayFind(t, fn)
     return nil
 end
 -- 
+-- Type aliases, interfaces, unions, and generics
 type ID = string | number
 type BaseEntity = {
     id: ID,
@@ -26,9 +27,11 @@ type Item = {
     name: string,
     rarity: Rarity,
 }
+-- Generic function
 local function getById<T>(entities: { T }, id: ID): T?
     return _arrayFind(entities, function(e) return e.id == id end)
 end
+-- Union type usage
 local function formatId(id: ID): string
     return if typeof(id) == "string" then id else tostring(id)
 end

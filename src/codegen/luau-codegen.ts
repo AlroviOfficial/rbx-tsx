@@ -191,8 +191,20 @@ function emitStatement(
     }
 
     case "comment": {
-      for (const commentLine of stmt.text.split("\n")) {
-        lines.push(`${t}-- ${commentLine}`);
+      const hasNewline = stmt.text.includes("\n");
+      if (hasNewline) {
+        const content = stmt.text;
+        const useLongBracket = content.includes("]]");
+        const open = useLongBracket ? `${t}--[[=[` : `${t}--[[`;
+        const close = useLongBracket ? `]=]` : `]]`;
+        const contentIndent = ctx.indent(depth + 1);
+        lines.push(open);
+        for (const line of content.split(/\r?\n/)) {
+          lines.push(`${contentIndent}${line}`);
+        }
+        lines.push(`${t}${close}`);
+      } else {
+        lines.push(`${t}-- ${stmt.text}`);
       }
       break;
     }
