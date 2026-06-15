@@ -156,6 +156,9 @@ function cleanSummary(text: string | undefined): string {
     .replace(/`(?:Class|Datatype)\.(\w+[.:]\w+(?:\(\))?)`/g, "`$1`")
     // Class/Datatype.Name — strip the prefix
     .replace(/`(?:Class|Datatype)\.(\w+)`/g, "`$1`")
+    // Break any comment-terminating `*/` (e.g. markdown `**X**/`) so it can't
+    // close the surrounding JSDoc block early; the inserted char is a zero-width space.
+    .replace(/\*\//g, `*${String.fromCharCode(0x200b)}/`)
     .replace(/\n/g, " ")
     .trim();
 }
@@ -209,8 +212,8 @@ const TS_RESERVED = new Set([
 ]);
 
 function safeName(name: string): string {
-  if (TS_RESERVED.has(name)) return `["${name}"]`;
-  if (/^[0-9]/.test(name) || /[^a-zA-Z0-9_$]/.test(name)) return `["${name}"]`;
+  if (TS_RESERVED.has(name)) return `[${JSON.stringify(name)}]`;
+  if (/^[0-9]/.test(name) || /[^a-zA-Z0-9_$]/.test(name)) return `[${JSON.stringify(name)}]`;
   return name;
 }
 
