@@ -205,6 +205,11 @@ What it captures: exported type aliases (with generics), function signatures, ta
 | Destructuring | Local variable extraction |
 | Spread `{ ...a, ...b }` | `_merge(a, b)` |
 | Classes with `extends` | Metatables with `__index` |
+| `get x()` / `set x(v)` | Function `__index` / `__newindex` dispatch |
+| `[key]() {}` / `"name"() {}` | Computed/string method name → `Class[key] = function` |
+| `` tag`a${x}b` `` | `tag({ "a", "b" }, x)` |
+| `LuaTuple<[A, B]>` return | `(A, B)` multiple return values |
+| `const [a, b] = tupleCall()` | `local a, b = tupleCall()` |
 
 ### API Transforms
 
@@ -224,6 +229,7 @@ What it captures: exported type aliases (with generics), function signatures, ta
 | `Object.keys/values/entries/assign` | Auto-generated helpers |
 | `Number.isInteger/isNaN/isFinite` | Inline Luau checks |
 | `Array.isArray(x)` / `Array.from(x)` | Type check / table conversion |
+| `Map`/`Set` `.get/.set/.has/.add/.delete/.clear/.size` | Table operations (resolved via the type checker) |
 | `/regex/flags` | `RegExp("regex", "flags")` via luau-regexp |
 | `v.add/sub/mul/div/idiv(x)` | `v + x` / `v - x` / `v * x` / `v / x` / `v // x` (value-type operators) |
 

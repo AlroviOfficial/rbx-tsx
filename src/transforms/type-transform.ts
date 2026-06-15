@@ -2,6 +2,19 @@ import ts from "typescript";
 import type { TransformContext } from "./transform-context.ts";
 
 /**
+ * True for a `LuaTuple<[...]>` type reference. LuaTuple models multiple Luau
+ * return values; detection is syntactic because the bundled `LuaTuple<T> = T`
+ * alias is transparent — the checker erases it to a plain tuple type.
+ */
+export function isLuaTupleTypeNode(node: ts.TypeNode | undefined): boolean {
+  return (
+    !!node &&
+    ts.isTypeReferenceNode(node) &&
+    node.typeName.getText() === "LuaTuple"
+  );
+}
+
+/**
  * Transform a TypeScript type node to a Luau type annotation string.
  */
 export function transformType(
@@ -216,6 +229,16 @@ function transformTypeReference(
         ? transformType(node.typeArguments[0], ctx)
         : "any";
       return `{ [${valType}]: boolean }`;
+    }
+
+    case "LuaTuple": {
+      // LuaTuple<[A, B]> models multiple Luau return values: `() -> (A, B)`.
+      const arg = node.typeArguments?.[0];
+      if (arg && ts.isTupleTypeNode(arg)) {
+        const parts = arg.elements.map((el) => transformType(el, ctx));
+        return `(${parts.join(", ")})`;
+      }
+      return arg ? transformType(arg, ctx) : "any";
     }
 
     case "Promise":

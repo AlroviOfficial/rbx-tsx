@@ -382,6 +382,67 @@ describe("class declarations", () => {
     expect(result).toContain("local MyClass = {}");
     expect(result).toContain("return MyClass");
   });
+
+  test("get/set accessors use function-based __index/__newindex", () => {
+    const result = compileStmt(`
+      class Person {
+        firstName: string;
+        lastName: string;
+        get fullName(): string { return this.firstName + " " + this.lastName; }
+        set fullName(value: string) { this.firstName = value; }
+      }
+    `);
+    expect(result).toContain("local Person_get = {}");
+    expect(result).toContain("local Person_set = {}");
+    expect(result).toContain("Person.__index = function(self, key)");
+    expect(result).toContain("Person.__newindex = function(self, key, value)");
+    expect(result).toContain("function Person_get.fullName(self: Person): string");
+    expect(result).toContain("function Person_set.fullName(self: Person, value: string)");
+    // virtual property is present in the data type
+    expect(result).toContain("fullName: string");
+    // getter body concatenates correctly
+    expect(result).toContain('self.firstName .. " " .. self.lastName');
+  });
+
+  test("getter-only accessor (no setter) still works", () => {
+    const result = compileStmt(`
+      class Circle {
+        radius: number;
+        get area(): number { return 3.14 * this.radius * this.radius; }
+      }
+    `);
+    expect(result).toContain("function Circle_get.area(self: Circle): number");
+    expect(result).toContain("local Circle_set = {}");
+  });
+
+  test("class without accessors keeps simple __index", () => {
+    const result = compileStmt(`
+      class Plain {
+        x: number;
+        constructor() { this.x = 0; }
+      }
+    `);
+    expect(result).toContain("Plain.__index = Plain");
+    expect(result).not.toContain("Plain_get");
+  });
+
+  test("computed method name → bracket assignment", () => {
+    const result = compileStmt(`
+      class Handlers {
+        ["on" + "Click"]() { return 1; }
+      }
+    `);
+    expect(result).toContain('Handlers["on" .. "Click"] = function(self: Handlers)');
+  });
+
+  test("string-literal method name → bracket assignment", () => {
+    const result = compileStmt(`
+      class Handlers {
+        "literal-name"() { return 2; }
+      }
+    `);
+    expect(result).toContain('Handlers["literal-name"] = function(self: Handlers)');
+  });
 });
 
 describe("namespace declarations", () => {

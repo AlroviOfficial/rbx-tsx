@@ -51,6 +51,8 @@ export interface LuauCompoundAssignment {
 export interface LuauReturn {
   type: "return";
   value?: LuauExpression;
+  /** Multiple return values (`return a, b`) — takes precedence over `value`. */
+  values?: LuauExpression[];
 }
 
 export interface LuauFunctionDecl {

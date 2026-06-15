@@ -85,7 +85,12 @@ function emitStatement(
     }
 
     case "return": {
-      if (stmt.value) {
+      if (stmt.values && stmt.values.length > 0) {
+        const vals = stmt.values
+          .map((v) => emitExpr(v, ctx, depth))
+          .join(", ");
+        lines.push(`${t}return ${vals}`);
+      } else if (stmt.value) {
         lines.push(`${t}return ${emitExpr(stmt.value, ctx, depth)}`);
       } else {
         lines.push(`${t}return`);

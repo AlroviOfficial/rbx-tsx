@@ -168,3 +168,44 @@ describe("mapped types", () => {
     expect(result).toContain("[string]: boolean");
   });
 });
+
+describe("LuaTuple / multi-return", () => {
+  test("LuaTuple<[A, B]> return annotation → (A, B)", () => {
+    const result = compileTS(
+      "function f(): LuaTuple<[number, string]> { return [1, 'a']; }"
+    );
+    expect(result).toContain("function f(): (number, string)");
+  });
+
+  test("return [a, b] in LuaTuple function → multiple values", () => {
+    const result = compileTS(
+      "function f(a: number, b: number): LuaTuple<[number, number]> { return [a, b]; }"
+    );
+    expect(result).toContain("return a, b");
+    expect(result).not.toContain("return { a, b }");
+  });
+
+  test("destructuring a LuaTuple call → multi-local", () => {
+    const result = compileTS(
+      "function f(): LuaTuple<[number, string]> { return [1, 'a']; }\nconst [n, s] = f();"
+    );
+    expect(result).toContain("local n, s = f()");
+  });
+
+  test("destructuring with a hole keeps positions aligned", () => {
+    const result = compileTS(
+      "function f(): LuaTuple<[number, string]> { return [1, 'a']; }\nconst [, s] = f();"
+    );
+    expect(result).toContain("local _, s = f()");
+  });
+
+  test("pcall destructures to multi-local", () => {
+    const result = compileTS("const [ok, result] = pcall(() => 1);");
+    expect(result).toContain("local ok, result = pcall(");
+  });
+
+  test("non-tuple array destructuring still uses temp var", () => {
+    const result = compileTS("const arr = [1, 2, 3];\nconst [a, b] = arr;");
+    expect(result).toContain("_temp_");
+  });
+});

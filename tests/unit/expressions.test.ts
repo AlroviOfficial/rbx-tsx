@@ -76,6 +76,18 @@ describe("template literals", () => {
   });
 });
 
+describe("tagged template literals", () => {
+  test("tag with interpolations → tag(strings, ...values)", () => {
+    const result = compileStmt("const r = tag`sum ${x} and ${y}!`;");
+    expect(result).toContain('tag({ "sum ", " and ", "!" }, x, y)');
+  });
+
+  test("tag without interpolation → tag({ str })", () => {
+    const result = compileStmt("const r = tag`plain`;");
+    expect(result).toContain('tag({ "plain" })');
+  });
+});
+
 describe("ternary", () => {
   test("ternary expression", () => {
     const result = compileStmt("const x = cond ? 'a' : 'b';");
@@ -171,6 +183,70 @@ describe("Roblox math operator macros", () => {
     const result = compileStmt("const s = new Set<number>(); s.add(5);");
     expect(result).toContain("s[5] = true");
     expect(result).not.toContain("s + 5");
+  });
+});
+
+describe("Map/Set checker-driven resolution", () => {
+  test("Map param resolves get/set/has via checker", () => {
+    const src = `function f(cache: Map<string, number>) {
+      cache.set("b", 2);
+      return cache.get("a") ?? (cache.has("a") ? 1 : 0);
+    }`;
+    const result = compileStmt(src);
+    expect(result).toContain('cache["b"] = 2');
+    expect(result).toContain('cache["a"]');
+    expect(result).not.toContain("cache:get");
+    expect(result).not.toContain("cache.get");
+  });
+
+  test("Set param resolves add/has via checker", () => {
+    const src = `function f(names: Set<string>) {
+      names.add("x");
+      return names.has("x");
+    }`;
+    const result = compileStmt(src);
+    expect(result).toContain('names["x"] = true');
+    expect(result).toContain('names["x"] ~= nil');
+  });
+
+  test("Map field (this.data) resolves via checker", () => {
+    const src = `class S {
+      data = new Map<string, number>();
+      put(k: string, v: number) { this.data.set(k, v); }
+      get(k: string) { return this.data.get(k); }
+    }`;
+    const result = compileStmt(src);
+    expect(result).toContain("self.data[k] = v");
+    expect(result).toContain("return self.data[k]");
+  });
+
+  test("Map mutation as statement emits no dangling receiver", () => {
+    const src = `function f(cache: Map<string, number>) { cache.set("b", 2); }`;
+    const lines = compileStmt(src)
+      .split("\n")
+      .map((l) => l.trim());
+    expect(lines).not.toContain("cache");
+  });
+
+  test("Map.size → _mapSize helper", () => {
+    const src = `function f(cache: Map<string, number>) { return cache.size; }`;
+    const result = compileStmt(src);
+    expect(result).toContain("_mapSize(cache)");
+    expect(result).toContain("local function _mapSize");
+  });
+
+  test("Map.clear → table.clear", () => {
+    const src = `function f(cache: Map<string, number>) { cache.clear(); }`;
+    expect(compileStmt(src)).toContain("table.clear(cache)");
+  });
+
+  test("impure receiver in chained .set is evaluated once", () => {
+    const src = `function make(): Map<string, number> { return new Map(); }
+      const m = make().set("a", 1);`;
+    const result = compileStmt(src);
+    // make() is hoisted to a temp; the mutation indexes the temp, not a 2nd call
+    expect(result).not.toContain('make()["a"]');
+    expect(result).toMatch(/local \w+ = make\(\)/);
   });
 });
 

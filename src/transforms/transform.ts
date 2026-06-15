@@ -980,6 +980,32 @@ function getHelperFunction(name: string): LuauStatement[] | null {
         },
       ];
 
+    case "mapSize":
+      return [
+        {
+          type: "function-decl",
+          local: true,
+          name: "_mapSize",
+          params: [{ name: "t" }],
+          body: [
+            { type: "local", name: "n", value: num(0) },
+            {
+              type: "for-in",
+              vars: ["_"],
+              iterators: [ident("t")],
+              body: [
+                {
+                  type: "assignment",
+                  target: ident("n"),
+                  value: binary(ident("n"), "+", num(1)),
+                },
+              ],
+            },
+            { type: "return", value: ident("n") },
+          ],
+        },
+      ];
+
     case "generatorToIterator":
       return [
         {

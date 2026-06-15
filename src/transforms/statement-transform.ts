@@ -33,11 +33,12 @@ import {
   applyTruthiness,
   cloneExpr,
 } from "./expression-transform.ts";
-import { inferJsType, typeNodeToJsType } from "./js-type.ts";
+import { inferJsType, inferCollectionKind, typeNodeToJsType } from "./js-type.ts";
 import {
   transformType,
   transformInterfaceToLuauType,
   transformTypeAliasToLuauType,
+  isLuaTupleTypeNode,
 } from "./type-transform.ts";
 import {
   getLeadingComments,
@@ -68,6 +69,50 @@ export function transformStatements(
   return result;
 }
 
+/** The return-type annotation of the nearest enclosing function-like, if any. */
+function getEnclosingReturnTypeNode(
+  node: ts.Node
+): ts.TypeNode | undefined {
+  const fn = ts.findAncestor(
+    node.parent,
+    (a) =>
+      ts.isFunctionDeclaration(a) ||
+      ts.isFunctionExpression(a) ||
+      ts.isArrowFunction(a) ||
+      ts.isMethodDeclaration(a)
+  ) as ts.SignatureDeclaration | undefined;
+  return fn?.type;
+}
+
+/**
+ * Whether an array binding pattern is destructurable into a flat multi-local —
+ * every element is a plain identifier or a hole (no nested patterns, defaults,
+ * or rest), so it maps cleanly onto Luau's `local a, b = ...`.
+ */
+function isPlainTupleBinding(pattern: ts.ArrayBindingPattern): boolean {
+  return pattern.elements.every((e) => {
+    if (ts.isOmittedExpression(e)) return true;
+    return (
+      ts.isIdentifier(e.name) && !e.dotDotDotToken && e.initializer === undefined
+    );
+  });
+}
+
+/** Whether a call expression's resolved signature is declared to return a LuaTuple. */
+function callReturnsLuaTuple(
+  expr: ts.Expression,
+  ctx: TransformContext
+): boolean {
+  if (!ctx.checker || !ts.isCallExpression(expr)) return false;
+  let decl: ts.SignatureDeclaration | undefined;
+  try {
+    decl = ctx.checker.getResolvedSignature(expr)?.getDeclaration();
+  } catch {
+    return false;
+  }
+  return isLuaTupleTypeNode(decl?.type);
+}
+
 export function transformStatement(
   node: ts.Statement | ts.Declaration,
   ctx: TransformContext
@@ -84,6 +129,19 @@ export function transformStatement(
 
   // Return statement
   if (ts.isReturnStatement(node)) {
+    // `return [a, b]` inside a function declared `: LuaTuple<[A, B]>` emits
+    // multiple Luau return values rather than a single table.
+    if (
+      node.expression &&
+      ts.isArrayLiteralExpression(node.expression) &&
+      !node.expression.elements.some((e) => ts.isSpreadElement(e)) &&
+      isLuaTupleTypeNode(getEnclosingReturnTypeNode(node))
+    ) {
+      const values = node.expression.elements.map((e) =>
+        transformExpression(e, ctx)
+      );
+      return [{ type: "return", values }];
+    }
     const value = node.expression
       ? transformExpression(node.expression, ctx)
       : undefined;
@@ -378,6 +436,20 @@ function transformVariableStatement(
             names,
             values: [initExpr],
           });
+        } else if (
+          ts.isArrayBindingPattern(decl.name) &&
+          callReturnsLuaTuple(decl.initializer, ctx) &&
+          isPlainTupleBinding(decl.name)
+        ) {
+          // `const [a, b] = call()` where call returns LuaTuple → `local a, b =`
+          // (multiple values) instead of indexing a single table. Holes become
+          // `_` so positions stay aligned.
+          const names = decl.name.elements.map((e) =>
+            ts.isOmittedExpression(e)
+              ? "_"
+              : (e as ts.BindingElement).name.getText()
+          );
+          results.push({ type: "multi-local", names, values: [initExpr] });
         } else if (ts.isArrayBindingPattern(decl.name)) {
           // General array destructuring
           const tempName = `_temp_${decl.name.pos}`;
@@ -1259,17 +1331,20 @@ function transformExpressionStatement(
     ];
   }
 
-  // Map/Set methods at statement level: map.set(k, v) → map[k] = v, etc.
+  // Map/Set mutations at statement level: map.set(k, v) → map[k] = v, etc.
+  // Emitting the assignment directly here (rather than via the expression-level
+  // pre-statement path) avoids a dangling receiver expression statement.
+  // Resolved via the checker so any receiver — local, param, or field — works.
   if (
     ts.isCallExpression(expr) &&
-    ts.isPropertyAccessExpression(expr.expression) &&
-    ts.isIdentifier(expr.expression.expression)
+    ts.isPropertyAccessExpression(expr.expression)
   ) {
-    const objName = expr.expression.expression.text;
+    const receiver = expr.expression.expression;
     const method = expr.expression.name.text;
+    const collectionKind = inferCollectionKind(receiver, ctx);
 
-    if (ctx.mapVariables.has(objName)) {
-      const obj = transformExpression(expr.expression.expression, ctx);
+    if (collectionKind === "map") {
+      const obj = transformExpression(receiver, ctx);
       if (method === "set" && expr.arguments.length >= 2) {
         return [
           {
@@ -1295,12 +1370,17 @@ function transformExpressionStatement(
         ];
       }
       if (method === "clear") {
-        return [{ type: "assignment", target: obj, value: table([]) }];
+        return [
+          {
+            type: "expression-statement",
+            expr: call(index(ident("table"), "clear"), [obj]),
+          },
+        ];
       }
     }
 
-    if (ctx.setVariables.has(objName)) {
-      const obj = transformExpression(expr.expression.expression, ctx);
+    if (collectionKind === "set") {
+      const obj = transformExpression(receiver, ctx);
       if (method === "add" && expr.arguments.length >= 1) {
         return [
           {
@@ -1326,7 +1406,12 @@ function transformExpressionStatement(
         ];
       }
       if (method === "clear") {
-        return [{ type: "assignment", target: obj, value: table([]) }];
+        return [
+          {
+            type: "expression-statement",
+            expr: call(index(ident("table"), "clear"), [obj]),
+          },
+        ];
       }
     }
   }
@@ -1683,6 +1768,8 @@ function transformClassDeclaration(
   const properties: ts.PropertyDeclaration[] = [];
   let constructorDecl: ts.ConstructorDeclaration | null = null;
   const methods: ts.MethodDeclaration[] = [];
+  const getAccessors: ts.GetAccessorDeclaration[] = [];
+  const setAccessors: ts.SetAccessorDeclaration[] = [];
 
   for (const member of node.members) {
     if (ts.isConstructorDeclaration(member)) {
@@ -1691,17 +1778,26 @@ function transformClassDeclaration(
       methods.push(member);
     } else if (ts.isPropertyDeclaration(member)) {
       properties.push(member);
-    } else if (
-      ts.isGetAccessorDeclaration(member) ||
-      ts.isSetAccessorDeclaration(member)
-    ) {
-      ctx.warnAtNode(
-        "unsupported-syntax",
-        `Get/set accessors are not supported in class '${className}'`,
-        member
-      );
+    } else if (ts.isGetAccessorDeclaration(member)) {
+      if (ts.isIdentifier(member.name)) getAccessors.push(member);
+      else
+        ctx.warnAtNode(
+          "unsupported-syntax",
+          "Computed accessor names are not supported",
+          member
+        );
+    } else if (ts.isSetAccessorDeclaration(member)) {
+      if (ts.isIdentifier(member.name)) setAccessors.push(member);
+      else
+        ctx.warnAtNode(
+          "unsupported-syntax",
+          "Computed accessor names are not supported",
+          member
+        );
     }
   }
+
+  const hasAccessors = getAccessors.length > 0 || setAccessors.length > 0;
 
   const classTypeParams =
     node.typeParameters?.map((p) => p.name.getText()) ?? undefined;
@@ -1724,11 +1820,82 @@ function transformClassDeclaration(
     });
   }
 
-  result.push({
-    type: "assignment",
-    target: index(ident(className), "__index"),
-    value: ident(className),
-  });
+  if (hasAccessors) {
+    // Accessors require property-access interception, so __index/__newindex
+    // become functions that consult per-class getter/setter dispatch tables
+    // (populated below) before falling back to the methods table / rawset.
+    result.push(
+      { type: "local", name: `${className}_get`, value: table([]) },
+      { type: "local", name: `${className}_set`, value: table([]) },
+      {
+        type: "assignment",
+        target: index(ident(className), "__index"),
+        value: funcExpr(
+          [{ name: "self" }, { name: "key" }],
+          [
+            {
+              type: "local",
+              name: "getter",
+              value: bracketIndex(ident(`${className}_get`), ident("key")),
+            },
+            {
+              type: "if",
+              condition: ident("getter"),
+              body: [
+                {
+                  type: "return",
+                  value: call(ident("getter"), [ident("self")]),
+                },
+              ],
+            },
+            {
+              type: "return",
+              value: bracketIndex(ident(className), ident("key")),
+            },
+          ]
+        ),
+      },
+      {
+        type: "assignment",
+        target: index(ident(className), "__newindex"),
+        value: funcExpr(
+          [{ name: "self" }, { name: "key" }, { name: "value" }],
+          [
+            {
+              type: "local",
+              name: "setter",
+              value: bracketIndex(ident(`${className}_set`), ident("key")),
+            },
+            {
+              type: "if",
+              condition: ident("setter"),
+              body: [
+                {
+                  type: "expression-statement",
+                  expr: call(ident("setter"), [ident("self"), ident("value")]),
+                },
+                { type: "return" },
+              ],
+            },
+            {
+              type: "expression-statement",
+              expr: call(ident("rawset"), [
+                ident("self"),
+                ident("key"),
+                ident("value"),
+              ]),
+            },
+          ]
+        ),
+      }
+    );
+  } else {
+    result.push({
+      type: "assignment",
+      target: index(ident(className), "__index"),
+      value: ident(className),
+    });
+  }
 
   // Emit type ClassNameData and type ClassName = typeof(setmetatable(...))
   result.push(
@@ -1736,6 +1903,8 @@ function transformClassDeclaration(
       className,
       parentClassName,
       properties,
+      getAccessors,
+      setAccessors,
       isExported,
       classTypeParams,
       ctx
@@ -1759,6 +1928,23 @@ function transformClassDeclaration(
     result.push(
       ...emitClassMethod(className, method, classTypeParams, ctx)
     );
+  }
+
+  // Emit accessor functions into the getter/setter dispatch tables
+  if (hasAccessors) {
+    const selfType = classTypeParams?.length
+      ? `${className}<${classTypeParams.join(", ")}>`
+      : className;
+    for (const getter of getAccessors) {
+      result.push(
+        ...emitClassAccessor(className, "get", getter, selfType, ctx)
+      );
+    }
+    for (const setter of setAccessors) {
+      result.push(
+        ...emitClassAccessor(className, "set", setter, selfType, ctx)
+      );
+    }
   }
 
   // Emit static property initializers
@@ -1993,18 +2179,72 @@ function emitClassConstructorInner(
   ];
 }
 
+function emitClassAccessor(
+  className: string,
+  kind: "get" | "set",
+  accessor: ts.GetAccessorDeclaration | ts.SetAccessorDeclaration,
+  selfType: string,
+  ctx: TransformContext
+): LuauStatement[] {
+  const accessorName = (accessor.name as ts.Identifier).text;
+  const tableName = `${className}_${kind}`;
+
+  const { params, body } = ctx.withScope(() => {
+    const params: LuauParam[] = [{ name: "self", type: selfType }];
+    if (kind === "set" && accessor.parameters[0]) {
+      const param = accessor.parameters[0];
+      const paramType = param.type ? transformType(param.type, ctx) : undefined;
+      params.push({ name: param.name.getText(), type: paramType });
+    }
+    const body = accessor.body
+      ? transformStatements(accessor.body.statements, ctx)
+      : [];
+    return { params, body };
+  });
+
+  let returnType: string | undefined;
+  if (kind === "get" && ts.isGetAccessorDeclaration(accessor) && accessor.type) {
+    returnType = transformType(accessor.type, ctx);
+  }
+
+  return [
+    {
+      type: "function-decl",
+      local: false,
+      name: `${tableName}.${accessorName}`,
+      params,
+      body,
+      returnType,
+    },
+  ];
+}
+
 function emitClassMethod(
   className: string,
   method: ts.MethodDeclaration,
   classTypeParams: string[] | undefined,
   ctx: TransformContext
 ): LuauStatement[] {
-  if (!ts.isIdentifier(method.name)) {
-    ctx.warn("unsupported-syntax", "Computed method names are not supported");
-    return [{ type: "comment", text: "unsupported: computed method name" }];
+  // A computed (`[expr]() {}`) or string/numeric method name is emitted as a
+  // `ClassName[key] = function ...` assignment instead of dotted syntax.
+  let computedKey: LuauExpression | null = null;
+  let methodName: string;
+  if (ts.isIdentifier(method.name)) {
+    methodName = method.name.text;
+  } else if (ts.isStringLiteral(method.name)) {
+    computedKey = str(method.name.text);
+    methodName = method.name.text;
+  } else if (ts.isNumericLiteral(method.name)) {
+    computedKey = num(Number(method.name.text));
+    methodName = method.name.text;
+  } else if (ts.isComputedPropertyName(method.name)) {
+    computedKey = transformExpression(method.name.expression, ctx);
+    methodName = method.name.getText();
+  } else {
+    ctx.warn("unsupported-syntax", "Unsupported method name");
+    return [{ type: "comment", text: "unsupported: method name" }];
   }
 
-  const methodName = method.name.text;
   const isStatic = method.modifiers?.some(
     (m) => m.kind === ts.SyntaxKind.StaticKeyword
   );
@@ -2063,6 +2303,23 @@ function emitClassMethod(
 
   const methodTypeParams =
     method.typeParameters?.map((p) => p.name.getText()) ?? classTypeParams;
+
+  if (computedKey !== null) {
+    if (getDecoratorExpressions(method, ctx).length > 0) {
+      ctx.warnAtNode(
+        "unsupported-syntax",
+        "Decorators on computed method names are not supported",
+        method
+      );
+    }
+    return [
+      {
+        type: "assignment",
+        target: bracketIndex(ident(className), computedKey),
+        value: funcExpr(finalParams, body, returnType, methodTypeParams),
+      },
+    ];
+  }
 
   const methodDecorators = getDecoratorExpressions(method, ctx);
 
@@ -2128,6 +2385,8 @@ function emitClassTypeAlias(
   className: string,
   parentClassName: string | null,
   properties: ts.PropertyDeclaration[],
+  getAccessors: ts.GetAccessorDeclaration[],
+  setAccessors: ts.SetAccessorDeclaration[],
   isExported: boolean | undefined,
   typeParams: string[] | undefined,
   ctx: TransformContext
@@ -2145,6 +2404,25 @@ function emitClassTypeAlias(
     const propType = prop.type ? transformType(prop.type, ctx) : "any";
     const optional = prop.questionToken ? "?" : "";
     dataMembers.push(`${propName}: ${propType}${optional}`);
+  }
+
+  // Accessor-backed properties are virtual (no stored field) but must appear in
+  // the type so `obj.name` resolves. Getter return type wins; a setter-only
+  // property takes its parameter type.
+  const accessorTypes = new Map<string, string>();
+  for (const setter of setAccessors) {
+    if (!ts.isIdentifier(setter.name)) continue;
+    const param = setter.parameters[0];
+    const type = param?.type ? transformType(param.type, ctx) : "any";
+    accessorTypes.set(setter.name.text, type);
+  }
+  for (const getter of getAccessors) {
+    if (!ts.isIdentifier(getter.name)) continue;
+    const type = getter.type ? transformType(getter.type, ctx) : "any";
+    accessorTypes.set(getter.name.text, type);
+  }
+  for (const [name, type] of accessorTypes) {
+    dataMembers.push(`${name}: ${type}`);
   }
 
   const dataTypeName = `${className}Data`;
@@ -2254,7 +2532,15 @@ function transformTryStatement(
 function rewriteReturnsToResolve(stmts: LuauStatement[]): LuauStatement[] {
   const result: LuauStatement[] = [];
   for (const stmt of stmts) {
-    if (stmt.type === "return" && stmt.value) {
+    if (stmt.type === "return" && stmt.values && stmt.values.length > 0) {
+      // Multi-value (LuaTuple) return inside an async body: forward all values
+      // to resolve so none are dropped.
+      result.push({
+        type: "expression-statement",
+        expr: call(ident("resolve"), stmt.values),
+      });
+      result.push({ type: "return" } as LuauStatement);
+    } else if (stmt.type === "return" && stmt.value) {
       result.push({
         type: "expression-statement",
         expr: call(ident("resolve"), [stmt.value]),

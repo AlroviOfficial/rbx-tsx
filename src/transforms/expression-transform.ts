@@ -31,7 +31,12 @@ import {
   ROBLOX_MATH_OPERATORS,
 } from "../mappings/roblox-constructors.ts";
 import type { TransformContext } from "./transform-context.ts";
-import { inferJsType, typeNodeToJsType, type JsType } from "./js-type.ts";
+import {
+  inferJsType,
+  inferCollectionKind,
+  typeNodeToJsType,
+  type JsType,
+} from "./js-type.ts";
 import { transformType } from "./type-transform.ts";
 import { transformJSX } from "./jsx-transform.ts";
 import { transformStatements } from "./statement-transform.ts";
@@ -235,14 +240,26 @@ export function transformExpression(
     return call(ident("RegExp"), [str(pattern), str(flags)]);
   }
 
-  // Tagged template literal — unsupported
+  // Tagged template literal: tag`a${x}b` → tag({ "a", "b" }, x).
+  // The cooked string parts become a table; interpolated values follow as
+  // positional args. (The JS `.raw` property has no Luau equivalent.)
   if (ts.isTaggedTemplateExpression(node)) {
-    ctx.warnAtNode(
-      "unsupported-syntax",
-      "Tagged template literals are not supported",
-      node
-    );
-    return raw(`--[[ unsupported: tagged template ]] nil`);
+    const tag = transformExpression(node.tag, ctx);
+    const strings: string[] = [];
+    const values: LuauExpression[] = [];
+    if (ts.isNoSubstitutionTemplateLiteral(node.template)) {
+      strings.push(node.template.text);
+    } else {
+      strings.push(node.template.head.text);
+      for (const span of node.template.templateSpans) {
+        values.push(transformExpression(span.expression, ctx));
+        strings.push(span.literal.text);
+      }
+    }
+    return call(tag, [
+      table(strings.map((s) => ({ value: str(s) }))),
+      ...values,
+    ]);
   }
 
   // Await expression
@@ -576,14 +593,18 @@ function transformBinaryExpression(
     const left = transformExpression(node.left, ctx);
     const right = transformExpression(node.right, ctx);
 
-    // string + → .. concatenation
+    // string + → .. concatenation. Prefer the checker (resolves string-typed
+    // operands like `obj.name` or a nested concat), then fall back to syntactic
+    // and output-shape heuristics.
     if (op === ts.SyntaxKind.PlusToken) {
       const leftIsString =
+        inferJsType(node.left, ctx) === "string" ||
         ts.isStringLiteral(node.left) ||
         ts.isNoSubstitutionTemplateLiteral(node.left) ||
         ts.isTemplateExpression(node.left) ||
         isLikelyStringResult(left);
       const rightIsString =
+        inferJsType(node.right, ctx) === "string" ||
         ts.isStringLiteral(node.right) ||
         ts.isNoSubstitutionTemplateLiteral(node.right) ||
         ts.isTemplateExpression(node.right) ||
@@ -1130,54 +1151,74 @@ function transformSpecialCallExpression(
     return transformObjectMethod(methodName, args, node, ctx);
   }
 
-  // Map/Set methods: map.get(k), map.has(k), set.has(k), etc.
+  // Map/Set methods: map.get(k), map.has(k), set.add(v), etc. Resolved via the
+  // checker so any receiver (param, field, call result) is handled, not just a
+  // locally-declared `new Map()`.
   const obj = transformExpression(propAccess.expression, ctx);
-  if (ts.isIdentifier(propAccess.expression)) {
-    const objName = propAccess.expression.text;
-    if (ctx.mapVariables.has(objName)) {
-      switch (methodName) {
-        case "get":
-          return bracketIndex(obj, args[0] ?? nil());
-        case "has":
-          return binary(bracketIndex(obj, args[0] ?? nil()), "~=", nil());
-        case "set": {
-          ctx.pushPreStatement({
-            type: "assignment",
-            target: bracketIndex(obj, args[0] ?? nil()),
-            value: args[1] ?? nil(),
-          });
-          return obj;
-        }
-        case "delete": {
-          ctx.pushPreStatement({
-            type: "assignment",
-            target: bracketIndex(obj, args[0] ?? nil()),
-            value: nil(),
-          });
-          return bool(true);
-        }
+  const collectionKind = inferCollectionKind(propAccess.expression, ctx);
+  if (collectionKind === "map") {
+    switch (methodName) {
+      case "get":
+        return bracketIndex(obj, args[0] ?? nil());
+      case "has":
+        return binary(bracketIndex(obj, args[0] ?? nil()), "~=", nil());
+      case "set": {
+        // Chaining returns the collection, so hoist an impure receiver to a
+        // temp to avoid evaluating it twice (mutation + returned value).
+        const recv = hoistReceiver(obj, ctx);
+        ctx.pushPreStatement({
+          type: "assignment",
+          target: bracketIndex(recv, args[0] ?? nil()),
+          value: args[1] ?? nil(),
+        });
+        return recv;
+      }
+      case "delete": {
+        ctx.pushPreStatement({
+          type: "assignment",
+          target: bracketIndex(obj, args[0] ?? nil()),
+          value: nil(),
+        });
+        return bool(true);
+      }
+      case "clear": {
+        const recv = hoistReceiver(obj, ctx);
+        ctx.pushPreStatement({
+          type: "expression-statement",
+          expr: call(index(ident("table"), "clear"), [recv]),
+        });
+        return recv;
       }
     }
-    if (ctx.setVariables.has(objName)) {
-      switch (methodName) {
-        case "has":
-          return binary(bracketIndex(obj, args[0] ?? nil()), "~=", nil());
-        case "add": {
-          ctx.pushPreStatement({
-            type: "assignment",
-            target: bracketIndex(obj, args[0] ?? nil()),
-            value: bool(true),
-          });
-          return obj;
-        }
-        case "delete": {
-          ctx.pushPreStatement({
-            type: "assignment",
-            target: bracketIndex(obj, args[0] ?? nil()),
-            value: nil(),
-          });
-          return bool(true);
-        }
+  }
+  if (collectionKind === "set") {
+    switch (methodName) {
+      case "has":
+        return binary(bracketIndex(obj, args[0] ?? nil()), "~=", nil());
+      case "add": {
+        const recv = hoistReceiver(obj, ctx);
+        ctx.pushPreStatement({
+          type: "assignment",
+          target: bracketIndex(recv, args[0] ?? nil()),
+          value: bool(true),
+        });
+        return recv;
+      }
+      case "delete": {
+        ctx.pushPreStatement({
+          type: "assignment",
+          target: bracketIndex(obj, args[0] ?? nil()),
+          value: nil(),
+        });
+        return bool(true);
+      }
+      case "clear": {
+        const recv = hoistReceiver(obj, ctx);
+        ctx.pushPreStatement({
+          type: "expression-statement",
+          expr: call(index(ident("table"), "clear"), [recv]),
+        });
+        return recv;
       }
     }
   }
@@ -1760,6 +1801,16 @@ function transformPropertyAccess(
       ctx.requireHelper("numberIsNaN");
       return ident("_numberIsNaN");
     }
+  }
+
+  // Map/Set .size → _mapSize(obj) (hash tables have no length operator)
+  if (
+    propName === "size" &&
+    !node.questionDotToken &&
+    inferCollectionKind(node.expression, ctx)
+  ) {
+    ctx.requireHelper("mapSize");
+    return call(ident("_mapSize"), [transformExpression(node.expression, ctx)]);
   }
 
   // Array/string .length → #obj

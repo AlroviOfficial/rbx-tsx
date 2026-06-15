@@ -205,6 +205,68 @@ function inferViaChecker(
   return t;
 }
 
+const MAP_SYMBOLS = new Set(["Map", "ReadonlyMap", "WeakMap"]);
+const SET_SYMBOLS = new Set(["Set", "ReadonlySet", "WeakSet"]);
+
+/**
+ * Resolve whether an expression is a JS `Map` or `Set` so its methods
+ * (`.get`/`.set`/`.has`/`.add`/`.delete`) compile to table operations. Prefers
+ * the checker (works for any receiver — params, fields, call results), and
+ * falls back to the name-tracked declarations in parse-only mode.
+ */
+export function inferCollectionKind(
+  node: ts.Expression,
+  ctx: TransformContext
+): "map" | "set" | null {
+  while (
+    ts.isParenthesizedExpression(node) ||
+    ts.isNonNullExpression(node)
+  ) {
+    node = node.expression;
+  }
+
+  if (ctx.checker) {
+    let type: ts.Type | undefined;
+    try {
+      type = ctx.checker.getTypeAtLocation(node);
+    } catch {
+      type = undefined;
+    }
+    if (type) {
+      const kind = collectionKindFromType(type);
+      if (kind) return kind;
+    }
+  }
+
+  if (ts.isIdentifier(node)) {
+    if (ctx.mapVariables.has(node.text)) return "map";
+    if (ctx.setVariables.has(node.text)) return "set";
+  }
+  return null;
+}
+
+function collectionKindFromType(type: ts.Type): "map" | "set" | null {
+  // Unwrap a nullable union (`Map<...> | undefined`) to its collection member.
+  // A union mixing distinct collection kinds (`Map | Set`) is ambiguous → null,
+  // so it falls through to a plain method call rather than a wrong translation.
+  if (type.isUnion()) {
+    let found: "map" | "set" | null = null;
+    for (const member of type.types) {
+      const kind = collectionKindFromType(member);
+      if (!kind) continue;
+      if (found && found !== kind) return null;
+      found = kind;
+    }
+    return found;
+  }
+  const name = type.symbol?.name;
+  if (name) {
+    if (MAP_SYMBOLS.has(name)) return "map";
+    if (SET_SYMBOLS.has(name)) return "set";
+  }
+  return null;
+}
+
 const ARITHMETIC_OPS = new Set<ts.SyntaxKind>([
   ts.SyntaxKind.MinusToken,
   ts.SyntaxKind.AsteriskToken,
