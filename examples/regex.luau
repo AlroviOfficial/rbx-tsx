@@ -17,7 +17,7 @@ local looksLikeEmail = emailPattern:test("user@example.com")
 local match = digitPattern:exec("price: 99")
 if match then
     -- luau-regexp returns 1-based: match[1] = full match, match.index = position
-    print(match[2], match.index)
+    print(match[1], match.index)
 end
 -- str.match(regex) → regex:exec(str)
 local parts = RegExp("l+", "g"):exec("hello world")

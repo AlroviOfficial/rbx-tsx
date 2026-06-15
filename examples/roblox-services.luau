@@ -5,8 +5,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 -- 
--- *
---  * Roblox services and Instance API usage
+-- Roblox services and Instance API usage
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")

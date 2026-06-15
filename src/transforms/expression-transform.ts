@@ -37,6 +37,26 @@ import { transformJSX } from "./jsx-transform.ts";
 import { transformStatements } from "./statement-transform.ts";
 import { resolveModuleSpecifierToRequirePath } from "./path-resolution.ts";
 
+// Static members of the roblox-lua-promise module — called with `.` (no self).
+// Instance methods (andThen, catch, await, expect, …) keep `:` via the default
+// method-call path, so they are deliberately absent here.
+const PROMISE_STATIC_METHODS = new Set([
+  "new",
+  "resolve",
+  "reject",
+  "all",
+  "allSettled",
+  "race",
+  "any",
+  "some",
+  "delay",
+  "each",
+  "retry",
+  "retryWithDelay",
+  "fromEvent",
+  "try",
+]);
+
 export function transformExpression(
   node: ts.Expression,
   ctx: TransformContext
@@ -768,7 +788,7 @@ function transformCallExpression(
     if (arg && ts.isStringLiteral(arg)) {
       ctx.needsPromise = true;
       const requirePath = resolveModuleSpecifierToRequirePath(arg.text, ctx);
-      return methodCall(ident("Promise"), "resolve", [
+      return call(index(ident("Promise"), "resolve"), [
         call(ident("require"), [raw(requirePath)]),
       ]);
     }
@@ -897,6 +917,16 @@ function transformCallExpression(
     } else if (method === "test" || method === "exec") {
       // RegExp.test/exec need : syntax to pass self (luau-regexp)
       result = methodCall(obj, method, args);
+    } else if (
+      ts.isIdentifier(receiver) &&
+      receiver.text === "Promise" &&
+      !ctx.knownClassNames.has(receiver.text) &&
+      PROMISE_STATIC_METHODS.has(method)
+    ) {
+      // Static call on the auto-required Promise module: Promise.resolve(),
+      // Promise.all() — use dot. (Imported Promise is handled by the
+      // importedModules branch above; this covers the auto-required global.)
+      result = call(index(obj, method), args);
     } else if (
       ts.isIdentifier(receiver) &&
       ctx.knownClassNames.has(receiver.text)

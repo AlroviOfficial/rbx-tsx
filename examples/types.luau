@@ -17,7 +17,7 @@ type BaseEntity = {
     id: ID,
     createdAt: number,
 }
-type Player = {
+type Player = BaseEntity & {
     name: string,
     health: number,
 }

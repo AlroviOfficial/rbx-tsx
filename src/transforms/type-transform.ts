@@ -433,7 +433,31 @@ export function transformInterfaceToLuauType(
     }
   }
 
-  return `{\n    ${members.join(",\n    ")},\n}`;
+  // Heritage (`extends Base`, `extends Base<T>`) becomes a Luau intersection:
+  // `interface Player extends BaseEntity { … }` → `BaseEntity & { … }`. Without
+  // this the inherited members are dropped and the alias is incomplete.
+  const heritage: string[] = [];
+  if (node.heritageClauses) {
+    for (const clause of node.heritageClauses) {
+      if (clause.token !== ts.SyntaxKind.ExtendsKeyword) continue;
+      for (const base of clause.types) {
+        let name = base.expression.getText();
+        if (base.typeArguments && base.typeArguments.length > 0) {
+          name += `<${base.typeArguments
+            .map((arg) => transformType(arg, ctx))
+            .join(", ")}>`;
+        }
+        heritage.push(name);
+      }
+    }
+  }
+
+  const parts = [...heritage];
+  if (members.length > 0) {
+    parts.push(`{\n    ${members.join(",\n    ")},\n}`);
+  }
+  if (parts.length === 0) return "{}";
+  return parts.join(" & ");
 }
 
 /**

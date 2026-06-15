@@ -504,9 +504,9 @@ describe("0-to-1 based indexing", () => {
 });
 
 describe("dynamic import", () => {
-  test("import('./module') → Promise:resolve(require(path))", () => {
+  test("import('./module') → Promise.resolve(require(path))", () => {
     const result = compileStmt('const m = import("./Card");');
-    expect(result).toContain("Promise:resolve");
+    expect(result).toContain("Promise.resolve");
     expect(result).toContain("require(script.Parent.Card)");
   });
 
