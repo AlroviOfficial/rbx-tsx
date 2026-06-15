@@ -7,6 +7,7 @@ import Inventory from "./Inventory";
 import Stats from "./Stats";
 import { useAutoClicker } from "./hooks/useAutoClicker";
 import { useTimer } from "./hooks/useTimer";
+import { useWelcomeBonus } from "./hooks/useWelcomeBonus";
 import { GEM_COLLECTION } from "../shared/GameConfig";
 import type { GemInfo, ShopItem } from "../shared/GameConfig";
 
@@ -37,6 +38,14 @@ export default function App() {
   }, []);
 
   useAutoClicker(autoRate, autoTick);
+
+  // Welcome bonus: grant a lump of gems shortly after the UI loads.
+  const grantBonus = useCallback((amount: number) => {
+    setGems((g: number) => g + amount);
+    setTotalGems((t: number) => t + amount);
+  }, []);
+
+  useWelcomeBonus(3, 100, grantBonus);
 
   // Manual click
   const handleClick = useCallback(() => {

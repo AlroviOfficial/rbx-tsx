@@ -18,6 +18,7 @@ import { startWatch } from "./watch.ts";
 import type { WarningLevel } from "./warnings.ts";
 import { execSync } from "child_process";
 import { handleInit, type InitOptions } from "./init.ts";
+import { handleTypes, generatePackageTypes, type TypesOptions } from "./types-command.ts";
 import { findPackageManifest } from "./package-manifest.ts";
 
 export function createCLI(): Command {
@@ -62,6 +63,15 @@ export function createCLI(): Command {
     .option("--pm <manager>", "Package manager: wally or pesde", "wally")
     .action((directory: string | undefined, opts: InitOptions) => {
       handleInit(directory, opts);
+    });
+
+  program
+    .command("types")
+    .description("Generate TypeScript declarations from installed Luau packages")
+    .argument("[directory]", "Project directory (defaults to current dir)")
+    .option("-o, --output <dir>", "Output directory (defaults to types/packages)")
+    .action((directory: string | undefined, opts: TypesOptions) => {
+      handleTypes(directory, opts);
     });
 
   program
@@ -213,6 +223,9 @@ function handleCompile(
     // Directory compilation
     const outputDir = opts.output ? resolve(opts.output) : absInput;
 
+    // Generate TypeScript declarations for installed packages (if any).
+    if (manifest) generatePackageTypes(absInput);
+
     // Auto-detect Rojo project for cross-boundary import resolution
     if (!compilerOpts.pathAliases) {
       const rojoProject = findRojoProject(absInput);
@@ -335,6 +348,7 @@ function handleWatch(
   const manifest = findPackageManifest(absPath);
   if (manifest) {
     console.log(`Packages: ${manifest.pm}`);
+    generatePackageTypes(absPath);
   }
 
   const compilerOpts: CompilerOptions = {

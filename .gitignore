@@ -4,4 +4,6 @@ dist/
 .DS_Store
 demo/out
 demo/Packages
+demo/types
+docs/specs/
 .claude/

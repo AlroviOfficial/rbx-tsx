@@ -766,6 +766,16 @@ function transformCallExpression(
       // Static call on a Roblox value type: Vector3.new(), Color3.fromRGB(),
       // Instance.new() — use dot (no self), never colon.
       result = call(index(obj, method), args);
+    } else if (
+      ts.isIdentifier(receiver) &&
+      ctx.importedModules.has(receiver.text) &&
+      ctx.importedModules.get(receiver.text) !== "@rbx-services"
+    ) {
+      // Static call on an imported package module: Promise.delay(), Foo.bar().
+      // The function is a field of the module table, so use dot — not colon.
+      // (@rbx-services entries are Roblox service instances and keep colon via
+      // the ROBLOX_METHODS branch below.)
+      result = call(index(obj, method), args);
     } else if (mathOp && args.length === 1) {
       // Operator macro: a.add(b) → a + b (Luau value types overload operators).
       result = binary(obj, mathOp, args[0]!);

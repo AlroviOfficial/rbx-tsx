@@ -37,30 +37,35 @@ export function resolvePackageName(
 }
 
 /**
+ * Walk up from startDir to find the directory containing a package manifest
+ * (wally.toml or pesde.toml). Returns null if neither is found.
+ */
+export function findManifestDir(startDir: string): string | null {
+  let dir = startDir;
+  for (;;) {
+    if (existsSync(join(dir, "wally.toml")) || existsSync(join(dir, "pesde.toml"))) {
+      return dir;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+/**
  * Walk up from startDir to find a package manifest (wally.toml or pesde.toml).
  * Returns null if neither is found.
  */
 export function findPackageManifest(
   startDir: string
 ): PackageManifest | null {
-  let dir = startDir;
-  for (;;) {
-    // Check wally.toml first (more common, backwards compat)
-    const wallyPath = join(dir, "wally.toml");
-    if (existsSync(wallyPath)) {
-      return parseWallyManifest(wallyPath);
-    }
-
-    const pesdePath = join(dir, "pesde.toml");
-    if (existsSync(pesdePath)) {
-      return parsePesdeManifest(pesdePath);
-    }
-
-    const parent = dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return null;
+  const dir = findManifestDir(startDir);
+  if (!dir) return null;
+  // Check wally.toml first (more common, backwards compat)
+  const wallyPath = join(dir, "wally.toml");
+  if (existsSync(wallyPath)) return parseWallyManifest(wallyPath);
+  return parsePesdeManifest(join(dir, "pesde.toml"));
 }
 
 /**

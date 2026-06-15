@@ -149,6 +149,23 @@ Runs the compiler without emitting files. Reports warnings and errors.
 
 Scaffolds a new Roblox project with starter components, `tsconfig.json`, `wally.toml`, and `default.project.json`.
 
+### `rbx-tsx types [directory]`
+
+Generates TypeScript declarations (`.d.ts`) from your installed wally/pesde Luau packages, so downloaded packages import with real types instead of `any`.
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-o, --output <dir>` | Output directory for the generated `.d.ts` files | `types/packages` |
+
+```bash
+wally install            # or: pesde install
+rbx-tsx types            # reads wally.toml / pesde.toml + the Packages/ folder
+```
+
+For each dependency it reads the package's Luau source, extracts `export type` aliases and the module's exported shape, and emits a `declare module` block. Add the output directory to your `tsconfig.json` `include` (e.g. `"types/**/*"`) so TypeScript picks the declarations up. Re-run after installing or updating packages.
+
+What it captures: exported type aliases (with generics), function signatures, table/record shapes, unions, optionals, and the common ecosystem aliases (`Array`/`Map`/`Set`/`Object`). Constructs it can't resolve — metatable classes, `typeof(setmetatable(...))`, cross-module type references, Luau type functions — degrade to `any` rather than failing. Packages that ship bundled types (`react`, `react-roblox`) are skipped.
+
 ## Features
 
 ### JSX and React
@@ -170,7 +187,7 @@ Scaffolds a new Roblox project with starter components, `tsconfig.json`, `wally.
 | `a ?? b` | `if a ~= nil then a else b` |
 | `a?.b?.c` | temp-var optional chaining |
 | `cond ? a : b` | `if cond then a else b` |
-| `` `hello ${name}` `` | `"hello " .. tostring(name)` |
+| `` `hello ${name}` `` | `` `hello {name}` `` (Luau string interpolation) |
 | `for...of` | `for _, v in items do` |
 | `for...in` | `for k, _ in obj do` |
 | Numeric `for` | `for i = 0, n - 1 do` |

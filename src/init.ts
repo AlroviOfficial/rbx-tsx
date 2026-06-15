@@ -125,7 +125,7 @@ const TSCONFIG =
         noEmit: true,
         skipLibCheck: true,
       },
-      include: ["src/**/*", "node_modules/rbx-tsx/types/**/*"],
+      include: ["src/**/*", "types/**/*", "node_modules/rbx-tsx/types/**/*"],
     },
     null,
     2
