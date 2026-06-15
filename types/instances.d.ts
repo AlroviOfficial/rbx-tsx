@@ -15087,6 +15087,7 @@ interface CreatableInstances {
 declare const Instance: {
 	/** Creates a new Instance of the given class. */
 	new <T extends keyof CreatableInstances>(className: T, parent?: Instance): CreatableInstances[T];
+	"new"<T extends keyof CreatableInstances>(className: T, parent?: Instance): CreatableInstances[T];
 	/** Returns a copy of an existing Instance (like Clone but ignores Archivable). */
 	fromExisting(existingInstance: Instance): Instance;
 };

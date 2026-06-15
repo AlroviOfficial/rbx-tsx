@@ -399,6 +399,72 @@ function formatYamlParams(params: YamlParam[]): string {
     .join(", ");
 }
 
+// Operator-overload macros for Roblox value types. TypeScript has no operator
+// overloading, so these surface as methods (`a.add(b)`) that the compiler
+// rewrites to Luau binary expressions (`a + b`). Kept in sync with
+// ROBLOX_MATH_OPERATORS in src/mappings/roblox-constructors.ts.
+interface OperatorMethod {
+  name: string;
+  param: string;
+  ret: string;
+  doc: string;
+}
+
+const MATH_OPERATOR_METHODS: Record<string, OperatorMethod[]> = {
+  Vector2: [
+    { name: "add", param: "Vector2", ret: "Vector2", doc: "Returns the sum of the two vectors." },
+    { name: "sub", param: "Vector2", ret: "Vector2", doc: "Returns the difference of the two vectors." },
+    { name: "mul", param: "Vector2 | number", ret: "Vector2", doc: "Returns the vector multiplied by another vector or a scalar." },
+    { name: "div", param: "Vector2 | number", ret: "Vector2", doc: "Returns the vector divided by another vector or a scalar." },
+    { name: "idiv", param: "Vector2 | number", ret: "Vector2", doc: "Returns the vector floor-divided by another vector or a scalar." },
+  ],
+  Vector3: [
+    { name: "add", param: "Vector3", ret: "Vector3", doc: "Returns the sum of the two vectors." },
+    { name: "sub", param: "Vector3", ret: "Vector3", doc: "Returns the difference of the two vectors." },
+    { name: "mul", param: "Vector3 | number", ret: "Vector3", doc: "Returns the vector multiplied by another vector or a scalar." },
+    { name: "div", param: "Vector3 | number", ret: "Vector3", doc: "Returns the vector divided by another vector or a scalar." },
+    { name: "idiv", param: "Vector3 | number", ret: "Vector3", doc: "Returns the vector floor-divided by another vector or a scalar." },
+  ],
+  Vector2int16: [
+    { name: "add", param: "Vector2int16", ret: "Vector2int16", doc: "Returns the sum of the two vectors." },
+    { name: "sub", param: "Vector2int16", ret: "Vector2int16", doc: "Returns the difference of the two vectors." },
+    { name: "mul", param: "Vector2int16", ret: "Vector2int16", doc: "Returns the product of the two vectors." },
+    { name: "div", param: "Vector2int16", ret: "Vector2int16", doc: "Returns the quotient of the two vectors." },
+  ],
+  Vector3int16: [
+    { name: "add", param: "Vector3int16", ret: "Vector3int16", doc: "Returns the sum of the two vectors." },
+    { name: "sub", param: "Vector3int16", ret: "Vector3int16", doc: "Returns the difference of the two vectors." },
+    { name: "mul", param: "Vector3int16", ret: "Vector3int16", doc: "Returns the product of the two vectors." },
+    { name: "div", param: "Vector3int16", ret: "Vector3int16", doc: "Returns the quotient of the two vectors." },
+  ],
+  UDim: [
+    { name: "add", param: "UDim", ret: "UDim", doc: "Returns the sum of the two UDims." },
+    { name: "sub", param: "UDim", ret: "UDim", doc: "Returns the difference of the two UDims." },
+  ],
+  UDim2: [
+    { name: "add", param: "UDim2", ret: "UDim2", doc: "Returns the sum of the two UDim2s." },
+    { name: "sub", param: "UDim2", ret: "UDim2", doc: "Returns the difference of the two UDim2s." },
+  ],
+  CFrame: [
+    { name: "add", param: "Vector3", ret: "CFrame", doc: "Returns this CFrame translated by the given Vector3." },
+    { name: "sub", param: "Vector3", ret: "CFrame", doc: "Returns this CFrame translated by the negation of the given Vector3." },
+    { name: "mul", param: "CFrame", ret: "CFrame", doc: "Returns the composition of the two CFrames." },
+    { name: "mul", param: "Vector3", ret: "Vector3", doc: "Returns the given Vector3 transformed by this CFrame." },
+  ],
+};
+
+/** Emit the operator-overload methods (if any) for a value type's interface. */
+function operatorMethodLines(typeName: string): string[] {
+  const ops = MATH_OPERATOR_METHODS[typeName];
+  if (!ops) return [];
+  const out: string[] = [];
+  for (const op of ops) {
+    out.push(`\t/** ${op.doc} */`);
+    out.push(`\t${op.name}(other: ${op.param}): ${op.ret};`);
+  }
+  return out;
+}
+
 function generateDatatypesFromYaml(datatypes: YamlDatatype[]): string {
   const lines: string[] = [
     "// Auto-generated from Roblox creator-docs YAML — do not edit manually",
@@ -452,6 +518,9 @@ function generateDatatypesFromYaml(datatypes: YamlDatatype[]): string {
       }
     }
 
+    // Operator-overload macros (add/sub/mul/div/idiv) for value types.
+    lines.push(...operatorMethodLines(dt.name));
+
     lines.push("}\n");
 
     // --- Constructor const (constructors + constants + static functions) ---
@@ -473,7 +542,11 @@ function generateDatatypesFromYaml(datatypes: YamlDatatype[]): string {
             : ctor.name;
 
           if (ctorName === "new") {
+            // Construct signature enables `new Vector3()`; the quoted "new"
+            // method enables the idiomatic `Vector3.new()` call style. Both
+            // compile to `Vector3.new()` in Luau.
             lines.push(`${doc}\tnew (${params}): ${dt.name};`);
+            lines.push(`\t"new"(${params}): ${dt.name};`);
           } else {
             lines.push(`${doc}\t${safeName(ctorName)}(${params}): ${dt.name};`);
           }
@@ -637,6 +710,7 @@ function generateInstances(classes: ApiClass[], docs: ClassDocsMap): string {
   lines.push("declare const Instance: {");
   lines.push("\t/** Creates a new Instance of the given class. */");
   lines.push("\tnew <T extends keyof CreatableInstances>(className: T, parent?: Instance): CreatableInstances[T];");
+  lines.push('\t"new"<T extends keyof CreatableInstances>(className: T, parent?: Instance): CreatableInstances[T];');
   lines.push("\t/** Returns a copy of an existing Instance (like Clone but ignores Archivable). */");
   lines.push("\tfromExisting(existingInstance: Instance): Instance;");
   lines.push("};\n");

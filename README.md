@@ -179,7 +179,7 @@ Scaffolds a new Roblox project with starter components, `tsconfig.json`, `wally.
 | `throw` | `error()` |
 | `async/await` | Promise-based transform |
 | `function*` / `yield` | Coroutine adapter |
-| `new Color3()` | `Color3.new()` |
+| `new Color3()` / `Color3.new()` | `Color3.new()` |
 | `typeof x` | `typeof(x)` |
 | `delete obj.key` | `obj.key = nil` |
 | Decorators | Wrapper/descriptor calls |
@@ -208,6 +208,7 @@ Scaffolds a new Roblox project with starter components, `tsconfig.json`, `wally.
 | `Number.isInteger/isNaN/isFinite` | Inline Luau checks |
 | `Array.isArray(x)` / `Array.from(x)` | Type check / table conversion |
 | `/regex/flags` | `RegExp("regex", "flags")` via luau-regexp |
+| `v.add/sub/mul/div/idiv(x)` | `v + x` / `v - x` / `v * x` / `v / x` / `v // x` (value-type operators) |
 
 ### Module System
 
@@ -248,7 +249,9 @@ Supports generics, union types, intersection types, `Partial<T>`, `NonNullable<T
 
 ### Roblox Integration
 
-- Roblox constructors (`new Vector3()` becomes `Vector3.new()`)
+- Roblox constructors — both `new Vector3()` and the idiomatic `Vector3.new()` compile to `Vector3.new()`
+- Static value-type calls (`Color3.fromRGB()`, `CFrame.lookAt()`, `Instance.new()`) use `.` dot syntax
+- Value-type math via methods (`a.add(b)` → `a + b`) since TypeScript lacks operator overloading
 - Roblox method calls use `:` colon syntax automatically (`WaitForChild`, `Connect`, etc.)
 - `@rbx-services` maps to `game:GetService()` for all known services
 - CSS module support with companion `rbx-css` compiler (`--css` flag)

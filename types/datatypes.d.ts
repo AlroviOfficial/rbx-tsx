@@ -30,6 +30,7 @@ declare const Axes: {
 	 * Creates a new Axes using list of axes and/or faces. NormalIds (faces) are converted to the corresponding axes.
 	 */
 	new (axes?: unknown): Axes;
+	"new"(axes?: unknown): Axes;
 };
 
 /** A data type that provides a predefined list of named colors. */
@@ -51,16 +52,20 @@ interface BrickColor {
 declare const BrickColor: {
 	/** Constructs a `BrickColor` from its numerical index. */
 	new (val?: number): BrickColor;
+	"new"(val?: number): BrickColor;
 	/**
 	 * Constructs the closest `BrickColor` that can be matched to the specified RGB components, each between 0 and 1.
 	 */
 	new (r?: number, g?: number, b?: number): BrickColor;
+	"new"(r?: number, g?: number, b?: number): BrickColor;
 	/** Constructs a `BrickColor` from its name. */
 	new (name?: string): BrickColor;
+	"new"(name?: string): BrickColor;
 	/**
 	 * Constructs the closest `BrickColor` that can be matched to the specified `Color3`.
 	 */
 	new (color?: Color3): BrickColor;
+	"new"(color?: Color3): BrickColor;
 	/** Constructs a `BrickColor` from its palette index. */
 	palette(paletteValue?: number): BrickColor;
 	/** Returns a random `BrickColor`. */
@@ -211,31 +216,45 @@ interface CFrame {
 	 * Returns the angle, in radians, between the orientation of one `CFrame` and another.
 	 */
 	AngleBetween(other?: CFrame): number;
+	/** Returns this CFrame translated by the given Vector3. */
+	add(other: Vector3): CFrame;
+	/** Returns this CFrame translated by the negation of the given Vector3. */
+	sub(other: Vector3): CFrame;
+	/** Returns the composition of the two CFrames. */
+	mul(other: CFrame): CFrame;
+	/** Returns the given Vector3 transformed by this CFrame. */
+	mul(other: Vector3): Vector3;
 }
 
 declare const CFrame: {
 	/** Returns a blank identity `CFrame`. */
 	new (): CFrame;
+	"new"(): CFrame;
 	/**
 	 * Returns a `CFrame` with no rotation with the position of the provided `Vector3`.
 	 */
 	new (pos?: Vector3): CFrame;
+	"new"(pos?: Vector3): CFrame;
 	/**
 	 * Returns a `CFrame` with the position of the first `Vector3` and an orientation pointed toward the second.
 	 */
 	new (pos?: Vector3, lookAt?: Vector3): CFrame;
+	"new"(pos?: Vector3, lookAt?: Vector3): CFrame;
 	/**
 	 * Returns a `CFrame` with a position comprised of the provided `x`, `y`, and `z` components.
 	 */
 	new (x?: number, y?: number, z?: number): CFrame;
+	"new"(x?: number, y?: number, z?: number): CFrame;
 	/**
 	 * Returns a `CFrame` from position (`x`, `y`, `z`) and quaternion (`qX`, `qY`, `qZ`, `qW`).
 	 */
 	new (x?: number, y?: number, z?: number, qX?: number, qY?: number, qZ?: number, qW?: number): CFrame;
+	"new"(x?: number, y?: number, z?: number, qX?: number, qY?: number, qZ?: number, qW?: number): CFrame;
 	/**
 	 * Returns a `CFrame` from position (`x`, `y`, `z`) with an orientation specified by the rotation matrix.
 	 */
 	new (x?: number, y?: number, z?: number, R00?: number, R01?: number, R02?: number, R10?: number, R11?: number, R12?: number, R20?: number, R21?: number, R22?: number): CFrame;
+	"new"(x?: number, y?: number, z?: number, R00?: number, R01?: number, R02?: number, R10?: number, R11?: number, R12?: number, R20?: number, R21?: number, R22?: number): CFrame;
 	/**
 	 * Returns a `CFrame` with the position of the first `Vector3` and an orientation pointed toward the second.
 	 */
@@ -291,6 +310,7 @@ interface Color3 {
 declare const Color3: {
 	/** Returns a `Color3` with the given red, green, and blue values. */
 	new (red?: number, green?: number, blue?: number): Color3;
+	"new"(red?: number, green?: number, blue?: number): Color3;
 	/** Returns a `Color3` from given components within the range of 0 to 255. */
 	fromRGB(red?: number, green?: number, blue?: number): Color3;
 	/** Returns a `Color3` from the given hue, saturation, and value components. */
@@ -313,12 +333,15 @@ interface ColorSequence {
 declare const ColorSequence: {
 	/** Returns a new `ColorSequence` that is entirely the specified color. */
 	new (c?: Color3): ColorSequence;
+	"new"(c?: Color3): ColorSequence;
 	/**
 	 * Returns a new `ColorSequence` with `c0` as the start value and `c1` as the end value.
 	 */
 	new (c0?: Color3, c1?: Color3): ColorSequence;
+	"new"(c0?: Color3, c1?: Color3): ColorSequence;
 	/** Returns a new `ColorSequence` from an array of `ColorSequenceKeypoints`. */
 	new (keypoints?: any[]): ColorSequence;
+	"new"(keypoints?: any[]): ColorSequence;
 };
 
 /** A color and time value that represents a keypoint in a `ColorSequence`. */
@@ -332,6 +355,7 @@ interface ColorSequenceKeypoint {
 declare const ColorSequenceKeypoint: {
 	/** Returns a ColorSequenceKeypoint from the given time and color. */
 	new (time?: number, color?: Color3): ColorSequenceKeypoint;
+	"new"(time?: number, color?: Color3): ColorSequenceKeypoint;
 };
 
 /**
@@ -421,6 +445,7 @@ interface DockWidgetPluginGuiInfo {
 declare const DockWidgetPluginGuiInfo: {
 	/** Returns a new DockWidgetPluginGuiInfo object. */
 	new (InitialDockState?: Enum.InitialDockState, InitialEnabled?: boolean, InitialEnabledShouldOverrideRestore?: boolean, FloatingXSize?: number, FloatingYSize?: number, MinWidth?: number, MinHeight?: number): DockWidgetPluginGuiInfo;
+	"new"(InitialDockState?: Enum.InitialDockState, InitialEnabled?: boolean, InitialEnabledShouldOverrideRestore?: boolean, FloatingXSize?: number, FloatingYSize?: number, MinWidth?: number, MinHeight?: number): DockWidgetPluginGuiInfo;
 };
 
 /** A data type containing six booleans, each representing a face of a `BasePart`. */
@@ -444,6 +469,7 @@ declare const Faces: {
 	 * Returns a Faces with the corresponding face of each passed `Enum.NormalId` as `true`.
 	 */
 	new (_param?: unknown): Faces;
+	"new"(_param?: unknown): Faces;
 };
 
 /** A time-value pair used with `FloatCurve` instances. */
@@ -463,6 +489,7 @@ interface FloatCurveKey {
 declare const FloatCurveKey: {
 	/** Returns a new `FloatCurveKey` from the given time and value. */
 	new (time?: number, value?: number, Interpolation?: Enum.KeyInterpolationMode): FloatCurveKey;
+	"new"(time?: number, value?: number, Interpolation?: Enum.KeyInterpolationMode): FloatCurveKey;
 };
 
 /** Describes the font used to render text. */
@@ -480,6 +507,7 @@ interface Font {
 declare const Font: {
 	/** Creates a new `Font`. */
 	new (family?: string, weight?: Enum.FontWeight, style?: Enum.FontStyle): Font;
+	"new"(family?: string, weight?: Enum.FontWeight, style?: Enum.FontStyle): Font;
 	/** Creates a `Font` from an `Enum.Font` value. */
 	fromEnum(font?: Enum.Font): Font;
 	/** Creates a `Font` from a name like `FredokaOne`. */
@@ -499,8 +527,10 @@ interface NumberRange {
 declare const NumberRange: {
 	/** Returns a new `NumberRange` with the minimum and maximum set to the `value`. */
 	new (value?: number): NumberRange;
+	"new"(value?: number): NumberRange;
 	/** Returns a new `NumberRange` with the provided `minimum` and `maximum`. */
 	new (minimum?: number, maximum?: number): NumberRange;
+	"new"(minimum?: number, maximum?: number): NumberRange;
 };
 
 /** A series of floats across a period of time. */
@@ -514,12 +544,15 @@ declare const NumberSequence: {
 	 * Returns a `NumberSequence` with the start and end values set to the provided `n`.
 	 */
 	new (n?: number): NumberSequence;
+	"new"(n?: number): NumberSequence;
 	/**
 	 * Returns a `NumberSequence` of two keypoints with `n0` as the start value and `n1` as the end value.
 	 */
 	new (n0?: number, n1?: number): NumberSequence;
+	"new"(n0?: number, n1?: number): NumberSequence;
 	/** Returns a `NumberSequence` from an array of `NumberSequenceKeypoints`. */
 	new (Keypoints?: any[]): NumberSequence;
+	"new"(Keypoints?: any[]): NumberSequence;
 };
 
 /**
@@ -537,8 +570,10 @@ interface NumberSequenceKeypoint {
 declare const NumberSequenceKeypoint: {
 	/** Returns a keypoint with the specified time and value. */
 	new (time?: number, value?: number): NumberSequenceKeypoint;
+	"new"(time?: number, value?: number): NumberSequenceKeypoint;
 	/** Returns a keypoint with the specified time, value, and envelope. */
 	new (time?: number, value?: number, envelope?: number): NumberSequenceKeypoint;
+	"new"(time?: number, value?: number, envelope?: number): NumberSequenceKeypoint;
 };
 
 /** Stores parameters used in boundary-querying functions. */
@@ -568,6 +603,7 @@ interface OverlapParams {
 declare const OverlapParams: {
 	/** Returns a blank `OverlapParams` object. */
 	new (): OverlapParams;
+	"new"(): OverlapParams;
 };
 
 /** Stores the info for a single control point used with the `Path2D` instance. */
@@ -583,12 +619,15 @@ interface Path2DControlPoint {
 declare const Path2DControlPoint: {
 	/** Returns an empty `Path2DControlPoint`. */
 	new (): Path2DControlPoint;
+	"new"(): Path2DControlPoint;
 	/** Returns a `Path2DControlPoint` with only the position set. */
 	new (Position?: UDim2): Path2DControlPoint;
+	"new"(Position?: UDim2): Path2DControlPoint;
 	/**
 	 * Returns a `Path2DControlPoint` with the position, left tangent, and right tangent set.
 	 */
 	new (Position?: UDim2, _param?: UDim2, _param2?: UDim2): Path2DControlPoint;
+	"new"(Position?: UDim2, _param?: UDim2, _param2?: UDim2): Path2DControlPoint;
 };
 
 /** A description of the steps required to reach the next waypoint in a path. */
@@ -606,6 +645,7 @@ declare const PathWaypoint: {
 	 * Returns a `PathWaypoint` object from the given `Vector3` position, `Enum.PathWaypointAction` action, and optional string label.
 	 */
 	new (position?: Vector3, action?: Enum.PathWaypointAction, label?: string): PathWaypoint;
+	"new"(position?: Vector3, action?: Enum.PathWaypointAction, label?: string): PathWaypoint;
 };
 
 /** Describes properties that affect the physical behavior of a `BasePart`. */
@@ -635,18 +675,22 @@ declare const PhysicalProperties: {
 	 * Returns a `PhysicalProperties` with the default properties for the given material.
 	 */
 	new (material?: Enum.Material): PhysicalProperties;
+	"new"(material?: Enum.Material): PhysicalProperties;
 	/**
 	 * Returns a `PhysicalProperties` with the specified density, friction, and elasticity.
 	 */
 	new (density?: number, friction?: number, elasticity?: number): PhysicalProperties;
+	"new"(density?: number, friction?: number, elasticity?: number): PhysicalProperties;
 	/**
 	 * Creates a `PhysicalProperties` container with the specified density, friction, elasticity, weight of friction, and weight of elasticity.
 	 */
 	new (density?: number, friction?: number, elasticity?: number, frictionWeight?: number, elasticityWeight?: number): PhysicalProperties;
+	"new"(density?: number, friction?: number, elasticity?: number, frictionWeight?: number, elasticityWeight?: number): PhysicalProperties;
 	/**
 	 * Creates a `PhysicalProperties` container with the specified density, friction, elasticity, weight of friction, weight of elasticity, and acoustic absorption.
 	 */
 	new (density?: number, friction?: number, elasticity?: number, frictionWeight?: number, elasticityWeight?: number, acousticAbsorption?: number): PhysicalProperties;
+	"new"(density?: number, friction?: number, elasticity?: number, frictionWeight?: number, elasticityWeight?: number, acousticAbsorption?: number): PhysicalProperties;
 };
 
 /** Generates pseudorandom numbers and directions. */
@@ -668,6 +712,7 @@ interface Random {
 declare const Random: {
 	/** Returns a new pseudorandom generator using an optional seed. */
 	new (seed?: number): Random;
+	"new"(seed?: number): Random;
 };
 
 /**
@@ -693,6 +738,7 @@ interface Ray {
 declare const Ray: {
 	/** Returns a `Ray` with the given `Origin` and `Direction`. */
 	new (Origin?: Vector3, Direction?: Vector3): Ray;
+	"new"(Origin?: Vector3, Direction?: Vector3): Ray;
 };
 
 /** A container for parameters used in raycasting operations. */
@@ -724,6 +770,7 @@ interface RaycastParams {
 declare const RaycastParams: {
 	/** Returns a blank `RaycastParams`. */
 	new (): RaycastParams;
+	"new"(): RaycastParams;
 };
 
 /** Stores results from a raycast operation. */
@@ -755,12 +802,15 @@ interface Rect {
 declare const Rect: {
 	/** Returns a new **Rect** with zero `Vector2` positions. */
 	new (): Rect;
+	"new"(): Rect;
 	/** Returns a new **Rect** from the given `Vector2` positions. */
 	new (min?: Vector2, max?: Vector2): Rect;
+	"new"(min?: Vector2, max?: Vector2): Rect;
 	/**
 	 * Returns a new **Rect** using the first and last two arguments as coordinates for corners.
 	 */
 	new (minX?: number, minY?: number, maxX?: number, maxY?: number): Rect;
+	"new"(minX?: number, minY?: number, maxX?: number, maxY?: number): Rect;
 };
 
 /** Describes a rectangular volume in 3D space. */
@@ -776,6 +826,7 @@ interface Region3 {
 declare const Region3: {
 	/** Returns a new `Region3` using the provided vectors as boundaries. */
 	new (min?: Vector3, max?: Vector3): Region3;
+	"new"(min?: Vector3, max?: Vector3): Region3;
 };
 
 /**
@@ -791,6 +842,7 @@ interface Region3int16 {
 declare const Region3int16: {
 	/** Returns a new Region3int16 from the provided boundaries. */
 	new (min?: Vector3int16, max?: Vector3int16): Region3int16;
+	"new"(min?: Vector3int16, max?: Vector3int16): Region3int16;
 };
 
 /** A time-value pair used with `RotationCurve` instances. */
@@ -810,6 +862,7 @@ interface RotationCurveKey {
 declare const RotationCurveKey: {
 	/** Returns a new `RotationCurveKey` at a given time with a given `CFrame`. */
 	new (time?: number, cframe?: CFrame, Interpolation?: Enum.KeyInterpolationMode): RotationCurveKey;
+	"new"(time?: number, cframe?: CFrame, Interpolation?: Enum.KeyInterpolationMode): RotationCurveKey;
 };
 
 /** Stores secret non-printable content. */
@@ -845,6 +898,7 @@ declare const SecurityCapabilities: {
 	 * Returns a new set of capabilities from zero or more `Enum.SecurityCapability` items.
 	 */
 	new (_param?: Enum.SecurityCapability): SecurityCapabilities;
+	"new"(_param?: Enum.SecurityCapability): SecurityCapabilities;
 	/**
 	 * Returns a new set of capabilities from the capabilities of the calling function.
 	 */
@@ -858,10 +912,12 @@ interface SharedTable {
 declare const SharedTable: {
 	/** Returns a new, empty `SharedTable`. */
 	new (): SharedTable;
+	"new"(): SharedTable;
 	/**
 	 * Returns a new `SharedTable` containing elements equivalent to those in the provided Luau table.
 	 */
 	new (t?: Record<string, any>): SharedTable;
+	"new"(t?: Record<string, any>): SharedTable;
 	/** Removes all of the elements from the `SharedTable`. */
 	clear(st?: SharedTable): void;
 	/** Creates and returns a clone of the provided `SharedTable`. */
@@ -899,6 +955,7 @@ interface TweenInfo {
 declare const TweenInfo: {
 	/** Creates a new `TweenInfo` from the provided parameters. */
 	new (time?: number, easingStyle?: Enum.EasingStyle, easingDirection?: Enum.EasingDirection, repeatCount?: number, reverses?: boolean, delayTime?: number): TweenInfo;
+	"new"(time?: number, easingStyle?: Enum.EasingStyle, easingDirection?: Enum.EasingDirection, repeatCount?: number, reverses?: boolean, delayTime?: number): TweenInfo;
 };
 
 /**
@@ -909,11 +966,16 @@ interface UDim {
 	readonly Scale: number;
 	/** The absolute offset component of the `UDim`. */
 	readonly Offset: number;
+	/** Returns the sum of the two UDims. */
+	add(other: UDim): UDim;
+	/** Returns the difference of the two UDims. */
+	sub(other: UDim): UDim;
 }
 
 declare const UDim: {
 	/** Returns a `UDim` from the given components. */
 	new (Scale?: number, Offset?: number): UDim;
+	"new"(Scale?: number, Offset?: number): UDim;
 };
 
 /**
@@ -930,6 +992,10 @@ interface UDim2 {
 	readonly Height: UDim;
 	/** Returns a `UDim2` interpolated linearly between the value and the given goal. */
 	Lerp(goal?: UDim2, alpha?: number): UDim2;
+	/** Returns the sum of the two UDim2s. */
+	add(other: UDim2): UDim2;
+	/** Returns the difference of the two UDim2s. */
+	sub(other: UDim2): UDim2;
 }
 
 declare const UDim2: {
@@ -937,14 +1003,17 @@ declare const UDim2: {
 	 * Returns a new `UDim2` with the coordinates of two zero `UDim` components representing each axis.
 	 */
 	new (): UDim2;
+	"new"(): UDim2;
 	/**
 	 * Returns a new `UDim2` given the coordinates of the two `UDim` components representing each axis.
 	 */
 	new (xScale?: number, xOffset?: number, yScale?: number, yOffset?: number): UDim2;
+	"new"(xScale?: number, xOffset?: number, yScale?: number, yOffset?: number): UDim2;
 	/**
 	 * Returns a new `UDim2` from the given `UDim` objects representing the **X** and **Y** dimensions, respectively.
 	 */
 	new (x?: UDim, y?: UDim): UDim2;
+	"new"(x?: UDim, y?: UDim): UDim2;
 	/** Returns a new `UDim2` with the given scale components and no offsets. */
 	fromScale(xScale?: number, yScale?: number): UDim2;
 	/** Returns a new `UDim2` with the given offset components and no scaling. */
@@ -968,6 +1037,7 @@ interface ValueCurveKey {
 declare const ValueCurveKey: {
 	/** Returns a new `ValueCurveKey` from the given time and value. */
 	new (time?: number, value?: any, Interpolation?: Enum.KeyInterpolationMode): ValueCurveKey;
+	"new"(time?: number, value?: any, Interpolation?: Enum.KeyInterpolationMode): ValueCurveKey;
 };
 
 /** Represents a 2D value with direction and magnitude. */
@@ -1010,11 +1080,22 @@ interface Vector2 {
 	 * Returns `true` if the X and Y components of the other `Vector2` are within epsilon units of each corresponding component of this `Vector2`.
 	 */
 	FuzzyEq(other?: Vector2, epsilon?: number): boolean;
+	/** Returns the sum of the two vectors. */
+	add(other: Vector2): Vector2;
+	/** Returns the difference of the two vectors. */
+	sub(other: Vector2): Vector2;
+	/** Returns the vector multiplied by another vector or a scalar. */
+	mul(other: Vector2 | number): Vector2;
+	/** Returns the vector divided by another vector or a scalar. */
+	div(other: Vector2 | number): Vector2;
+	/** Returns the vector floor-divided by another vector or a scalar. */
+	idiv(other: Vector2 | number): Vector2;
 }
 
 declare const Vector2: {
 	/** Returns a `Vector2` from the given x and y components. */
 	new (x?: number, y?: number): Vector2;
+	"new"(x?: number, y?: number): Vector2;
 	/** A `Vector2` with a magnitude of zero. */
 	readonly zero: Vector2;
 	/** A `Vector2` with a value of 1 on every axis. */
@@ -1031,11 +1112,20 @@ interface Vector2int16 {
 	readonly X: number;
 	/** The y-coordinate of the `Vector2int16`. */
 	readonly Y: number;
+	/** Returns the sum of the two vectors. */
+	add(other: Vector2int16): Vector2int16;
+	/** Returns the difference of the two vectors. */
+	sub(other: Vector2int16): Vector2int16;
+	/** Returns the product of the two vectors. */
+	mul(other: Vector2int16): Vector2int16;
+	/** Returns the quotient of the two vectors. */
+	div(other: Vector2int16): Vector2int16;
 }
 
 declare const Vector2int16: {
 	/** Returns a `Vector2int16` from the given x and y components. */
 	new (x?: number, y?: number): Vector2int16;
+	"new"(x?: number, y?: number): Vector2int16;
 };
 
 /** Represents a 3D value with a direction and magnitude. */
@@ -1084,11 +1174,22 @@ interface Vector3 {
 	 * Returns a `Vector3` with each component as the lowest among the respective components of both provided `Vector3` objects.
 	 */
 	Min(vector?: Vector3): Vector3;
+	/** Returns the sum of the two vectors. */
+	add(other: Vector3): Vector3;
+	/** Returns the difference of the two vectors. */
+	sub(other: Vector3): Vector3;
+	/** Returns the vector multiplied by another vector or a scalar. */
+	mul(other: Vector3 | number): Vector3;
+	/** Returns the vector divided by another vector or a scalar. */
+	div(other: Vector3 | number): Vector3;
+	/** Returns the vector floor-divided by another vector or a scalar. */
+	idiv(other: Vector3 | number): Vector3;
 }
 
 declare const Vector3: {
 	/** Returns a new `Vector3` from the given `x`, `y`, and `z` components. */
 	new (x?: number, y?: number, z?: number): Vector3;
+	"new"(x?: number, y?: number, z?: number): Vector3;
 	/** Returns a new `Vector3` in the given direction. */
 	FromNormalId(normal?: Enum.NormalId): Vector3;
 	/** Returns a new `Vector3` for the given axis. */
@@ -1113,9 +1214,18 @@ interface Vector3int16 {
 	readonly Y: number;
 	/** The z-coordinate of the `Vector3int16`. */
 	readonly Z: number;
+	/** Returns the sum of the two vectors. */
+	add(other: Vector3int16): Vector3int16;
+	/** Returns the difference of the two vectors. */
+	sub(other: Vector3int16): Vector3int16;
+	/** Returns the product of the two vectors. */
+	mul(other: Vector3int16): Vector3int16;
+	/** Returns the quotient of the two vectors. */
+	div(other: Vector3int16): Vector3int16;
 }
 
 declare const Vector3int16: {
 	/** Returns a new `Vector3int16` from the given x, y, and z components. */
 	new (x?: number, y?: number, z?: number): Vector3int16;
+	"new"(x?: number, y?: number, z?: number): Vector3int16;
 };

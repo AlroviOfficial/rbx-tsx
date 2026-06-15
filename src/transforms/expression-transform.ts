@@ -26,7 +26,10 @@ import {
 } from "../ast/luau-ast.ts";
 import { ROBLOX_METHODS } from "../mappings/roblox-methods.ts";
 import { ROBLOX_SERVICES } from "../mappings/roblox-services.ts";
-import { ROBLOX_CONSTRUCTORS } from "../mappings/roblox-constructors.ts";
+import {
+  ROBLOX_CONSTRUCTORS,
+  ROBLOX_MATH_OPERATORS,
+} from "../mappings/roblox-constructors.ts";
 import type { TransformContext } from "./transform-context.ts";
 import { transformType } from "./type-transform.ts";
 import { transformJSX } from "./jsx-transform.ts";
@@ -751,16 +754,30 @@ function transformCallExpression(
       obj = ident(tmp);
     }
 
+    const receiver = node.expression.expression;
+    const mathOp = ROBLOX_MATH_OPERATORS[method];
+
     let result: LuauExpression;
-    // Check if this is a Roblox method call (use : syntax)
-    if (ROBLOX_METHODS.has(method)) {
+    if (
+      ts.isIdentifier(receiver) &&
+      ROBLOX_CONSTRUCTORS.has(receiver.text) &&
+      !ctx.importedModules.has(receiver.text)
+    ) {
+      // Static call on a Roblox value type: Vector3.new(), Color3.fromRGB(),
+      // Instance.new() — use dot (no self), never colon.
+      result = call(index(obj, method), args);
+    } else if (mathOp && args.length === 1) {
+      // Operator macro: a.add(b) → a + b (Luau value types overload operators).
+      result = binary(obj, mathOp, args[0]!);
+    } else if (ROBLOX_METHODS.has(method)) {
+      // Check if this is a Roblox method call (use : syntax)
       result = methodCall(obj, method, args);
     } else if (method === "test" || method === "exec") {
       // RegExp.test/exec need : syntax to pass self (luau-regexp)
       result = methodCall(obj, method, args);
     } else if (
-      ts.isIdentifier(node.expression.expression) &&
-      ctx.knownClassNames.has(node.expression.expression.text)
+      ts.isIdentifier(receiver) &&
+      ctx.knownClassNames.has(receiver.text)
     ) {
       // Static class method: ClassName.method() — use dot (no self)
       result = call(index(obj, method), args);

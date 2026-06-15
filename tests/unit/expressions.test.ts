@@ -116,6 +116,64 @@ describe("new expressions", () => {
   });
 });
 
+describe("Roblox static method calls (dot syntax, not colon)", () => {
+  test("Vector3.new() → Vector3.new()", () => {
+    const result = compileStmt("const x = Vector3.new(1, 2, 3);");
+    expect(result).toContain("Vector3.new(1, 2, 3)");
+    expect(result).not.toContain("Vector3:new");
+  });
+
+  test("Instance.new() → Instance.new()", () => {
+    const result = compileStmt('const x = Instance.new("Part");');
+    expect(result).toContain('Instance.new("Part")');
+    expect(result).not.toContain("Instance:new");
+  });
+
+  test("Color3.fromRGB() → Color3.fromRGB()", () => {
+    const result = compileStmt("const x = Color3.fromRGB(255, 0, 0);");
+    expect(result).toContain("Color3.fromRGB(255, 0, 0)");
+    expect(result).not.toContain("Color3:fromRGB");
+  });
+
+  test("CFrame.lookAt() → CFrame.lookAt()", () => {
+    const result = compileStmt("const x = CFrame.lookAt(a, b);");
+    expect(result).toContain("CFrame.lookAt(a, b)");
+    expect(result).not.toContain("CFrame:lookAt");
+  });
+});
+
+describe("Roblox math operator macros", () => {
+  test("add → +", () => {
+    expect(compileStmt("const x = a.add(b);")).toContain("a + b");
+  });
+
+  test("sub → -", () => {
+    expect(compileStmt("const x = a.sub(b);")).toContain("a - b");
+  });
+
+  test("mul → *", () => {
+    expect(compileStmt("const x = a.mul(2);")).toContain("a * 2");
+  });
+
+  test("div → /", () => {
+    expect(compileStmt("const x = a.div(2);")).toContain("a / 2");
+  });
+
+  test("idiv → //", () => {
+    expect(compileStmt("const x = a.idiv(2);")).toContain("a // 2");
+  });
+
+  test("chained operators parenthesize by precedence", () => {
+    expect(compileStmt("const x = v.add(w).mul(2);")).toContain("(v + w) * 2");
+  });
+
+  test("Set.add is not treated as an operator", () => {
+    const result = compileStmt("const s = new Set<number>(); s.add(5);");
+    expect(result).toContain("s[5] = true");
+    expect(result).not.toContain("s + 5");
+  });
+});
+
 describe("console methods", () => {
   test("console.log → print", () => {
     const result = compileStmt('console.log("hello");');
