@@ -121,11 +121,11 @@ function emitStatement(
     }
 
     case "if": {
-      lines.push(`${t}if ${emitExpr(stmt.condition, ctx, depth)} then`);
+      lines.push(`${t}if ${emitCondition(stmt.condition, ctx, depth)} then`);
       emitBody(stmt.body, lines, ctx, depth + 1);
       if (stmt.elseIfs) {
         for (const ei of stmt.elseIfs) {
-          lines.push(`${t}elseif ${emitExpr(ei.condition, ctx, depth)} then`);
+          lines.push(`${t}elseif ${emitCondition(ei.condition, ctx, depth)} then`);
           emitBody(ei.body, lines, ctx, depth + 1);
         }
       }
@@ -165,7 +165,7 @@ function emitStatement(
     }
 
     case "while": {
-      lines.push(`${t}while ${emitExpr(stmt.condition, ctx, depth)} do`);
+      lines.push(`${t}while ${emitCondition(stmt.condition, ctx, depth)} do`);
       emitBody(stmt.body, lines, ctx, depth + 1);
       lines.push(`${t}end`);
       break;
@@ -174,7 +174,7 @@ function emitStatement(
     case "repeat-until": {
       lines.push(`${t}repeat`);
       emitBody(stmt.body, lines, ctx, depth + 1);
-      lines.push(`${t}until ${emitExpr(stmt.condition, ctx, depth)}`);
+      lines.push(`${t}until ${emitCondition(stmt.condition, ctx, depth)}`);
       break;
     }
 
@@ -237,6 +237,20 @@ function emitStatement(
       break;
     }
   }
+}
+
+/**
+ * Emit an expression used as a statement condition (if/elseif/while/until).
+ * A bare if-expression must be parenthesized there to avoid being parsed as a
+ * nested statement-level `if`.
+ */
+function emitCondition(
+  expr: LuauExpression,
+  ctx: CodegenContext,
+  depth: number
+): string {
+  const s = emitExpr(expr, ctx, depth);
+  return expr.type === "if-expr" ? `(${s})` : s;
 }
 
 function emitBody(

@@ -1,6 +1,7 @@
 import ts from "typescript";
 import type { WarningCollector, WarningCode } from "../warnings.ts";
 import type { LuauStatement, LuauExpression } from "../ast/luau-ast.ts";
+import type { JsType } from "./js-type.ts";
 import type { CSSManifest } from "../css-manifest.ts";
 import {
   type PackageManifest,
@@ -113,6 +114,13 @@ export class TransformContext {
   /** Object literal declarations: name → key names */
   readonly constObjectKeys = new Map<string, string[]>();
 
+  /**
+   * Coarse inferred type of in-scope variables/params, used to drive
+   * JS-truthiness coercion and array-vs-record index shifting. Swapped for a
+   * snapshot at function boundaries to respect scoping (see withScope).
+   */
+  localTypes = new Map<string, JsType>();
+
   /** Pre-statements accumulated during expression transforms (e.g., temp vars for optional chains) */
   readonly preStatements: LuauStatement[] = [];
 
@@ -203,6 +211,21 @@ export class TransformContext {
   /** Generate a unique temp variable name for optional chain extraction */
   nextTempVar(): string {
     return `_opt${this._tempCounter++}`;
+  }
+
+  /**
+   * Run `fn` with a fresh local-type scope that inherits the current bindings,
+   * restoring the outer scope afterward. Used at function boundaries so a
+   * parameter's type does not leak into sibling/outer scopes.
+   */
+  withScope<T>(fn: () => T): T {
+    const saved = this.localTypes;
+    this.localTypes = new Map(saved);
+    try {
+      return fn();
+    } finally {
+      this.localTypes = saved;
+    }
   }
 
   /** Add a statement that must be emitted before the current expression's containing statement */

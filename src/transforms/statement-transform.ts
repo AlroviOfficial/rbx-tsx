@@ -29,7 +29,11 @@ import {
   transformFunctionExpression,
   transformParameters,
   emitDestructuringStatements,
+  coerceTruthyFromNode,
+  applyTruthiness,
+  cloneExpr,
 } from "./expression-transform.ts";
+import { inferJsType, typeNodeToJsType } from "./js-type.ts";
 import {
   transformType,
   transformInterfaceToLuauType,
@@ -116,7 +120,7 @@ export function transformStatement(
     return [
       {
         type: "while",
-        condition: transformExpression(node.expression, ctx),
+        condition: coerceTruthyFromNode(node.expression, ctx),
         body: transformBlockOrStatement(node.statement, ctx),
       },
     ];
@@ -127,7 +131,7 @@ export function transformStatement(
     return [
       {
         type: "repeat-until",
-        condition: unary("not", transformExpression(node.expression, ctx)),
+        condition: unary("not", coerceTruthyFromNode(node.expression, ctx)),
         body: transformBlockOrStatement(node.statement, ctx),
       },
     ];
@@ -411,22 +415,30 @@ function transformVariableStatement(
       if (isGenericArrow) {
         const fn = rawInit as ts.ArrowFunction | ts.FunctionExpression;
         const typeParams = fn.typeParameters!.map((p) => p.name.getText());
-        const params = transformParameters(fn.parameters, ctx);
-        const returnType = fn.type
-          ? transformType(fn.type, ctx)
-          : undefined;
-        const additionalBodyStmts = getDestructuringPreamble(fn.parameters, ctx);
-        let body: LuauStatement[];
-        if (ts.isBlock(fn.body)) {
-          body = [
-            ...additionalBodyStmts,
-            ...transformStatements(fn.body.statements, ctx),
-          ];
-        } else {
-          const expr = transformExpression(fn.body as ts.Expression, ctx);
-          const pre = ctx.flushPreStatements();
-          body = [...additionalBodyStmts, ...pre, { type: "return", value: expr }];
-        }
+        const { params, returnType, body } = ctx.withScope(() => {
+          const params = transformParameters(fn.parameters, ctx);
+          const returnType = fn.type ? transformType(fn.type, ctx) : undefined;
+          const additionalBodyStmts = getDestructuringPreamble(
+            fn.parameters,
+            ctx
+          );
+          let body: LuauStatement[];
+          if (ts.isBlock(fn.body)) {
+            body = [
+              ...additionalBodyStmts,
+              ...transformStatements(fn.body.statements, ctx),
+            ];
+          } else {
+            const expr = transformExpression(fn.body as ts.Expression, ctx);
+            const pre = ctx.flushPreStatements();
+            body = [
+              ...additionalBodyStmts,
+              ...pre,
+              { type: "return", value: expr },
+            ];
+          }
+          return { params, returnType, body };
+        });
         results.push({
           type: "function-decl",
           local: !ctx.namespacePrefix,
@@ -477,6 +489,16 @@ function transformVariableStatement(
         if (ctorName === "Map") ctx.mapVariables.add(name);
         if (ctorName === "Set") ctx.setVariables.add(name);
       }
+
+      // Record coarse type for truthiness coercion and array-index shifting.
+      ctx.localTypes.set(
+        name,
+        decl.type
+          ? typeNodeToJsType(decl.type)
+          : initForTracking
+          ? inferJsType(initForTracking, ctx)
+          : "unknown"
+      );
 
       // Track const arrays with string literal elements for type resolution
       if (initForTracking && ts.isArrayLiteralExpression(initForTracking)) {
@@ -596,6 +618,14 @@ function isHookCall(node: ts.Expression): boolean {
 // ── Function Declaration ──
 
 function transformFunctionDeclaration(
+  node: ts.FunctionDeclaration,
+  ctx: TransformContext
+): LuauStatement[] {
+  if (!node.name) return [];
+  return ctx.withScope(() => transformFunctionDeclarationInner(node, ctx));
+}
+
+function transformFunctionDeclarationInner(
   node: ts.FunctionDeclaration,
   ctx: TransformContext
 ): LuauStatement[] {
@@ -758,7 +788,7 @@ function transformIfStatement(
   node: ts.IfStatement,
   ctx: TransformContext
 ): LuauStatement {
-  const condition = transformExpression(node.expression, ctx);
+  const condition = coerceTruthyFromNode(node.expression, ctx);
   const body = transformBlockOrStatement(node.thenStatement, ctx);
 
   let elseIfs:
@@ -771,7 +801,7 @@ function transformIfStatement(
     if (ts.isIfStatement(current)) {
       if (!elseIfs) elseIfs = [];
       elseIfs.push({
-        condition: transformExpression(current.expression, ctx),
+        condition: coerceTruthyFromNode(current.expression, ctx),
         body: transformBlockOrStatement(current.thenStatement, ctx),
       });
       current = current.elseStatement;
@@ -1027,7 +1057,7 @@ function transformForStatement(
   }
 
   const condition = node.condition
-    ? transformExpression(node.condition, ctx)
+    ? coerceTruthyFromNode(node.condition, ctx)
     : bool(true);
 
   const loopBody = transformBlockOrStatement(node.statement, ctx);
@@ -1158,10 +1188,11 @@ function transformExpressionStatement(
     ) {
       const target = transformExpression(expr.left, ctx);
       const value = transformExpression(expr.right, ctx);
+      const cond = applyTruthiness(cloneExpr(target), inferJsType(expr.left, ctx));
       return [
         {
           type: "if",
-          condition: target,
+          condition: cond,
           body: [{ type: "assignment", target, value }],
         },
       ];
@@ -1169,10 +1200,11 @@ function transformExpressionStatement(
     if (expr.operatorToken.kind === ts.SyntaxKind.BarBarEqualsToken) {
       const target = transformExpression(expr.left, ctx);
       const value = transformExpression(expr.right, ctx);
+      const cond = applyTruthiness(cloneExpr(target), inferJsType(expr.left, ctx));
       return [
         {
           type: "if",
-          condition: unary("not", target),
+          condition: unary("not", cond),
           body: [{ type: "assignment", target, value }],
         },
       ];
@@ -1809,6 +1841,26 @@ function emitClassConstructor(
   typeParams: string[] | undefined,
   ctx: TransformContext
 ): LuauStatement[] {
+  return ctx.withScope(() =>
+    emitClassConstructorInner(
+      className,
+      parentClassName,
+      constructorDecl,
+      properties,
+      typeParams,
+      ctx
+    )
+  );
+}
+
+function emitClassConstructorInner(
+  className: string,
+  parentClassName: string | null,
+  constructorDecl: ts.ConstructorDeclaration | null,
+  properties: ts.PropertyDeclaration[],
+  typeParams: string[] | undefined,
+  ctx: TransformContext
+): LuauStatement[] {
   const body: LuauStatement[] = [];
   let params: LuauParam[] = [];
 
@@ -1961,20 +2013,21 @@ function emitClassMethod(
   );
 
   // Roblox OOP: use dot syntax with explicit self for required self: ClassName annotation
-  const params = transformFunctionParams(method.parameters, ctx);
-  const additionalBodyStmts = getDestructuringPreamble(method.parameters, ctx);
+  const { params, innerBody } = ctx.withScope(() => {
+    const params = transformFunctionParams(method.parameters, ctx);
+    const additionalBodyStmts = getDestructuringPreamble(method.parameters, ctx);
+    const innerBody: LuauStatement[] = method.body
+      ? [
+          ...additionalBodyStmts,
+          ...transformStatements(method.body.statements, ctx),
+        ]
+      : [];
+    return { params, innerBody };
+  });
 
   let returnType: string | undefined;
   if (method.type) {
     returnType = transformType(method.type, ctx);
-  }
-
-  let innerBody: LuauStatement[] = [];
-  if (method.body) {
-    innerBody = [
-      ...additionalBodyStmts,
-      ...transformStatements(method.body.statements, ctx),
-    ];
   }
 
   let body: LuauStatement[];

@@ -31,6 +31,7 @@ import {
   ROBLOX_MATH_OPERATORS,
 } from "../mappings/roblox-constructors.ts";
 import type { TransformContext } from "./transform-context.ts";
+import { inferJsType, typeNodeToJsType, type JsType } from "./js-type.ts";
 import { transformType } from "./type-transform.ts";
 import { transformJSX } from "./jsx-transform.ts";
 import { transformStatements } from "./statement-transform.ts";
@@ -349,6 +350,74 @@ function transformTemplateLiteral(
   return templateLiteral(head, spans);
 }
 
+// ── JS truthiness coercion ──
+
+/** Structural clone of a Luau expression (safe to duplicate in output). */
+export function cloneExpr<T extends LuauExpression>(expr: T): T {
+  return structuredClone(expr);
+}
+
+/**
+ * Wrap a Luau expression so it reflects JS truthiness in a Lua boolean context.
+ * Only number/string get rewritten — the cases where JS falsiness (0, "", NaN)
+ * diverges from Lua (where only nil/false are falsy). The input expression must
+ * be side-effect free when `type` is number, since the NaN guard duplicates it
+ * (inferJsType only reports number/string for pure expressions).
+ */
+export function applyTruthiness(
+  expr: LuauExpression,
+  type: JsType
+): LuauExpression {
+  if (type === "number") {
+    // x ~= 0 and x == x  (the self-comparison rules out NaN, also falsy in JS)
+    return binary(
+      binary(expr, "~=", num(0)),
+      "and",
+      binary(cloneExpr(expr), "==", cloneExpr(expr))
+    );
+  }
+  if (type === "string") {
+    return binary(expr, "~=", str(""));
+  }
+  return expr;
+}
+
+/** Transform a node into a Luau expression coerced to JS truthiness. */
+export function coerceTruthyFromNode(
+  node: ts.Expression,
+  ctx: TransformContext
+): LuauExpression {
+  const type = inferJsType(node, ctx);
+  return applyTruthiness(transformExpression(node, ctx), type);
+}
+
+/** True for receivers that can be re-emitted without risking double side-effects. */
+function isSimpleReceiver(expr: LuauExpression): boolean {
+  return (
+    expr.type === "identifier" ||
+    expr.type === "string" ||
+    expr.type === "number" ||
+    expr.type === "boolean" ||
+    expr.type === "nil" ||
+    expr.type === "varargs"
+  );
+}
+
+/**
+ * Hoist a non-trivial optional-chain receiver into a temp so it is evaluated
+ * exactly once (the receiver otherwise appears in both the nil-check and the
+ * access).
+ */
+function hoistReceiver(
+  obj: LuauExpression,
+  ctx: TransformContext
+): LuauExpression {
+  if (isSimpleReceiver(obj)) return obj;
+  const tmp = ctx.nextTempVar();
+  ctx.pushPreStatement({ type: "local", name: tmp, value: obj });
+  return ident(tmp);
+}
+
 // ── Binary Expression ──
 
 function transformBinaryExpression(
@@ -366,22 +435,34 @@ function transformBinaryExpression(
     return ifExpr(binary(left, "~=", nil()), left, right);
   }
 
-  // Logical AND (&&)
-  if (op === ts.SyntaxKind.AmpersandAmpersandToken) {
-    return binary(
-      transformExpression(node.left, ctx),
-      "and",
-      transformExpression(node.right, ctx)
-    );
-  }
+  // Logical AND (&&) / OR (||)
+  // Lua `and`/`or` already match JS for boolean/object/nil operands; they only
+  // diverge when the left operand is a number/string whose JS-falsy values
+  // (0, "", NaN) are truthy in Lua. For those, emit a value-preserving
+  // if-expression so the original operand value is returned. The left operand
+  // is pure here (inferJsType only reports number/string for pure expressions),
+  // so duplicating it is safe.
+  if (
+    op === ts.SyntaxKind.AmpersandAmpersandToken ||
+    op === ts.SyntaxKind.BarBarToken
+  ) {
+    const leftType = inferJsType(node.left, ctx);
+    const isAnd = op === ts.SyntaxKind.AmpersandAmpersandToken;
+    const left = transformExpression(node.left, ctx);
 
-  // Logical OR (||)
-  if (op === ts.SyntaxKind.BarBarToken) {
-    return binary(
-      transformExpression(node.left, ctx),
-      "or",
-      transformExpression(node.right, ctx)
-    );
+    if (leftType === "number" || leftType === "string") {
+      // The value-preserving form references the left operand in both the
+      // truthiness test and the returned value, so hoist anything non-trivial
+      // (e.g. a template literal with interpolated calls) to evaluate it once.
+      const lv = hoistReceiver(left, ctx);
+      const cond = applyTruthiness(lv, leftType);
+      const right = transformExpression(node.right, ctx);
+      return isAnd
+        ? ifExpr(cond, right, cloneExpr(lv))
+        : ifExpr(cond, cloneExpr(lv), right);
+    }
+
+    return binary(left, isAnd ? "and" : "or", transformExpression(node.right, ctx));
   }
 
   // Strict equality (===) → ==
@@ -495,6 +576,24 @@ function transformBinaryExpression(
     return binary(left, luauOp, right);
   }
 
+  // Bitwise operators → bit32.* (Luau has no infix bitwise operators).
+  // JS `>>` is sign-propagating (arshift); `>>>` is zero-fill (rshift).
+  const bitwiseOps: Partial<Record<ts.SyntaxKind, string>> = {
+    [ts.SyntaxKind.AmpersandToken]: "band",
+    [ts.SyntaxKind.BarToken]: "bor",
+    [ts.SyntaxKind.CaretToken]: "bxor",
+    [ts.SyntaxKind.LessThanLessThanToken]: "lshift",
+    [ts.SyntaxKind.GreaterThanGreaterThanToken]: "arshift",
+    [ts.SyntaxKind.GreaterThanGreaterThanGreaterThanToken]: "rshift",
+  };
+  const bitFn = bitwiseOps[op];
+  if (bitFn) {
+    return call(index(ident("bit32"), bitFn), [
+      transformExpression(node.left, ctx),
+      transformExpression(node.right, ctx),
+    ]);
+  }
+
   // Assignment operators are handled at the statement level
   // But they can appear in expression context
   if (op === ts.SyntaxKind.EqualsToken) {
@@ -516,11 +615,14 @@ function transformPrefixUnary(
   node: ts.PrefixUnaryExpression,
   ctx: TransformContext
 ): LuauExpression {
+  // `!x` negates JS truthiness, so coerce the operand first.
+  if (node.operator === ts.SyntaxKind.ExclamationToken) {
+    return unary("not", coerceTruthyFromNode(node.operand, ctx));
+  }
+
   const operand = transformExpression(node.operand, ctx);
 
   switch (node.operator) {
-    case ts.SyntaxKind.ExclamationToken:
-      return unary("not", operand);
     case ts.SyntaxKind.MinusToken:
       return unary("-", operand);
     case ts.SyntaxKind.PlusToken:
@@ -558,7 +660,7 @@ function transformConditional(
   ctx: TransformContext
 ): LuauExpression {
   return ifExpr(
-    transformExpression(node.condition, ctx),
+    coerceTruthyFromNode(node.condition, ctx),
     transformExpression(node.whenTrue, ctx),
     transformExpression(node.whenFalse, ctx)
   );
@@ -567,6 +669,13 @@ function transformConditional(
 // ── Function Expression / Arrow Function ──
 
 export function transformFunctionExpression(
+  node: ts.ArrowFunction | ts.FunctionExpression,
+  ctx: TransformContext
+): LuauExpression {
+  return ctx.withScope(() => transformFunctionExpressionInner(node, ctx));
+}
+
+function transformFunctionExpressionInner(
   node: ts.ArrowFunction | ts.FunctionExpression,
   ctx: TransformContext
 ): LuauExpression {
@@ -638,6 +747,9 @@ export function transformParameters(
       const name = param.name.getText();
       const paramType = param.type ? transformType(param.type, ctx) : undefined;
       result.push({ name, type: paramType });
+      // Record (even when "unknown") so the param shadows any outer binding of
+      // the same name within this scope.
+      ctx.localTypes.set(name, typeNodeToJsType(param.type));
     }
   }
 
@@ -1624,14 +1736,8 @@ function transformOptionalChain(
   node: ts.PropertyAccessExpression,
   ctx: TransformContext
 ): LuauExpression {
-  let obj = transformExpression(node.expression, ctx);
+  const obj = hoistReceiver(transformExpression(node.expression, ctx), ctx);
   const propName = node.name.text;
-
-  if (obj.type === "if-expr") {
-    const tmp = ctx.nextTempVar();
-    ctx.pushPreStatement({ type: "local", name: tmp, value: obj });
-    obj = ident(tmp);
-  }
 
   // a?.b → if a ~= nil then a.b else nil
   return ifExpr(binary(obj, "~=", nil()), index(obj, propName), nil());
@@ -1639,38 +1745,58 @@ function transformOptionalChain(
 
 // ── Element Access ──
 
-function transformElementAccess(
-  node: ts.ElementAccessExpression,
+/**
+ * Whether the `+1` array shift applies for indexing `baseNode`. Arrays/tuples
+ * compile to 1-indexed Luau tables, so numeric access must shift; keyed
+ * containers (Record/Map/Set/object literals) keep their literal keys and must
+ * NOT shift. Unknown bases default to shifting (the common case is an array)
+ * to preserve existing behavior.
+ */
+function shouldShiftIndex(
+  baseNode: ts.Expression,
+  ctx: TransformContext
+): boolean {
+  return inferJsType(baseNode, ctx) !== "object";
+}
+
+/** Compute the (possibly shifted) Luau index expression for `base[arg]`. */
+function transformIndexArgument(
+  baseNode: ts.Expression,
+  argExpr: ts.Expression,
   ctx: TransformContext
 ): LuauExpression {
-  let obj = transformExpression(node.expression, ctx);
-  const argExpr = node.argumentExpression;
-
-  // Optional element access: a?.[b]
-  if (node.questionDotToken) {
-    if (obj.type === "if-expr") {
-      const tmp = ctx.nextTempVar();
-      ctx.pushPreStatement({ type: "local", name: tmp, value: obj });
-      obj = ident(tmp);
-    }
-    const idx = transformExpression(argExpr, ctx);
-    return ifExpr(binary(obj, "~=", nil()), bracketIndex(obj, idx), nil());
-  }
-
   // Numeric literal index: arr[0] → arr[1] (0-to-1 based adjustment)
   if (ts.isNumericLiteral(argExpr)) {
     const n = Number(argExpr.text);
-    return bracketIndex(obj, num(n + 1));
+    return num(shouldShiftIndex(baseNode, ctx) ? n + 1 : n);
   }
 
   // Variable index (likely numeric): arr[i] → arr[i + 1]
   if (ts.isIdentifier(argExpr)) {
     const idx = transformExpression(argExpr, ctx);
-    return bracketIndex(obj, binary(idx, "+", num(1)));
+    return shouldShiftIndex(baseNode, ctx) ? binary(idx, "+", num(1)) : idx;
   }
 
   // String literal keys and other expressions: no adjustment
-  const idx = transformExpression(argExpr, ctx);
+  return transformExpression(argExpr, ctx);
+}
+
+function transformElementAccess(
+  node: ts.ElementAccessExpression,
+  ctx: TransformContext
+): LuauExpression {
+  const argExpr = node.argumentExpression;
+
+  // Optional element access: a?.[b] — hoist the receiver so it is evaluated
+  // once, and apply the same index shift as plain access for consistency.
+  if (node.questionDotToken) {
+    const obj = hoistReceiver(transformExpression(node.expression, ctx), ctx);
+    const idx = transformIndexArgument(node.expression, argExpr, ctx);
+    return ifExpr(binary(obj, "~=", nil()), bracketIndex(obj, idx), nil());
+  }
+
+  const obj = transformExpression(node.expression, ctx);
+  const idx = transformIndexArgument(node.expression, argExpr, ctx);
   return bracketIndex(obj, idx);
 }
 
