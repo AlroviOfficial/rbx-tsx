@@ -99,6 +99,13 @@ export class TransformContext {
   /** Source file reference for line/column extraction */
   sourceFile?: ts.SourceFile;
 
+  /**
+   * Type checker from the in-memory program, when available. Lets type
+   * inference query resolved `ts.Type`s instead of relying purely on syntactic
+   * heuristics. Undefined in parse-only fallback mode.
+   */
+  checker?: ts.TypeChecker;
+
   /** Whether the current file is an index file (becomes init.luau — script IS the folder) */
   readonly isIndexFile: boolean;
 

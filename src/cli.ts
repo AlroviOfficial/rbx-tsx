@@ -8,7 +8,12 @@ import {
   existsSync,
 } from "fs";
 import { join, resolve, dirname, relative, basename } from "path";
-import { compile, getOutputPath, type CompilerOptions } from "./compiler.ts";
+import {
+  compile,
+  compileProject,
+  getOutputPath,
+  type CompilerOptions,
+} from "./compiler.ts";
 import {
   loadManifest,
   mergeManifests,
@@ -167,6 +172,60 @@ function buildAliasesFromRojo(
   return aliases;
 }
 
+/**
+ * Compile a set of source files as one project (shared type checker across
+ * imports) and write each result to `outputDir`. Paths are made relative to
+ * `baseDir` so cross-file module resolution and require-path emission line up.
+ * Returns true if any file produced errors.
+ */
+function compileTreeToDisk(
+  files: string[],
+  baseDir: string,
+  outputDir: string,
+  compilerOpts: CompilerOptions
+): boolean {
+  const sources = new Map<string, string>();
+  const relByFile = new Map<string, string>();
+  for (const file of files) {
+    const rel = relative(baseDir, file).split("\\").join("/");
+    relByFile.set(file, rel);
+    try {
+      sources.set(rel, readFileSync(file, "utf-8"));
+    } catch (err) {
+      console.error(`Error reading ${rel}:`, err);
+    }
+  }
+
+  const results = compileProject(sources, compilerOpts);
+
+  let hasErrors = false;
+  for (const file of files) {
+    const rel = relByFile.get(file)!;
+    const outRel = getOutputPath(rel);
+    const result = results.get(outRel);
+    if (!result) continue;
+
+    if (result.error) {
+      console.error(`Error compiling ${rel}:`, result.error);
+      hasErrors = true;
+      continue;
+    }
+
+    const warningText = result.warnings.format();
+    if (warningText) process.stderr.write(warningText + "\n");
+    if (result.warnings.hasErrors()) {
+      hasErrors = true;
+      continue;
+    }
+
+    const outputPath = join(outputDir, outRel);
+    mkdirSync(dirname(outputPath), { recursive: true });
+    writeFileSync(outputPath, result.luau);
+    console.log(`${rel} -> ${relative(process.cwd(), outputPath)}`);
+  }
+  return hasErrors;
+}
+
 function handleCompile(
   input: string,
   opts: {
@@ -295,36 +354,14 @@ function handleCompile(
       }
     }
 
-    // Phase 2: Compile TSX/TS files (with manifest available from Phase 1)
+    // Phase 2: Compile TSX/TS files as a project (with manifest from Phase 1)
     const files = findSourceFiles(absInput);
-    let hasErrors = false;
-
-    for (const file of files) {
-      const relPath = relative(absInput, file);
-      const outputPath = getOutputPath(join(outputDir, relPath));
-
-      try {
-        const source = readFileSync(file, "utf-8");
-        const result = compile(source, relPath, compilerOpts);
-
-        const warningText = result.warnings.format();
-        if (warningText) {
-          process.stderr.write(warningText + "\n");
-        }
-
-        if (result.warnings.hasErrors()) {
-          hasErrors = true;
-          continue;
-        }
-
-        mkdirSync(dirname(outputPath), { recursive: true });
-        writeFileSync(outputPath, result.luau);
-        console.log(`${relPath} -> ${relative(process.cwd(), outputPath)}`);
-      } catch (err) {
-        console.error(`Error compiling ${relPath}:`, err);
-        hasErrors = true;
-      }
-    }
+    const hasErrors = compileTreeToDisk(
+      files,
+      absInput,
+      outputDir,
+      compilerOpts
+    );
 
     if (hasErrors && opts.strict) {
       process.exit(1);
@@ -359,27 +396,9 @@ function handleWatch(
     packageManifest: manifest ?? undefined,
   };
 
+  const baseDir = statSync(absPath).isFile() ? dirname(absPath) : absPath;
   startWatch(absPath, (files) => {
-    for (const file of files) {
-      try {
-        const relPath = relative(dirname(absPath), file);
-        const outputPath = getOutputPath(join(outputDir, relPath));
-
-        const source = readFileSync(file, "utf-8");
-        const result = compile(source, basename(file), compilerOpts);
-
-        const warningText = result.warnings.format();
-        if (warningText) {
-          process.stderr.write(warningText + "\n");
-        }
-
-        mkdirSync(dirname(outputPath), { recursive: true });
-        writeFileSync(outputPath, result.luau);
-        console.log(`Compiled -> ${outputPath}`);
-      } catch (err) {
-        console.error(`Error compiling ${file}:`, err);
-      }
-    }
+    compileTreeToDisk(files, baseDir, outputDir, compilerOpts);
   });
 }
 

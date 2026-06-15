@@ -92,6 +92,119 @@ export function typeNodeToJsType(
   return "unknown";
 }
 
+/** Map a resolved `ts.Type` to a coarse JsType. */
+function checkerTypeToJsType(type: ts.Type, checker: ts.TypeChecker): JsType {
+  // A nullable/optional union (`number | undefined`) cannot be treated as its
+  // base type: nil must stay falsy, so leave it un-coerced. This also handles
+  // `boolean`, which TypeScript models as the union `true | false`.
+  if (type.isUnion()) {
+    let result: JsType | null = null;
+    for (const member of type.types) {
+      if (
+        member.flags &
+        (ts.TypeFlags.Undefined | ts.TypeFlags.Null | ts.TypeFlags.Void)
+      ) {
+        return "unknown";
+      }
+      const t = checkerTypeToJsType(member, checker);
+      if (t === "unknown") return "unknown";
+      if (result === null) result = t;
+      else if (result !== t) return "unknown";
+    }
+    return result ?? "unknown";
+  }
+
+  const flags = type.flags;
+  if (flags & (ts.TypeFlags.Number | ts.TypeFlags.NumberLiteral)) return "number";
+  if (flags & (ts.TypeFlags.String | ts.TypeFlags.StringLiteral)) return "string";
+  if (flags & (ts.TypeFlags.Boolean | ts.TypeFlags.BooleanLiteral)) {
+    return "boolean";
+  }
+
+  if (isArrayOrTupleType(type)) return "array";
+
+  // Any other object type (Record, Map, Set, interfaces, object literals,
+  // functions) is keyed/non-array — suppresses array index shifting.
+  if (flags & ts.TypeFlags.Object) return "object";
+
+  return "unknown";
+}
+
+/** Detect `T[]`, `Array<T>`, `ReadonlyArray<T>`, and tuple types via the symbol/object flags. */
+function isArrayOrTupleType(type: ts.Type): boolean {
+  if (!(type.flags & ts.TypeFlags.Object)) return false;
+  const objectFlags = (type as ts.ObjectType).objectFlags;
+  if (objectFlags & ts.ObjectFlags.Reference) {
+    const target = (type as ts.TypeReference).target;
+    if (target.objectFlags & ts.ObjectFlags.Tuple) return true;
+    const name = target.symbol?.name;
+    if (name === "Array" || name === "ReadonlyArray") return true;
+  }
+  const name = type.symbol?.name;
+  return name === "Array" || name === "ReadonlyArray";
+}
+
+/**
+ * True for expressions that can be safely re-emitted (duplicated) in the
+ * output. The checker may resolve impure expressions (e.g. a call) to a
+ * number/string, but the NaN-guard truthiness coercion duplicates its operand,
+ * so we only promote pure expressions to number/string. Object/array/boolean
+ * results are never duplicated, so they need no such gate.
+ */
+function isDuplicationSafe(node: ts.Expression): boolean {
+  switch (node.kind) {
+    case ts.SyntaxKind.Identifier:
+    case ts.SyntaxKind.ThisKeyword:
+    case ts.SyntaxKind.NumericLiteral:
+    case ts.SyntaxKind.StringLiteral:
+    case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
+    case ts.SyntaxKind.TrueKeyword:
+    case ts.SyntaxKind.FalseKeyword:
+    case ts.SyntaxKind.NullKeyword:
+      return true;
+  }
+  if (
+    ts.isParenthesizedExpression(node) ||
+    ts.isNonNullExpression(node) ||
+    ts.isAsExpression(node) ||
+    ts.isSatisfiesExpression(node)
+  ) {
+    return isDuplicationSafe(node.expression);
+  }
+  if (ts.isPropertyAccessExpression(node) && !node.questionDotToken) {
+    return isDuplicationSafe(node.expression);
+  }
+  if (ts.isPrefixUnaryExpression(node)) {
+    switch (node.operator) {
+      case ts.SyntaxKind.MinusToken:
+      case ts.SyntaxKind.PlusToken:
+      case ts.SyntaxKind.TildeToken:
+      case ts.SyntaxKind.ExclamationToken:
+        return isDuplicationSafe(node.operand);
+    }
+  }
+  return false;
+}
+
+/** Resolve an expression's coarse type via the checker, or "unknown" if unavailable. */
+function inferViaChecker(
+  node: ts.Expression,
+  checker: ts.TypeChecker
+): JsType {
+  let type: ts.Type | undefined;
+  try {
+    type = checker.getTypeAtLocation(node);
+  } catch {
+    return "unknown";
+  }
+  if (!type) return "unknown";
+  const t = checkerTypeToJsType(type, checker);
+  if ((t === "number" || t === "string") && !isDuplicationSafe(node)) {
+    return "unknown";
+  }
+  return t;
+}
+
 const ARITHMETIC_OPS = new Set<ts.SyntaxKind>([
   ts.SyntaxKind.MinusToken,
   ts.SyntaxKind.AsteriskToken,
@@ -134,6 +247,14 @@ export function inferJsType(
     ts.isNonNullExpression(node)
   ) {
     node = node.expression;
+  }
+
+  // Prefer real type resolution when a checker is available; fall back to the
+  // syntactic heuristics below when it cannot determine the type or no program
+  // was built (parse-only mode).
+  if (ctx.checker) {
+    const resolved = inferViaChecker(node, ctx.checker);
+    if (resolved !== "unknown") return resolved;
   }
 
   if (ts.isAsExpression(node)) {

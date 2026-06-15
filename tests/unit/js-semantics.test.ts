@@ -254,3 +254,46 @@ describe("bitwise operators map to bit32", () => {
     expect(compileStmt(pre + "const x = a ** b;")).toContain("a ^ b");
   });
 });
+
+// ── checker-resolved types (no explicit annotation) ──
+
+describe("type-checker resolved inference", () => {
+  test("inferred numeric variable gets numeric truthiness without annotation", () => {
+    const result = compileStmt(
+      "declare function getCount(): number;\nconst n = getCount();\nif (n) { go(); }"
+    );
+    expect(result).toContain("if n ~= 0 and n == n then");
+  });
+
+  test("inferred string variable gets empty-string truthiness", () => {
+    const result = compileStmt(
+      'declare function getName(): string;\nconst s = getName();\nif (s) { go(); }'
+    );
+    expect(result).toContain('if s ~= "" then');
+  });
+
+  test("impure call condition is left bare (not duplicated)", () => {
+    const result = compileStmt(
+      "declare function getCount(): number;\nif (getCount()) { go(); }"
+    );
+    // A number-typed call must NOT be coerced, since the NaN guard would
+    // duplicate the call and invoke its side effects multiple times.
+    expect(result).toContain("if getCount() then");
+    expect(result).not.toContain("== getCount()");
+  });
+
+  test("inferred Record return type suppresses index shift", () => {
+    const result = compileStmt(
+      "declare function getScores(): Record<number, string>;\nconst s = getScores();\nconst v = s[5];"
+    );
+    expect(result).toContain("s[5]");
+    expect(result).not.toContain("s[6]");
+  });
+
+  test("inferred array return type still shifts index", () => {
+    const result = compileStmt(
+      "declare function getItems(): number[];\nconst arr = getItems();\nconst v = arr[0];"
+    );
+    expect(result).toContain("arr[1]");
+  });
+});

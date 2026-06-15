@@ -258,6 +258,44 @@ describe("array methods", () => {
   });
 });
 
+describe("type-directed method dispatch", () => {
+  test("typed string .slice() uses string.sub, not table.move", () => {
+    const result = compileStmt('const s: string = "hello"; const x = s.slice(1);');
+    expect(result).toContain("string.sub(s");
+    expect(result).not.toContain("table.move");
+  });
+
+  test("typed string .indexOf() uses string.find, not array offset", () => {
+    const result = compileStmt('function f(s: string) { const x = s.indexOf("e"); }');
+    expect(result).toContain("string.find(s");
+    expect(result).not.toContain("table.find");
+  });
+
+  test("typed string .includes() uses string.find", () => {
+    const result = compileStmt('function f(s: string) { const x = s.includes("e"); }');
+    expect(result).toContain("string.find(s");
+    expect(result).not.toContain("table.find");
+  });
+
+  test("typed array .includes() still uses table.find", () => {
+    const result = compileStmt("function f(a: number[]) { const x = a.includes(5); }");
+    expect(result).toContain("table.find(a, 5)");
+  });
+
+  test("typed array .slice() still uses table.move", () => {
+    const result = compileStmt("function f(a: number[]) { const x = a.slice(1); }");
+    expect(result).toContain("table.move(a");
+  });
+
+  test("known object receiver is not array/string translated", () => {
+    const result = compileStmt(
+      "function f(o: Record<string, number>) { const x = o.includes(5); }"
+    );
+    expect(result).not.toContain("table.find");
+    expect(result).not.toContain("string.find");
+  });
+});
+
 describe("parseInt/parseFloat", () => {
   test("parseInt → tonumber", () => {
     const result = compileStmt('const x = parseInt("42");');

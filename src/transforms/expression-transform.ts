@@ -1152,15 +1152,32 @@ function transformSpecialCallExpression(
     }
   }
 
-  // Array method chaining: arr.map(), arr.filter(), etc.
+  // Route array/string builtin translation by the receiver's resolved type so
+  // overlap methods (slice, concat, indexOf, includes) aren't mis-handled — a
+  // string's `.slice` is `string.sub`, an array's is `table.move`.
+  const receiverType = inferJsType(propAccess.expression, ctx);
+
+  if (receiverType === "string") {
+    return transformStringMethod(obj, methodName, args, node, ctx);
+  }
+  if (receiverType === "array") {
+    return transformArrayMethod(obj, methodName, args, node, ctx);
+  }
+  if (
+    receiverType === "object" ||
+    receiverType === "number" ||
+    receiverType === "boolean"
+  ) {
+    // A known non-collection receiver (Record/Map/instance/etc.): emit a plain
+    // method call rather than an array/string builtin translation.
+    return null;
+  }
+
+  // Unknown receiver type: fall back to the best-effort order (array first,
+  // then string), relying on the per-method string heuristic for overlaps.
   const arrayResult = transformArrayMethod(obj, methodName, args, node, ctx);
   if (arrayResult) return arrayResult;
-
-  // String methods
-  const stringResult = transformStringMethod(obj, methodName, args, node, ctx);
-  if (stringResult) return stringResult;
-
-  return null;
+  return transformStringMethod(obj, methodName, args, node, ctx);
 }
 
 // ── Object methods ──

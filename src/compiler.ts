@@ -6,6 +6,7 @@ import {
   type CompileOptions,
 } from "./transforms/transform-context.ts";
 import { generateLuau } from "./codegen/luau-codegen.ts";
+import { createSingleFileProgram, createProjectProgram } from "./program.ts";
 import { WarningCollector, type WarningLevel } from "./warnings.ts";
 import type { CSSManifest } from "./css-manifest.ts";
 import type { PackageManifest } from "./package-manifest.ts";
@@ -30,22 +31,18 @@ export interface CompileResult {
   luau: string;
   /** Warnings collector */
   warnings: WarningCollector;
+  /**
+   * Set by compileProject when a single file throws during transform, so one
+   * bad file does not abort the whole batch. Undefined on success.
+   */
+  error?: unknown;
 }
 
-/**
- * Compile a single TSX/TS source file to Luau.
- */
-export function compile(
-  source: string,
+function buildCompileOptions(
   filename: string,
-  options: CompilerOptions = {}
-): CompileResult {
-  const warnings = new WarningCollector(
-    options.warnLevel ?? "all",
-    options.strict ?? false
-  );
-
-  const compileOpts: CompileOptions = {
+  options: CompilerOptions
+): CompileOptions {
+  return {
     reactPath: options.reactPath ?? DEFAULT_OPTIONS.reactPath,
     reactRobloxPath: options.reactRobloxPath ?? DEFAULT_OPTIONS.reactRobloxPath,
     regExpPath: options.regExpPath ?? DEFAULT_OPTIONS.regExpPath,
@@ -57,9 +54,11 @@ export function compile(
     pathAliases: options.pathAliases,
     packageManifest: options.packageManifest ?? null,
   };
+}
 
-  // Parse TSX/TS with TypeScript compiler API
-  const sourceFile = ts.createSourceFile(
+/** Parse-only fallback used when no type-checked program is available. */
+function parseSourceFile(filename: string, source: string): ts.SourceFile {
+  return ts.createSourceFile(
     filename,
     source,
     ts.ScriptTarget.Latest,
@@ -68,38 +67,74 @@ export function compile(
       ? ts.ScriptKind.TSX
       : ts.ScriptKind.TS
   );
+}
 
-  // Transform
-  const ctx = new TransformContext(warnings, compileOpts);
+/** Transform an (already parsed) source file to Luau, using `checker` if present. */
+function emit(
+  sourceFile: ts.SourceFile,
+  checker: ts.TypeChecker | undefined,
+  filename: string,
+  options: CompilerOptions
+): CompileResult {
+  const warnings = new WarningCollector(
+    options.warnLevel ?? "all",
+    options.strict ?? false
+  );
+  const ctx = new TransformContext(warnings, buildCompileOptions(filename, options));
+  ctx.checker = checker;
   const luauStatements = transformSourceFile(sourceFile, ctx);
-
-  // Generate Luau code
-  const luau = generateLuau(luauStatements, {
-    sourceFile: filename,
-  });
-
+  const luau = generateLuau(luauStatements, { sourceFile: filename });
   return { luau, warnings };
 }
 
 /**
- * Compile a directory of TSX/TS files.
- * Returns a map of output paths → Luau source code.
+ * Compile a single TSX/TS source file to Luau.
+ */
+export function compile(
+  source: string,
+  filename: string,
+  options: CompilerOptions = {}
+): CompileResult {
+  // Build a type-checked program so codegen can query real types. Falls back to
+  // a parse-only SourceFile (no checker) if the program cannot be constructed.
+  const program = createSingleFileProgram(filename, source);
+  const sourceFile = program?.sourceFile ?? parseSourceFile(filename, source);
+  return emit(sourceFile, program?.checker, filename, options);
+}
+
+/**
+ * Compile a project of TSX/TS files as a unit, so the type checker resolves
+ * types across `import` boundaries between them.
+ * Returns a map of output paths → compile results.
  */
 export function compileProject(
   files: Map<string, string>,
   options: CompilerOptions = {}
 ): Map<string, CompileResult> {
-  const results = new Map<string, CompileResult>();
-
+  const sources = new Map<string, string>();
   for (const [filename, source] of files) {
-    // Skip test files
-    if (filename.includes(".test.") || filename.includes(".spec.")) {
-      continue;
-    }
+    if (filename.includes(".test.") || filename.includes(".spec.")) continue;
+    sources.set(filename, source);
+  }
 
-    const result = compile(source, filename, options);
-    const outputPath = getOutputPath(filename);
-    results.set(outputPath, result);
+  const program = createProjectProgram(sources);
+
+  const results = new Map<string, CompileResult>();
+  for (const [filename, source] of sources) {
+    try {
+      const sourceFile =
+        program?.getSourceFile(filename) ?? parseSourceFile(filename, source);
+      results.set(
+        getOutputPath(filename),
+        emit(sourceFile, program?.checker, filename, options)
+      );
+    } catch (error) {
+      results.set(getOutputPath(filename), {
+        luau: "",
+        warnings: new WarningCollector(options.warnLevel ?? "all", options.strict ?? false),
+        error,
+      });
+    }
   }
 
   return results;
