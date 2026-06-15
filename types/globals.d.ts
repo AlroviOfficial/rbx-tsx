@@ -10,6 +10,20 @@ declare function print(...args: any[]): void;
 declare function warn(...args: any[]): void;
 declare function error(message: string, level?: number): never;
 
+// JS runtime APIs the compiler maps to Luau (see README "API Transforms").
+// console.* compiles to print/warn; the timers compile to task.delay/task.cancel.
+interface Console {
+	log(...args: any[]): void;
+	info(...args: any[]): void;
+	warn(...args: any[]): void;
+	error(...args: any[]): void;
+	debug(...args: any[]): void;
+}
+declare const console: Console;
+declare function setTimeout(handler: (...args: any[]) => void, timeout?: number): number;
+declare function clearTimeout(id: number): void;
+declare function clearInterval(id: number): void;
+
 // Type utilities
 // Note: Roblox's typeof() cannot be declared in TS (reserved keyword). Use type() instead.
 declare function tostring(value: any): string;

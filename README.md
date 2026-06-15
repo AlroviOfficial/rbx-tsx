@@ -313,6 +313,17 @@ Any Roblox GUI class name (e.g. `<Frame>`, `<ScrollingFrame>`, `<TextLabel>`) is
 
 rbx-tsx ships with TypeScript type definitions for the Roblox environment in the [`types/`](types/) directory, covering React hooks, ReactRoblox, Roblox data types, enums, instances, services, and globals. These are included automatically when you install the package.
 
+## Playground
+
+The [`playground/`](playground/) directory is a self-contained, static web sandbox — TypeScript/TSX on the left, compiled Luau on the right, with an examples dropdown. Both panes use CodeMirror for syntax highlighting, and a live **problems panel** surfaces TypeScript type errors as you type. The compiler (including the full TypeScript type-checker) runs entirely in the browser over an in-memory filesystem, so output matches the CLI exactly.
+
+```bash
+bun run playground        # build + serve at http://localhost:5757
+bun run playground:build  # build only → playground/dist/ (static, deployable)
+```
+
+The build embeds the bundled `lib.*.d.ts`, the Roblox/React `types/`, and the `examples/` snippets into a single static bundle, so the result can be hosted anywhere (e.g. GitHub Pages) with no server.
+
 ## Demo
 
 The [`demo/`](demo/) directory contains a full Roblox project that demonstrates rbx-tsx in a real setup:

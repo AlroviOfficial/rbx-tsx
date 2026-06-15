@@ -1,5 +1,7 @@
 node_modules/
 dist/
+playground/dist/
+playground/src/generated/
 *.tsbuildinfo
 .DS_Store
 demo/out

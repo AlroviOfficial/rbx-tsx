@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rbx-tsx playground</title>
+  <style>
+    :root {
+      --bg: #1e1e1e;
+      --bg-panel: #252526;
+      --bg-bar: #2d2d30;
+      --border: #3c3c3c;
+      --fg: #d4d4d4;
+      --fg-dim: #858585;
+      --accent: #e2563f;
+      --ok: #4ec9b0;
+      --warn: #d7ba7d;
+      --err: #f48771;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 16px;
+      height: 48px;
+      background: var(--bg-bar);
+      border-bottom: 1px solid var(--border);
+      flex: 0 0 auto;
+    }
+    .logo { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: -0.3px; }
+    .logo .badge {
+      background: var(--accent); color: #fff; font-size: 12px; font-weight: 800;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .spacer { flex: 1; }
+    label.field { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-dim); }
+    select {
+      background: var(--bg-panel); color: var(--fg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 5px 8px; font-size: 13px; cursor: pointer;
+    }
+    a.gh { color: var(--fg-dim); text-decoration: none; font-size: 13px; }
+    a.gh:hover { color: var(--fg); }
+
+    main {
+      flex: 1 1 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 0;
+    }
+    .pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+    .pane:first-child { border-right: 1px solid var(--border); }
+    .pane-head {
+      flex: 0 0 auto; padding: 6px 12px; font-size: 12px; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--fg-dim); background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+    }
+    .editor { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+    .editor > .cm-editor { height: 100%; }
+    .cm-editor { font-size: 13px; }
+    .cm-scroller { font-family: var(--mono); line-height: 1.5; }
+
+    #problems {
+      flex: 0 0 auto;
+      height: 180px;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-bar);
+      border-top: 1px solid var(--border);
+    }
+    #problems-head {
+      flex: 0 0 auto; padding: 6px 14px; font-size: 12px; text-transform: uppercase;
+      letter-spacing: 0.5px; border-bottom: 1px solid var(--border);
+    }
+    #problems-title.ok { color: var(--ok); }
+    #problems-title.warn { color: var(--warn); }
+    #problems-title.error { color: var(--err); }
+    #problems-list { flex: 1 1 auto; overflow: auto; font-family: var(--mono); font-size: 12.5px; }
+    .problem {
+      display: flex; align-items: baseline; gap: 10px; padding: 4px 14px;
+      cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .problem:hover { background: rgba(255,255,255,0.05); }
+    .problem.empty { color: var(--fg-dim); cursor: default; }
+    .problem.empty:hover { background: none; }
+    .problem .sev { flex: 0 0 auto; width: 12px; text-align: center; }
+    .problem.error .sev { color: var(--err); }
+    .problem.warning .sev { color: var(--warn); }
+    .problem.info .sev { color: var(--fg-dim); }
+    .problem .loc { flex: 0 0 auto; color: var(--fg-dim); min-width: 48px; }
+    .problem .tag {
+      flex: 0 0 auto; color: var(--fg-dim); font-size: 11px; padding: 0 5px;
+      border: 1px solid var(--border); border-radius: 4px;
+    }
+    .problem .msg { flex: 1 1 auto; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo"><span class="badge">TS</span> rbx-tsx playground</div>
+    <div class="spacer"></div>
+    <label class="field">Examples
+      <select id="examples"></select>
+    </label>
+    <a class="gh" href="https://github.com/AlroviOfficial/rbx-tsx" target="_blank" rel="noreferrer">GitHub ↗</a>
+  </header>
+
+  <main>
+    <section class="pane">
+      <div class="pane-head">TypeScript / TSX</div>
+      <div class="editor" id="input"></div>
+    </section>
+    <section class="pane">
+      <div class="pane-head">Compiled Luau</div>
+      <div class="editor" id="output"></div>
+    </section>
+  </main>
+
+  <section id="problems">
+    <div id="problems-head"><span id="problems-title">Problems</span></div>
+    <div id="problems-list"></div>
+  </section>
+
+  <script type="module" src="./bundle.js"></script>
+</body>
+</html>
