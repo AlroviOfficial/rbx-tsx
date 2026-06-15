@@ -381,6 +381,8 @@ declare const Content: {
 	 * Returns a new `Content` with an [asset URI](../../../projects/assets/index.md#asset-uris) `string` value referencing content external to the place.
 	 */
 	fromUri(uri?: string): Content;
+	/** Returns a new `Content` from a numeric asset ID. */
+	fromAssetId(assetId?: number): Content;
 	/** Returns a new `Content` with a strong reference to an `Object`. */
 	fromObject(object?: Instance): Content;
 	/** An empty `Content` value with `Content.SourceType` of `None`. */
@@ -578,10 +580,12 @@ declare const NumberSequenceKeypoint: {
 
 /** Stores parameters used in boundary-querying functions. */
 interface OverlapParams {
-	/** An array of objects whose descendants is used in filtering candidates. */
-	readonly FilterDescendantsInstances: any[];
-	/** Determines how the `OverlapParams.FilterDescendantsInstances` list is used. */
-	readonly FilterType: Enum.RaycastFilterType;
+	/**
+	 * An optional array of instances whose descendants will be excluded from the query.
+	 */
+	readonly ExcludeInstances: {Instance};
+	/** An optional array of instances whose descendants will be included in the query. */
+	readonly IncludeInstances: {Instance};
 	/** The maximum amount of parts to be returned by the query. */
 	readonly MaxParts: number;
 	/** The collision group used for the operation. */
@@ -596,6 +600,12 @@ interface OverlapParams {
 	 * When enabled, the query will ignore all part collision properties and perform a brute-force check on every part.
 	 */
 	readonly BruteForceAllSlow: boolean;
+	/** An array of objects whose descendants are used in filtering candidates. */
+	readonly FilterDescendantsInstances: any[];
+	/**
+	 * Determines whether the `FilterDescendantsInstances` array is used as an exclude or include list.
+	 */
+	readonly FilterType: Enum.RaycastFilterType;
 	/** Adds the instances provided to `FilterDescendantsInstances`. */
 	AddToFilter(instances?: Instance | Array): void;
 }
@@ -744,11 +754,11 @@ declare const Ray: {
 /** A container for parameters used in raycasting operations. */
 interface RaycastParams {
 	/**
-	 * An array of objects whose descendants are used in filtering raycasting candidates.
+	 * An optional array of instances whose descendants will be excluded from the query.
 	 */
-	readonly FilterDescendantsInstances: any[];
-	/** Determines how the `FilterDescendantsInstances` array is used. */
-	readonly FilterType: Enum.RaycastFilterType;
+	readonly ExcludeInstances: {Instance};
+	/** An optional array of instances whose descendants will be included in the query. */
+	readonly IncludeInstances: {Instance};
 	/**
 	 * Determines whether the water material is considered when raycasting against `Terrain`.
 	 */
@@ -763,6 +773,12 @@ interface RaycastParams {
 	 * When enabled, the query will ignore all part collision properties and perform a brute-force check on every part.
 	 */
 	readonly BruteForceAllSlow: boolean;
+	/** An array of objects whose descendants are used to filter raycasting candidates. */
+	readonly FilterDescendantsInstances: any[];
+	/**
+	 * Determines whether the `FilterDescendantsInstances` array is used as an exclude or include list.
+	 */
+	readonly FilterType: Enum.RaycastFilterType;
 	/** Adds the instances provided to `FilterDescendantsInstances`. */
 	AddToFilter(instances?: Instance | Array): void;
 }
@@ -1018,6 +1034,25 @@ declare const UDim2: {
 	fromScale(xScale?: number, yScale?: number): UDim2;
 	/** Returns a new `UDim2` with the given offset components and no scaling. */
 	fromOffset(xOffset?: number, yOffset?: number): UDim2;
+};
+
+/** Represents a user's domain-scoped identity within a specific domain. */
+interface User {
+	/** The domain user ID, unique within this domain. */
+	readonly Id: number;
+	/** The type of domain that this domain user ID belongs to. */
+	readonly DomainType: Enum.DomainType;
+	/** The identifier of the specific domain instance. */
+	readonly DomainId: number;
+	/** Serializes this `User` into a stable string representation. */
+	ToString(): string;
+}
+
+declare const User: {
+	/** Creates a `User` from a domain user ID within the current experience. */
+	fromId(domainUserId?: number): User;
+	/** Creates a `User` from its serialized string form. */
+	fromString(userString?: string): User;
 };
 
 /** A time-value pair used with `ValueCurve` instances. */

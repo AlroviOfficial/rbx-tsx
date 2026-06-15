@@ -11,6 +11,7 @@ declare module "@rbx-services" {
 	export const AnimationFromVideoCreatorService: AnimationFromVideoCreatorService;
 	export const AnimationFromVideoCreatorStudioService: AnimationFromVideoCreatorStudioService;
 	export const AnnotationsService: AnnotationsService;
+	export const AppAgeSignalsService: AppAgeSignalsService;
 	export const AppLifecycleObserverService: AppLifecycleObserverService;
 	export const AppRatingPromptService: AppRatingPromptService;
 	export const AppUpdateService: AppUpdateService;
@@ -43,6 +44,7 @@ declare module "@rbx-services" {
 	export const ChangeHistoryStreamingService: ChangeHistoryStreamingService;
 	export const Chat: Chat;
 	export const CloudCRUDService: CloudCRUDService;
+	export const CloudExecutionService: CloudExecutionService;
 	export const ClusterPacketCache: ClusterPacketCache;
 	export const CollaboratorsService: CollaboratorsService;
 	export const CollectionService: CollectionService;
@@ -53,7 +55,6 @@ declare module "@rbx-services" {
 	export const ContentProvider: ContentProvider;
 	export const ContextActionService: ContextActionService;
 	export const ControllerService: ControllerService;
-	export const ConversationalAIAcceptanceService: ConversationalAIAcceptanceService;
 	export const CookiesService: CookiesService;
 	export const CoreGuiConfiguration: CoreGuiConfiguration;
 	export const CorePackages: CorePackages;
@@ -70,6 +71,8 @@ declare module "@rbx-services" {
 	export const DebuggerConnectionManager: DebuggerConnectionManager;
 	export const DebuggerManager: DebuggerManager;
 	export const DebuggerUIService: DebuggerUIService;
+	export const DeferredAssetManagerService: DeferredAssetManagerService;
+	export const DesignFoundationsService: DesignFoundationsService;
 	export const DeviceIdService: DeviceIdService;
 	export const DraftsService: DraftsService;
 	export const DraggerService: DraggerService;
@@ -89,6 +92,7 @@ declare module "@rbx-services" {
 	export const FacialAnimationStreamingServiceV2: FacialAnimationStreamingServiceV2;
 	export const FeatureRestrictionManager: FeatureRestrictionManager;
 	export const FileManagerService: FileManagerService;
+	export const FileSyncReplicationService: FileSyncReplicationService;
 	export const FlagStandService: FlagStandService;
 	export const FlyweightService: FlyweightService;
 	export const CSGDictionaryService: CSGDictionaryService;
@@ -101,12 +105,14 @@ declare module "@rbx-services" {
 	export const GenericChallengeService: GenericChallengeService;
 	export const Geometry: Geometry;
 	export const GeometryService: GeometryService;
+	export const GongService: GongService;
 	export const GroupService: GroupService;
 	export const GuiService: GuiService;
 	export const GuidRegistryService: GuidRegistryService;
 	export const HapticService: HapticService;
 	export const HarmonyService: HarmonyService;
 	export const HeapProfilerService: HeapProfilerService;
+	export const HeatmapQueryService: HeatmapQueryService;
 	export const HeatmapService: HeatmapService;
 	export const HeightmapImporterService: HeightmapImporterService;
 	export const Hopper: Hopper;
@@ -115,10 +121,13 @@ declare module "@rbx-services" {
 	export const ILegacyStudioBridge: ILegacyStudioBridge;
 	export const LegacyStudioBridge: LegacyStudioBridge;
 	export const IXPService: IXPService;
+	export const ImageScreenCaptureService: ImageScreenCaptureService;
 	export const IncrementalPatchBuilder: IncrementalPatchBuilder;
 	export const InsertService: InsertService;
 	export const InstanceExtensionsService: InstanceExtensionsService;
 	export const InstanceFileSyncService: InstanceFileSyncService;
+	export const InternalMessagingService: InternalMessagingService;
+	export const InternalMessagingServiceVerifier: InternalMessagingServiceVerifier;
 	export const JointsService: JointsService;
 	export const KeyboardService: KeyboardService;
 	export const KeyframeSequenceProvider: KeyframeSequenceProvider;
@@ -162,6 +171,7 @@ declare module "@rbx-services" {
 	export const Workspace: Workspace;
 	export const PackageService: PackageService;
 	export const PackageUIService: PackageUIService;
+	export const Packages: Packages;
 	export const PartyEmulatorService: PartyEmulatorService;
 	export const PatchBundlerFileWatch: PatchBundlerFileWatch;
 	export const PathfindingService: PathfindingService;
@@ -180,12 +190,15 @@ declare module "@rbx-services" {
 	export const PlayerHydrationService: PlayerHydrationService;
 	export const PlayerViewService: PlayerViewService;
 	export const Players: Players;
+	export const PluginConnectionService: PluginConnectionService;
 	export const PluginDebugService: PluginDebugService;
 	export const PluginGuiService: PluginGuiService;
 	export const PluginManagementService: PluginManagementService;
 	export const PluginPolicyService: PluginPolicyService;
 	export const PointsService: PointsService;
 	export const PolicyService: PolicyService;
+	export const Preloaded: Preloaded;
+	export const ProceduralBehaviorSchedulerService: ProceduralBehaviorSchedulerService;
 	export const ProcessInstancePhysicsService: ProcessInstancePhysicsService;
 	export const ProximityPromptService: ProximityPromptService;
 	export const PublishService: PublishService;
@@ -210,11 +223,13 @@ declare module "@rbx-services" {
 	export const RuntimeContentService: RuntimeContentService;
 	export const RuntimeScriptService: RuntimeScriptService;
 	export const SafetyService: SafetyService;
+	export const SceneAnalysisService: SceneAnalysisService;
 	export const ScriptChangeService: ScriptChangeService;
 	export const ScriptCloneWatcher: ScriptCloneWatcher;
 	export const ScriptCloneWatcherHelper: ScriptCloneWatcherHelper;
 	export const ScriptCommitService: ScriptCommitService;
 	export const ScriptContext: ScriptContext;
+	export const ScriptDebuggerService: ScriptDebuggerService;
 	export const ScriptEditorService: ScriptEditorService;
 	export const ScriptProfilerService: ScriptProfilerService;
 	export const ScriptRegistrationService: ScriptRegistrationService;
@@ -229,6 +244,7 @@ declare module "@rbx-services" {
 	export const SessionService: SessionService;
 	export const SharedTableRegistry: SharedTableRegistry;
 	export const SlimAnimationReplicationService: SlimAnimationReplicationService;
+	export const SlimDebugSettings: SlimDebugSettings;
 	export const SlimReplicationService: SlimReplicationService;
 	export const SlimService: SlimService;
 	export const SmoothVoxelsUpgraderService: SmoothVoxelsUpgraderService;
@@ -246,8 +262,10 @@ declare module "@rbx-services" {
 	export const Studio: Studio;
 	export const StudioAssetService: StudioAssetService;
 	export const StudioCameraService: StudioCameraService;
+	export const StudioCaptureService: StudioCaptureService;
 	export const StudioData: StudioData;
 	export const StudioDeviceEmulatorService: StudioDeviceEmulatorService;
+	export const StudioDeviceSimulatorService: StudioDeviceSimulatorService;
 	export const StudioPublishService: StudioPublishService;
 	export const StudioScriptDebugEventListener: StudioScriptDebugEventListener;
 	export const StudioSdkService: StudioSdkService;

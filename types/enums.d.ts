@@ -55,6 +55,16 @@ declare namespace Enum {
 		readonly Win: Enum.ActionType;
 	};
 
+	interface ActivePayerStatus extends EnumItem {}
+	const ActivePayerStatus: {
+		readonly Unknown: Enum.ActivePayerStatus;
+		readonly Never: Enum.ActivePayerStatus;
+		readonly Lapsed: Enum.ActivePayerStatus;
+		readonly Casual50Percent: Enum.ActivePayerStatus;
+		readonly Intermediate35Percent: Enum.ActivePayerStatus;
+		readonly Top15Percent: Enum.ActivePayerStatus;
+	};
+
 	interface ActuatorRelativeTo extends EnumItem {}
 	const ActuatorRelativeTo: {
 		readonly Attachment0: Enum.ActuatorRelativeTo;
@@ -82,12 +92,12 @@ declare namespace Enum {
 
 	interface AdEventType extends EnumItem {}
 	const AdEventType: {
-		readonly RewardedAdLoaded: Enum.AdEventType;
-		readonly RewardedAdGrant: Enum.AdEventType;
-		readonly RewardedAdUnloaded: Enum.AdEventType;
 		readonly VideoLoaded: Enum.AdEventType;
 		readonly VideoRemoved: Enum.AdEventType;
 		readonly UserCompletedVideo: Enum.AdEventType;
+		readonly RewardedAdLoaded: Enum.AdEventType;
+		readonly RewardedAdGrant: Enum.AdEventType;
+		readonly RewardedAdUnloaded: Enum.AdEventType;
 	};
 
 	interface AdFormat extends EnumItem {}
@@ -151,12 +161,12 @@ declare namespace Enum {
 
 	interface AlignType extends EnumItem {}
 	const AlignType: {
+		readonly Parallel: Enum.AlignType;
+		readonly Perpendicular: Enum.AlignType;
 		readonly PrimaryAxisParallel: Enum.AlignType;
 		readonly PrimaryAxisPerpendicular: Enum.AlignType;
 		readonly PrimaryAxisLookAt: Enum.AlignType;
 		readonly AllAxes: Enum.AlignType;
-		readonly Parallel: Enum.AlignType;
-		readonly Perpendicular: Enum.AlignType;
 	};
 
 	interface AlphaMode extends EnumItem {}
@@ -249,8 +259,14 @@ declare namespace Enum {
 	interface AnimationNodeInterruptible extends EnumItem {}
 	const AnimationNodeInterruptible: {
 		readonly Always: Enum.AnimationNodeInterruptible;
-		readonly ClipFinished: Enum.AnimationNodeInterruptible;
-		readonly Expression: Enum.AnimationNodeInterruptible;
+		readonly Finished: Enum.AnimationNodeInterruptible;
+		readonly Trigger: Enum.AnimationNodeInterruptible;
+	};
+
+	interface AnimationNodePhaseSync extends EnumItem {}
+	const AnimationNodePhaseSync: {
+		readonly Synced: Enum.AnimationNodePhaseSync;
+		readonly Unsynced: Enum.AnimationNodePhaseSync;
 	};
 
 	interface AnimationNodePlayMode extends EnumItem {}
@@ -272,7 +288,7 @@ declare namespace Enum {
 	const AnimationNodeType: {
 		readonly InvalidNode: Enum.AnimationNodeType;
 		readonly AddNode: Enum.AnimationNodeType;
-		readonly BlendNode: Enum.AnimationNodeType;
+		readonly OverNode: Enum.AnimationNodeType;
 		readonly Blend1DNode: Enum.AnimationNodeType;
 		readonly Blend2DNode: Enum.AnimationNodeType;
 		readonly ClipNode: Enum.AnimationNodeType;
@@ -288,19 +304,19 @@ declare namespace Enum {
 
 	interface AnimationNodeWaitFor extends EnumItem {}
 	const AnimationNodeWaitFor: {
-		readonly ClipFinished: Enum.AnimationNodeWaitFor;
-		readonly Expression: Enum.AnimationNodeWaitFor;
+		readonly Finished: Enum.AnimationNodeWaitFor;
+		readonly Trigger: Enum.AnimationNodeWaitFor;
 	};
 
 	interface AnimationPriority extends EnumItem {}
 	const AnimationPriority: {
-		readonly Core: Enum.AnimationPriority;
 		readonly Idle: Enum.AnimationPriority;
 		readonly Movement: Enum.AnimationPriority;
 		readonly Action: Enum.AnimationPriority;
 		readonly Action2: Enum.AnimationPriority;
 		readonly Action3: Enum.AnimationPriority;
 		readonly Action4: Enum.AnimationPriority;
+		readonly Core: Enum.AnimationPriority;
 	};
 
 	interface AnimatorRetargetingMode extends EnumItem {}
@@ -350,6 +366,12 @@ declare namespace Enum {
 		readonly Edit: Enum.AnnotationRequestType;
 	};
 
+	interface AntiAliasing extends EnumItem {}
+	const AntiAliasing: {
+		readonly Disabled: Enum.AntiAliasing;
+		readonly Enabled: Enum.AntiAliasing;
+	};
+
 	interface AppLifecycleManagerState extends EnumItem {}
 	const AppLifecycleManagerState: {
 		readonly Detached: Enum.AppLifecycleManagerState;
@@ -371,6 +393,7 @@ declare namespace Enum {
 		readonly GamePageLoaded: Enum.AppShellActionType;
 		readonly HomePageLoaded: Enum.AppShellActionType;
 		readonly AvatarEditorPageLoaded: Enum.AppShellActionType;
+		readonly HomePageInteractive: Enum.AppShellActionType;
 	};
 
 	interface AppShellFeature extends EnumItem {}
@@ -422,6 +445,12 @@ declare namespace Enum {
 		readonly TimedOut: Enum.AssetFetchStatus;
 	};
 
+	interface AssetRepresentation extends EnumItem {}
+	const AssetRepresentation: {
+		readonly FullLength: Enum.AssetRepresentation;
+		readonly ShortPreview: Enum.AssetRepresentation;
+	};
+
 	interface AssetType extends EnumItem {}
 	const AssetType: {
 		readonly Image: Enum.AssetType;
@@ -465,6 +494,8 @@ declare namespace Enum {
 		readonly SwimAnimation: Enum.AssetType;
 		readonly WalkAnimation: Enum.AssetType;
 		readonly PoseAnimation: Enum.AssetType;
+		readonly EarAccessory: Enum.AssetType;
+		readonly EyeAccessory: Enum.AssetType;
 		readonly EmoteAnimation: Enum.AssetType;
 		readonly Video: Enum.AssetType;
 		readonly TShirtAccessory: Enum.AssetType;
@@ -484,8 +515,8 @@ declare namespace Enum {
 		readonly FaceMakeup: Enum.AssetType;
 		readonly LipMakeup: Enum.AssetType;
 		readonly EyeMakeup: Enum.AssetType;
-		readonly EarAccessory: Enum.AssetType;
-		readonly EyeAccessory: Enum.AssetType;
+		readonly VoxelFragment: Enum.AssetType;
+		readonly AvatarBackground: Enum.AssetType;
 	};
 
 	interface AssetTypeVerification extends EnumItem {}
@@ -601,7 +632,6 @@ declare namespace Enum {
 		readonly RunAnimation: Enum.AvatarAssetType;
 		readonly SwimAnimation: Enum.AvatarAssetType;
 		readonly WalkAnimation: Enum.AvatarAssetType;
-		readonly MoodAnimation: Enum.AvatarAssetType;
 		readonly EmoteAnimation: Enum.AvatarAssetType;
 		readonly TShirtAccessory: Enum.AvatarAssetType;
 		readonly ShirtAccessory: Enum.AvatarAssetType;
@@ -614,10 +644,12 @@ declare namespace Enum {
 		readonly DressSkirtAccessory: Enum.AvatarAssetType;
 		readonly EyebrowAccessory: Enum.AvatarAssetType;
 		readonly EyelashAccessory: Enum.AvatarAssetType;
+		readonly MoodAnimation: Enum.AvatarAssetType;
 		readonly DynamicHead: Enum.AvatarAssetType;
 		readonly FaceMakeup: Enum.AvatarAssetType;
 		readonly LipMakeup: Enum.AvatarAssetType;
 		readonly EyeMakeup: Enum.AvatarAssetType;
+		readonly AvatarBackground: Enum.AvatarAssetType;
 	};
 
 	interface AvatarChatServiceFeature extends EnumItem {}
@@ -705,6 +737,12 @@ declare namespace Enum {
 	const AvatarSettingsBuildMode: {
 		readonly PlayerChoice: Enum.AvatarSettingsBuildMode;
 		readonly CustomBuild: Enum.AvatarSettingsBuildMode;
+	};
+
+	interface AvatarSettingsCharacterControllerMode extends EnumItem {}
+	const AvatarSettingsCharacterControllerMode: {
+		readonly LegacyHumanoid: Enum.AvatarSettingsCharacterControllerMode;
+		readonly LuaCharacterController: Enum.AvatarSettingsCharacterControllerMode;
 	};
 
 	interface AvatarSettingsClothingMode extends EnumItem {}
@@ -875,8 +913,8 @@ declare namespace Enum {
 
 	interface Button extends EnumItem {}
 	const Button: {
-		readonly Jump: Enum.Button;
 		readonly Dismount: Enum.Button;
+		readonly Jump: Enum.Button;
 	};
 
 	interface ButtonStyle extends EnumItem {}
@@ -930,6 +968,20 @@ declare namespace Enum {
 		readonly Custom: Enum.CameraType;
 		readonly Scriptable: Enum.CameraType;
 		readonly Orbital: Enum.CameraType;
+	};
+
+	interface CanCollaborateError extends EnumItem {}
+	const CanCollaborateError: {
+		readonly Invalid: Enum.CanCollaborateError;
+		readonly None: Enum.CanCollaborateError;
+		readonly NotAgeVerified: Enum.CanCollaborateError;
+		readonly OutsideAgeBucket: Enum.CanCollaborateError;
+		readonly TooManyCollaborators: Enum.CanCollaborateError;
+		readonly PCBlock: Enum.CanCollaborateError;
+		readonly NotFound: Enum.CanCollaborateError;
+		readonly OutsideOwnerAgeBucket: Enum.CanCollaborateError;
+		readonly NotAuthorized: Enum.CanCollaborateError;
+		readonly OutsideAgeBucketTcPc: Enum.CanCollaborateError;
 	};
 
 	interface CaptureGalleryPermission extends EnumItem {}
@@ -1092,6 +1144,7 @@ declare namespace Enum {
 		readonly DeveloperUpdate: Enum.CloseReason;
 		readonly ServerEmpty: Enum.CloseReason;
 		readonly OutOfMemory: Enum.CloseReason;
+		readonly Moderation: Enum.CloseReason;
 	};
 
 	interface CollaboratorStatus extends EnumItem {}
@@ -1108,6 +1161,7 @@ declare namespace Enum {
 		readonly Hull: Enum.CollisionFidelity;
 		readonly Box: Enum.CollisionFidelity;
 		readonly PreciseConvexDecomposition: Enum.CollisionFidelity;
+		readonly Scalable: Enum.CollisionFidelity;
 	};
 
 	interface CommandPermission extends EnumItem {}
@@ -1292,6 +1346,13 @@ declare namespace Enum {
 		readonly DisconnectCollaboratorOwnerActionRequired: Enum.ConnectionError;
 		readonly DisconnectCollaboratorTooManyCollaborators: Enum.ConnectionError;
 		readonly DisconnectCollaboratorUnknownError: Enum.ConnectionError;
+		readonly DisconnectCollaboratorRequestedEviction: Enum.ConnectionError;
+		readonly DisconnectCollaboratorTrustedConnectionsRequiredPC: Enum.ConnectionError;
+		readonly DisconnectRemoteAttestationUnsupported: Enum.ConnectionError;
+		readonly DisconnectRemoteAttestationGeneralFailure: Enum.ConnectionError;
+		readonly DisconnectRemoteAttestationTimeout: Enum.ConnectionError;
+		readonly DisconnectRemoteAttestationOSOutOfDate: Enum.ConnectionError;
+		readonly DisconnectRemoteAttestationBootValidationFailure: Enum.ConnectionError;
 		readonly PlacelaunchErrors: Enum.ConnectionError;
 		readonly PlacelaunchDisabled: Enum.ConnectionError;
 		readonly PlacelaunchError: Enum.ConnectionError;
@@ -1306,7 +1367,13 @@ declare namespace Enum {
 		readonly PlacelaunchPartyCannotFit: Enum.ConnectionError;
 		readonly PlacelaunchHttpError: Enum.ConnectionError;
 		readonly PlacelaunchUserPrivacyUnauthorized: Enum.ConnectionError;
+		readonly PlacelaunchVipOwnerNotPresent: Enum.ConnectionError;
+		readonly PlacelaunchAgeVerificationRequired: Enum.ConnectionError;
+		readonly PlacelaunchParentalApprovalRequired: Enum.ConnectionError;
+		readonly PlacelaunchCoreGated: Enum.ConnectionError;
+		readonly PlacelaunchCollaborationCoreGated: Enum.ConnectionError;
 		readonly PlacelaunchCreatorBan: Enum.ConnectionError;
+		readonly PlacelaunchDeviceBlock: Enum.ConnectionError;
 		readonly PlacelaunchCustomMessage: Enum.ConnectionError;
 		readonly PlacelaunchOtherError: Enum.ConnectionError;
 		readonly TeleportErrors: Enum.ConnectionError;
@@ -1363,6 +1430,7 @@ declare namespace Enum {
 		readonly SelfView: Enum.CoreGuiType;
 		readonly Captures: Enum.CoreGuiType;
 		readonly AvatarSwitcher: Enum.CoreGuiType;
+		readonly ExperienceShop: Enum.CoreGuiType;
 	};
 
 	interface CreateAssetResult extends EnumItem {}
@@ -1371,6 +1439,15 @@ declare namespace Enum {
 		readonly PermissionDenied: Enum.CreateAssetResult;
 		readonly UploadFailed: Enum.CreateAssetResult;
 		readonly Unknown: Enum.CreateAssetResult;
+	};
+
+	interface CreateContentResult extends EnumItem {}
+	const CreateContentResult: {
+		readonly Success: Enum.CreateContentResult;
+		readonly PermissionDenied: Enum.CreateContentResult;
+		readonly UploadFailed: Enum.CreateContentResult;
+		readonly StorageLimitExceeded: Enum.CreateContentResult;
+		readonly Unknown: Enum.CreateContentResult;
 	};
 
 	interface CreateOutfitFailure extends EnumItem {}
@@ -1435,6 +1512,13 @@ declare namespace Enum {
 		readonly OrderedRemove: Enum.DataStoreRequestType;
 	};
 
+	interface DebugBreakModeType extends EnumItem {}
+	const DebugBreakModeType: {
+		readonly Never: Enum.DebugBreakModeType;
+		readonly Always: Enum.DebugBreakModeType;
+		readonly Unhandled: Enum.DebugBreakModeType;
+	};
+
 	interface DebuggerEndReason extends EnumItem {}
 	const DebuggerEndReason: {
 		readonly ClientRequest: Enum.DebuggerEndReason;
@@ -1468,6 +1552,14 @@ declare namespace Enum {
 		readonly Exception: Enum.DebuggerPauseReason;
 		readonly SingleStep: Enum.DebuggerPauseReason;
 		readonly Entrypoint: Enum.DebuggerPauseReason;
+	};
+
+	interface DebuggerResumeType extends EnumItem {}
+	const DebuggerResumeType: {
+		readonly StepInto: Enum.DebuggerResumeType;
+		readonly StepOut: Enum.DebuggerResumeType;
+		readonly StepOver: Enum.DebuggerResumeType;
+		readonly Resume: Enum.DebuggerResumeType;
 	};
 
 	interface DebuggerStatus extends EnumItem {}
@@ -1581,12 +1673,20 @@ declare namespace Enum {
 		readonly High: Enum.DeviceLevel;
 	};
 
+	interface DeviceSimulatorScalingMode extends EnumItem {}
+	const DeviceSimulatorScalingMode: {
+		readonly ScaleToPhysicalSize: Enum.DeviceSimulatorScalingMode;
+		readonly ActualResolution: Enum.DeviceSimulatorScalingMode;
+		readonly FitToWindow: Enum.DeviceSimulatorScalingMode;
+	};
+
 	interface DeviceType extends EnumItem {}
 	const DeviceType: {
 		readonly Unknown: Enum.DeviceType;
 		readonly Desktop: Enum.DeviceType;
 		readonly Tablet: Enum.DeviceType;
 		readonly Phone: Enum.DeviceType;
+		readonly TV: Enum.DeviceType;
 	};
 
 	interface DialogBehaviorType extends EnumItem {}
@@ -1609,6 +1709,18 @@ declare namespace Enum {
 		readonly Enemy: Enum.DialogTone;
 	};
 
+	interface DigitsRigDescriptionSide extends EnumItem {}
+	const DigitsRigDescriptionSide: {
+		readonly None: Enum.DigitsRigDescriptionSide;
+		readonly Left: Enum.DigitsRigDescriptionSide;
+		readonly Right: Enum.DigitsRigDescriptionSide;
+	};
+
+	interface DiscountType extends EnumItem {}
+	const DiscountType: {
+		readonly Uncategorized: Enum.DiscountType;
+	};
+
 	interface DisplayScalingMode extends EnumItem {}
 	const DisplayScalingMode: {
 		readonly Default: Enum.DisplayScalingMode;
@@ -1621,6 +1733,12 @@ declare namespace Enum {
 		readonly Small: Enum.DisplaySize;
 		readonly Medium: Enum.DisplaySize;
 		readonly Large: Enum.DisplaySize;
+	};
+
+	interface DomainType extends EnumItem {}
+	const DomainType: {
+		readonly EXPERIENCE: Enum.DomainType;
+		readonly OAUTH: Enum.DomainType;
 	};
 
 	interface DominantAxis extends EnumItem {}
@@ -1719,6 +1837,15 @@ declare namespace Enum {
 		readonly Never: Enum.ElasticBehavior;
 	};
 
+	interface EngagementLevel extends EnumItem {}
+	const EngagementLevel: {
+		readonly Unknown: Enum.EngagementLevel;
+		readonly Inactive: Enum.EngagementLevel;
+		readonly Low: Enum.EngagementLevel;
+		readonly Medium: Enum.EngagementLevel;
+		readonly High: Enum.EngagementLevel;
+	};
+
 	interface EngineFolder extends EnumItem {}
 	const EngineFolder: {
 		readonly Screenshots: Enum.EngineFolder;
@@ -1735,6 +1862,15 @@ declare namespace Enum {
 		readonly Skip4: Enum.EnviromentalPhysicsThrottle;
 		readonly Skip8: Enum.EnviromentalPhysicsThrottle;
 		readonly Skip16: Enum.EnviromentalPhysicsThrottle;
+	};
+
+	interface ExperienceActivationStatus extends EnumItem {}
+	const ExperienceActivationStatus: {
+		readonly Unknown: Enum.ExperienceActivationStatus;
+		readonly New: Enum.ExperienceActivationStatus;
+		readonly Active: Enum.ExperienceActivationStatus;
+		readonly Lapsed: Enum.ExperienceActivationStatus;
+		readonly Reactivated: Enum.ExperienceActivationStatus;
 	};
 
 	interface ExperienceAuthScope extends EnumItem {}
@@ -1783,6 +1919,12 @@ declare namespace Enum {
 	const ExplosionType: {
 		readonly NoCraters: Enum.ExplosionType;
 		readonly Craters: Enum.ExplosionType;
+	};
+
+	interface ExternalEditorMode extends EnumItem {}
+	const ExternalEditorMode: {
+		readonly SystemDefault: Enum.ExternalEditorMode;
+		readonly UserSelectedEditor: Enum.ExternalEditorMode;
 	};
 
 	interface FACSDataLod extends EnumItem {}
@@ -1866,6 +2008,12 @@ declare namespace Enum {
 	const FeatureRestrictionAbuseVector: {
 		readonly ExperienceChat: Enum.FeatureRestrictionAbuseVector;
 		readonly Communication: Enum.FeatureRestrictionAbuseVector;
+	};
+
+	interface FeedbackType extends EnumItem {}
+	const FeedbackType: {
+		readonly Feedback: Enum.FeedbackType;
+		readonly PlayerSupport: Enum.FeedbackType;
 	};
 
 	interface FieldOfViewMode extends EnumItem {}
@@ -2181,13 +2329,6 @@ declare namespace Enum {
 		readonly CoreBillboards: Enum.GuiType;
 	};
 
-	interface HandRigDescriptionSide extends EnumItem {}
-	const HandRigDescriptionSide: {
-		readonly None: Enum.HandRigDescriptionSide;
-		readonly Left: Enum.HandRigDescriptionSide;
-		readonly Right: Enum.HandRigDescriptionSide;
-	};
-
 	interface HandlesStyle extends EnumItem {}
 	const HandlesStyle: {
 		readonly Resize: Enum.HandlesStyle;
@@ -2386,6 +2527,7 @@ declare namespace Enum {
 		readonly Add: Enum.ImageCombineType;
 		readonly Multiply: Enum.ImageCombineType;
 		readonly AlphaBlend: Enum.ImageCombineType;
+		readonly NormalMapBlend: Enum.ImageCombineType;
 	};
 
 	interface InOut extends EnumItem {}
@@ -2422,6 +2564,13 @@ declare namespace Enum {
 		readonly ViewportPosition: Enum.InputActionType;
 	};
 
+	interface InputSink extends EnumItem {}
+	const InputSink: {
+		readonly None: Enum.InputSink;
+		readonly Activate: Enum.InputSink;
+		readonly All: Enum.InputSink;
+	};
+
 	interface InputType extends EnumItem {}
 	const InputType: {
 		readonly NoInput: Enum.InputType;
@@ -2441,6 +2590,13 @@ declare namespace Enum {
 	interface IntermediateMeshGenerationResult extends EnumItem {}
 	const IntermediateMeshGenerationResult: {
 		readonly HighQualityMesh: Enum.IntermediateMeshGenerationResult;
+	};
+
+	interface InternalVideoUsage extends EnumItem {}
+	const InternalVideoUsage: {
+		readonly Default: Enum.InternalVideoUsage;
+		readonly WatchPage: Enum.InternalVideoUsage;
+		readonly HomeCarousel: Enum.InternalVideoUsage;
 	};
 
 	interface InterpolationThrottlingMode extends EnumItem {}
@@ -2557,105 +2713,6 @@ declare namespace Enum {
 		readonly RightCurly: Enum.KeyCode;
 		readonly Tilde: Enum.KeyCode;
 		readonly Delete: Enum.KeyCode;
-		readonly KeypadZero: Enum.KeyCode;
-		readonly KeypadOne: Enum.KeyCode;
-		readonly KeypadTwo: Enum.KeyCode;
-		readonly KeypadThree: Enum.KeyCode;
-		readonly KeypadFour: Enum.KeyCode;
-		readonly KeypadFive: Enum.KeyCode;
-		readonly KeypadSix: Enum.KeyCode;
-		readonly KeypadSeven: Enum.KeyCode;
-		readonly KeypadEight: Enum.KeyCode;
-		readonly KeypadNine: Enum.KeyCode;
-		readonly KeypadPeriod: Enum.KeyCode;
-		readonly KeypadDivide: Enum.KeyCode;
-		readonly KeypadMultiply: Enum.KeyCode;
-		readonly KeypadMinus: Enum.KeyCode;
-		readonly KeypadPlus: Enum.KeyCode;
-		readonly KeypadEnter: Enum.KeyCode;
-		readonly KeypadEquals: Enum.KeyCode;
-		readonly Up: Enum.KeyCode;
-		readonly Down: Enum.KeyCode;
-		readonly Right: Enum.KeyCode;
-		readonly Left: Enum.KeyCode;
-		readonly Insert: Enum.KeyCode;
-		readonly Home: Enum.KeyCode;
-		readonly End: Enum.KeyCode;
-		readonly PageUp: Enum.KeyCode;
-		readonly PageDown: Enum.KeyCode;
-		readonly F1: Enum.KeyCode;
-		readonly F2: Enum.KeyCode;
-		readonly F3: Enum.KeyCode;
-		readonly F4: Enum.KeyCode;
-		readonly F5: Enum.KeyCode;
-		readonly F6: Enum.KeyCode;
-		readonly F7: Enum.KeyCode;
-		readonly F8: Enum.KeyCode;
-		readonly F9: Enum.KeyCode;
-		readonly F10: Enum.KeyCode;
-		readonly F11: Enum.KeyCode;
-		readonly F12: Enum.KeyCode;
-		readonly F13: Enum.KeyCode;
-		readonly F14: Enum.KeyCode;
-		readonly F15: Enum.KeyCode;
-		readonly NumLock: Enum.KeyCode;
-		readonly CapsLock: Enum.KeyCode;
-		readonly ScrollLock: Enum.KeyCode;
-		readonly RightShift: Enum.KeyCode;
-		readonly LeftShift: Enum.KeyCode;
-		readonly RightControl: Enum.KeyCode;
-		readonly LeftControl: Enum.KeyCode;
-		readonly RightAlt: Enum.KeyCode;
-		readonly LeftAlt: Enum.KeyCode;
-		readonly RightMeta: Enum.KeyCode;
-		readonly LeftMeta: Enum.KeyCode;
-		readonly LeftSuper: Enum.KeyCode;
-		readonly RightSuper: Enum.KeyCode;
-		readonly Mode: Enum.KeyCode;
-		readonly Compose: Enum.KeyCode;
-		readonly Help: Enum.KeyCode;
-		readonly Print: Enum.KeyCode;
-		readonly SysReq: Enum.KeyCode;
-		readonly Break: Enum.KeyCode;
-		readonly Menu: Enum.KeyCode;
-		readonly Power: Enum.KeyCode;
-		readonly Euro: Enum.KeyCode;
-		readonly Undo: Enum.KeyCode;
-		readonly ButtonX: Enum.KeyCode;
-		readonly ButtonY: Enum.KeyCode;
-		readonly ButtonA: Enum.KeyCode;
-		readonly ButtonB: Enum.KeyCode;
-		readonly ButtonR1: Enum.KeyCode;
-		readonly ButtonL1: Enum.KeyCode;
-		readonly ButtonR2: Enum.KeyCode;
-		readonly ButtonL2: Enum.KeyCode;
-		readonly ButtonR3: Enum.KeyCode;
-		readonly ButtonL3: Enum.KeyCode;
-		readonly ButtonStart: Enum.KeyCode;
-		readonly ButtonSelect: Enum.KeyCode;
-		readonly DPadLeft: Enum.KeyCode;
-		readonly DPadRight: Enum.KeyCode;
-		readonly DPadUp: Enum.KeyCode;
-		readonly DPadDown: Enum.KeyCode;
-		readonly Thumbstick1: Enum.KeyCode;
-		readonly Thumbstick2: Enum.KeyCode;
-		readonly Thumbstick1Up: Enum.KeyCode;
-		readonly Thumbstick1Down: Enum.KeyCode;
-		readonly Thumbstick1Left: Enum.KeyCode;
-		readonly Thumbstick1Right: Enum.KeyCode;
-		readonly Thumbstick2Up: Enum.KeyCode;
-		readonly Thumbstick2Down: Enum.KeyCode;
-		readonly Thumbstick2Left: Enum.KeyCode;
-		readonly Thumbstick2Right: Enum.KeyCode;
-		readonly MouseLeftButton: Enum.KeyCode;
-		readonly MouseRightButton: Enum.KeyCode;
-		readonly MouseMiddleButton: Enum.KeyCode;
-		readonly MousePosition: Enum.KeyCode;
-		readonly Touch: Enum.KeyCode;
-		readonly MouseWheel: Enum.KeyCode;
-		readonly TrackpadPan: Enum.KeyCode;
-		readonly TrackpadPinch: Enum.KeyCode;
-		readonly MouseDelta: Enum.KeyCode;
 		readonly World0: Enum.KeyCode;
 		readonly World1: Enum.KeyCode;
 		readonly World2: Enum.KeyCode;
@@ -2752,10 +2809,111 @@ declare namespace Enum {
 		readonly World93: Enum.KeyCode;
 		readonly World94: Enum.KeyCode;
 		readonly World95: Enum.KeyCode;
+		readonly KeypadZero: Enum.KeyCode;
+		readonly KeypadOne: Enum.KeyCode;
+		readonly KeypadTwo: Enum.KeyCode;
+		readonly KeypadThree: Enum.KeyCode;
+		readonly KeypadFour: Enum.KeyCode;
+		readonly KeypadFive: Enum.KeyCode;
+		readonly KeypadSix: Enum.KeyCode;
+		readonly KeypadSeven: Enum.KeyCode;
+		readonly KeypadEight: Enum.KeyCode;
+		readonly KeypadNine: Enum.KeyCode;
+		readonly KeypadPeriod: Enum.KeyCode;
+		readonly KeypadDivide: Enum.KeyCode;
+		readonly KeypadMultiply: Enum.KeyCode;
+		readonly KeypadMinus: Enum.KeyCode;
+		readonly KeypadPlus: Enum.KeyCode;
+		readonly KeypadEnter: Enum.KeyCode;
+		readonly KeypadEquals: Enum.KeyCode;
+		readonly Up: Enum.KeyCode;
+		readonly Down: Enum.KeyCode;
+		readonly Right: Enum.KeyCode;
+		readonly Left: Enum.KeyCode;
+		readonly Insert: Enum.KeyCode;
+		readonly Home: Enum.KeyCode;
+		readonly End: Enum.KeyCode;
+		readonly PageUp: Enum.KeyCode;
+		readonly PageDown: Enum.KeyCode;
+		readonly F1: Enum.KeyCode;
+		readonly F2: Enum.KeyCode;
+		readonly F3: Enum.KeyCode;
+		readonly F4: Enum.KeyCode;
+		readonly F5: Enum.KeyCode;
+		readonly F6: Enum.KeyCode;
+		readonly F7: Enum.KeyCode;
+		readonly F8: Enum.KeyCode;
+		readonly F9: Enum.KeyCode;
+		readonly F10: Enum.KeyCode;
+		readonly F11: Enum.KeyCode;
+		readonly F12: Enum.KeyCode;
+		readonly F13: Enum.KeyCode;
+		readonly F14: Enum.KeyCode;
+		readonly F15: Enum.KeyCode;
+		readonly NumLock: Enum.KeyCode;
+		readonly CapsLock: Enum.KeyCode;
+		readonly ScrollLock: Enum.KeyCode;
+		readonly RightShift: Enum.KeyCode;
+		readonly LeftShift: Enum.KeyCode;
+		readonly RightControl: Enum.KeyCode;
+		readonly LeftControl: Enum.KeyCode;
+		readonly RightAlt: Enum.KeyCode;
+		readonly LeftAlt: Enum.KeyCode;
+		readonly RightMeta: Enum.KeyCode;
+		readonly LeftMeta: Enum.KeyCode;
+		readonly LeftSuper: Enum.KeyCode;
+		readonly RightSuper: Enum.KeyCode;
+		readonly Mode: Enum.KeyCode;
+		readonly Compose: Enum.KeyCode;
+		readonly Help: Enum.KeyCode;
+		readonly Print: Enum.KeyCode;
+		readonly SysReq: Enum.KeyCode;
+		readonly Break: Enum.KeyCode;
+		readonly Menu: Enum.KeyCode;
+		readonly Power: Enum.KeyCode;
+		readonly Euro: Enum.KeyCode;
+		readonly Undo: Enum.KeyCode;
+		readonly ButtonX: Enum.KeyCode;
+		readonly ButtonY: Enum.KeyCode;
+		readonly ButtonA: Enum.KeyCode;
+		readonly ButtonB: Enum.KeyCode;
+		readonly ButtonR1: Enum.KeyCode;
+		readonly ButtonL1: Enum.KeyCode;
+		readonly ButtonR2: Enum.KeyCode;
+		readonly ButtonL2: Enum.KeyCode;
+		readonly ButtonR3: Enum.KeyCode;
+		readonly ButtonL3: Enum.KeyCode;
+		readonly ButtonStart: Enum.KeyCode;
+		readonly ButtonSelect: Enum.KeyCode;
+		readonly DPadLeft: Enum.KeyCode;
+		readonly DPadRight: Enum.KeyCode;
+		readonly DPadUp: Enum.KeyCode;
+		readonly DPadDown: Enum.KeyCode;
+		readonly Thumbstick1: Enum.KeyCode;
+		readonly Thumbstick2: Enum.KeyCode;
+		readonly Thumbstick1Up: Enum.KeyCode;
+		readonly Thumbstick1Down: Enum.KeyCode;
+		readonly Thumbstick1Left: Enum.KeyCode;
+		readonly Thumbstick1Right: Enum.KeyCode;
+		readonly Thumbstick2Up: Enum.KeyCode;
+		readonly Thumbstick2Down: Enum.KeyCode;
+		readonly Thumbstick2Left: Enum.KeyCode;
+		readonly Thumbstick2Right: Enum.KeyCode;
+		readonly MouseLeftButton: Enum.KeyCode;
+		readonly MouseRightButton: Enum.KeyCode;
+		readonly MouseMiddleButton: Enum.KeyCode;
 		readonly MouseBackButton: Enum.KeyCode;
 		readonly MouseNoButton: Enum.KeyCode;
 		readonly MouseX: Enum.KeyCode;
 		readonly MouseY: Enum.KeyCode;
+		readonly MousePosition: Enum.KeyCode;
+		readonly TouchPosition: Enum.KeyCode;
+		readonly MouseWheel: Enum.KeyCode;
+		readonly TrackpadPan: Enum.KeyCode;
+		readonly TrackpadPinch: Enum.KeyCode;
+		readonly MouseDelta: Enum.KeyCode;
+		readonly TouchDelta: Enum.KeyCode;
+		readonly TouchPinch: Enum.KeyCode;
 	};
 
 	interface KeyInterpolationMode extends EnumItem {}
@@ -2954,18 +3112,18 @@ declare namespace Enum {
 		readonly Wood: Enum.Material;
 		readonly WoodPlanks: Enum.Material;
 		readonly Marble: Enum.Material;
+		readonly Basalt: Enum.Material;
 		readonly Slate: Enum.Material;
+		readonly CrackedLava: Enum.Material;
 		readonly Concrete: Enum.Material;
+		readonly Limestone: Enum.Material;
 		readonly Granite: Enum.Material;
+		readonly Pavement: Enum.Material;
 		readonly Brick: Enum.Material;
 		readonly Pebble: Enum.Material;
 		readonly Cobblestone: Enum.Material;
 		readonly Rock: Enum.Material;
 		readonly Sandstone: Enum.Material;
-		readonly Basalt: Enum.Material;
-		readonly CrackedLava: Enum.Material;
-		readonly Limestone: Enum.Material;
-		readonly Pavement: Enum.Material;
 		readonly CorrodedMetal: Enum.Material;
 		readonly DiamondPlate: Enum.Material;
 		readonly Foil: Enum.Material;
@@ -3018,6 +3176,11 @@ declare namespace Enum {
 		readonly Level02: Enum.MeshPartDetailLevel;
 		readonly Level03: Enum.MeshPartDetailLevel;
 		readonly Level04: Enum.MeshPartDetailLevel;
+		readonly Level05: Enum.MeshPartDetailLevel;
+		readonly Level06: Enum.MeshPartDetailLevel;
+		readonly Level07: Enum.MeshPartDetailLevel;
+		readonly Level08: Enum.MeshPartDetailLevel;
+		readonly Level09: Enum.MeshPartDetailLevel;
 	};
 
 	interface MeshPartHeadsAndAccessories extends EnumItem {}
@@ -3140,13 +3303,6 @@ declare namespace Enum {
 		readonly AirFree: Enum.MoveState;
 	};
 
-	interface MoverConstraintRootBehaviorMode extends EnumItem {}
-	const MoverConstraintRootBehaviorMode: {
-		readonly Default: Enum.MoverConstraintRootBehaviorMode;
-		readonly Disabled: Enum.MoverConstraintRootBehaviorMode;
-		readonly Enabled: Enum.MoverConstraintRootBehaviorMode;
-	};
-
 	interface MuteState extends EnumItem {}
 	const MuteState: {
 		readonly Unmuted: Enum.MuteState;
@@ -3230,6 +3386,7 @@ declare namespace Enum {
 		readonly Avatar: Enum.OutfitType;
 		readonly DynamicHead: Enum.OutfitType;
 		readonly Shoes: Enum.OutfitType;
+		readonly Makeup: Enum.OutfitType;
 	};
 
 	interface OutputLayoutMode extends EnumItem {}
@@ -3320,11 +3477,11 @@ declare namespace Enum {
 	interface PathStatus extends EnumItem {}
 	const PathStatus: {
 		readonly Success: Enum.PathStatus;
-		readonly NoPath: Enum.PathStatus;
 		readonly ClosestNoPath: Enum.PathStatus;
 		readonly ClosestOutOfRange: Enum.PathStatus;
 		readonly FailStartNotEmpty: Enum.PathStatus;
 		readonly FailFinishNotEmpty: Enum.PathStatus;
+		readonly NoPath: Enum.PathStatus;
 	};
 
 	interface PathWaypointAction extends EnumItem {}
@@ -3362,6 +3519,12 @@ declare namespace Enum {
 		readonly RobloxScript: Enum.PermissionLevelShown;
 		readonly Studio: Enum.PermissionLevelShown;
 		readonly Roblox: Enum.PermissionLevelShown;
+	};
+
+	interface PhysicalConstraintType extends EnumItem {}
+	const PhysicalConstraintType: {
+		readonly AnimationConstraint: Enum.PhysicalConstraintType;
+		readonly Motor6D: Enum.PhysicalConstraintType;
 	};
 
 	interface PhysicsSimulationRate extends EnumItem {}
@@ -3475,6 +3638,28 @@ declare namespace Enum {
 		readonly CreatorKick: Enum.PlayerExitReason;
 	};
 
+	interface PlayerPlatformActivationStatus extends EnumItem {}
+	const PlayerPlatformActivationStatus: {
+		readonly Unknown: Enum.PlayerPlatformActivationStatus;
+		readonly New: Enum.PlayerPlatformActivationStatus;
+		readonly Active: Enum.PlayerPlatformActivationStatus;
+		readonly Lapsed: Enum.PlayerPlatformActivationStatus;
+		readonly Reactivated: Enum.PlayerPlatformActivationStatus;
+	};
+
+	interface PlayerPlatformSpenderStatus extends EnumItem {}
+	const PlayerPlatformSpenderStatus: {
+		readonly Unknown: Enum.PlayerPlatformSpenderStatus;
+		readonly Active: Enum.PlayerPlatformSpenderStatus;
+		readonly OtherPayer: Enum.PlayerPlatformSpenderStatus;
+	};
+
+	interface PluginConnectionTargetType extends EnumItem {}
+	const PluginConnectionTargetType: {
+		readonly Edit: Enum.PluginConnectionTargetType;
+		readonly Test: Enum.PluginConnectionTargetType;
+	};
+
 	interface PoseEasingDirection extends EnumItem {}
 	const PoseEasingDirection: {
 		readonly In: Enum.PoseEasingDirection;
@@ -3527,6 +3712,14 @@ declare namespace Enum {
 		readonly Largest: Enum.PreferredTextSize;
 	};
 
+	interface PrefetchDownloadStatus extends EnumItem {}
+	const PrefetchDownloadStatus: {
+		readonly NotStarted: Enum.PrefetchDownloadStatus;
+		readonly InProgress: Enum.PrefetchDownloadStatus;
+		readonly Completed: Enum.PrefetchDownloadStatus;
+		readonly Failed: Enum.PrefetchDownloadStatus;
+	};
+
 	interface PrimalPhysicsSolver extends EnumItem {}
 	const PrimalPhysicsSolver: {
 		readonly Default: Enum.PrimalPhysicsSolver;
@@ -3546,11 +3739,11 @@ declare namespace Enum {
 
 	interface PrivilegeType extends EnumItem {}
 	const PrivilegeType: {
-		readonly Owner: Enum.PrivilegeType;
-		readonly Admin: Enum.PrivilegeType;
-		readonly Member: Enum.PrivilegeType;
-		readonly Visitor: Enum.PrivilegeType;
 		readonly Banned: Enum.PrivilegeType;
+		readonly Visitor: Enum.PrivilegeType;
+		readonly Member: Enum.PrivilegeType;
+		readonly Admin: Enum.PrivilegeType;
+		readonly Owner: Enum.PrivilegeType;
 	};
 
 	interface ProductLocationRestriction extends EnumItem {}
@@ -3654,6 +3847,12 @@ declare namespace Enum {
 		readonly Custom: Enum.ProximityPromptStyle;
 	};
 
+	interface PurchaseOption extends EnumItem {}
+	const PurchaseOption: {
+		readonly TimedOption: Enum.PurchaseOption;
+		readonly Permanent: Enum.PurchaseOption;
+	};
+
 	interface QualityLevel extends EnumItem {}
 	const QualityLevel: {
 		readonly Automatic: Enum.QualityLevel;
@@ -3698,6 +3897,19 @@ declare namespace Enum {
 		readonly NeedPermission: Enum.ReadCapturesFromGalleryResult;
 	};
 
+	interface ReceiptDecision extends EnumItem {}
+	const ReceiptDecision: {
+		readonly NotProcessedYet: Enum.ReceiptDecision;
+		readonly Processed: Enum.ReceiptDecision;
+	};
+
+	interface ReceiptType extends EnumItem {}
+	const ReceiptType: {
+		readonly DeveloperProduct: Enum.ReceiptType;
+		readonly RobuxTransferSender: Enum.ReceiptType;
+		readonly RobuxTransferReceiver: Enum.ReceiptType;
+	};
+
 	interface RecommendationActionType extends EnumItem {}
 	const RecommendationActionType: {
 		readonly AddReaction: Enum.RecommendationActionType;
@@ -3733,6 +3945,21 @@ declare namespace Enum {
 	const RecommendationItemVisibility: {
 		readonly Private: Enum.RecommendationItemVisibility;
 		readonly Public: Enum.RecommendationItemVisibility;
+	};
+
+	interface RecommendationPreferenceTargetType extends EnumItem {}
+	const RecommendationPreferenceTargetType: {
+		readonly User: Enum.RecommendationPreferenceTargetType;
+		readonly Universe: Enum.RecommendationPreferenceTargetType;
+		readonly CustomTag: Enum.RecommendationPreferenceTargetType;
+	};
+
+	interface RecommendationPreferenceType extends EnumItem {}
+	const RecommendationPreferenceType: {
+		readonly AddFollow: Enum.RecommendationPreferenceType;
+		readonly RemoveFollow: Enum.RecommendationPreferenceType;
+		readonly AddMute: Enum.RecommendationPreferenceType;
+		readonly RemoveMute: Enum.RecommendationPreferenceType;
 	};
 
 	interface RejectCharacterDeletions extends EnumItem {}
@@ -3787,9 +4014,9 @@ declare namespace Enum {
 	interface ReservedHighlightId extends EnumItem {}
 	const ReservedHighlightId: {
 		readonly Standard: Enum.ReservedHighlightId;
-		readonly Selection: Enum.ReservedHighlightId;
-		readonly Hover: Enum.ReservedHighlightId;
 		readonly Active: Enum.ReservedHighlightId;
+		readonly Hover: Enum.ReservedHighlightId;
+		readonly Selection: Enum.ReservedHighlightId;
 		readonly NegatedPart: Enum.ReservedHighlightId;
 	};
 
@@ -3884,13 +4111,28 @@ declare namespace Enum {
 		readonly RightElbow: Enum.RigLabel;
 		readonly RightWrist: Enum.RigLabel;
 		readonly Neck: Enum.RigLabel;
-		readonly Pelvis: Enum.RigLabel;
+		readonly Spine: Enum.RigLabel;
 		readonly Chest: Enum.RigLabel;
 		readonly HeadBase: Enum.RigLabel;
 		readonly LeftClavicle: Enum.RigLabel;
 		readonly RightClavicle: Enum.RigLabel;
-		readonly LeftToes: Enum.RigLabel;
-		readonly RightToes: Enum.RigLabel;
+		readonly LeftToeBase: Enum.RigLabel;
+		readonly RightToeBase: Enum.RigLabel;
+		readonly Thumb1: Enum.RigLabel;
+		readonly Thumb2: Enum.RigLabel;
+		readonly Thumb3: Enum.RigLabel;
+		readonly Index1: Enum.RigLabel;
+		readonly Index2: Enum.RigLabel;
+		readonly Index3: Enum.RigLabel;
+		readonly Middle1: Enum.RigLabel;
+		readonly Middle2: Enum.RigLabel;
+		readonly Middle3: Enum.RigLabel;
+		readonly Ring1: Enum.RigLabel;
+		readonly Ring2: Enum.RigLabel;
+		readonly Ring3: Enum.RigLabel;
+		readonly Pinky1: Enum.RigLabel;
+		readonly Pinky2: Enum.RigLabel;
+		readonly Pinky3: Enum.RigLabel;
 	};
 
 	interface RigScale extends EnumItem {}
@@ -4073,6 +4315,22 @@ declare namespace Enum {
 		readonly NoSpaceOnDevice: Enum.ScreenshotCaptureResult;
 	};
 
+	interface ScriptStoppedReason extends EnumItem {}
+	const ScriptStoppedReason: {
+		readonly Breakpoint: Enum.ScriptStoppedReason;
+		readonly Exception: Enum.ScriptStoppedReason;
+		readonly Pause: Enum.ScriptStoppedReason;
+		readonly Step: Enum.ScriptStoppedReason;
+		readonly Entry: Enum.ScriptStoppedReason;
+	};
+
+	interface ScriptVariableScope extends EnumItem {}
+	const ScriptVariableScope: {
+		readonly Local: Enum.ScriptVariableScope;
+		readonly Upvalue: Enum.ScriptVariableScope;
+		readonly Global: Enum.ScriptVariableScope;
+	};
+
 	interface ScrollBarInset extends EnumItem {}
 	const ScrollBarInset: {
 		readonly None: Enum.ScrollBarInset;
@@ -4140,6 +4398,8 @@ declare namespace Enum {
 		readonly Consequences: Enum.SecurityCapability;
 		readonly Material: Enum.SecurityCapability;
 		readonly AvatarBehavior: Enum.SecurityCapability;
+		readonly AvatarAppearance: Enum.SecurityCapability;
+		readonly LoadUnownedAsset: Enum.SecurityCapability;
 	};
 
 	interface SelectionBehavior extends EnumItem {}
@@ -4168,6 +4428,8 @@ declare namespace Enum {
 	const SensorMode: {
 		readonly Floor: Enum.SensorMode;
 		readonly Ladder: Enum.SensorMode;
+		readonly ClassicFloor: Enum.SensorMode;
+		readonly ClassicLadder: Enum.SensorMode;
 	};
 
 	interface SensorUpdateType extends EnumItem {}
@@ -4221,6 +4483,23 @@ declare namespace Enum {
 		readonly RelativeXY: Enum.SizeConstraint;
 		readonly RelativeXX: Enum.SizeConstraint;
 		readonly RelativeYY: Enum.SizeConstraint;
+	};
+
+	interface SlimTintMode extends EnumItem {}
+	const SlimTintMode: {
+		readonly None: Enum.SlimTintMode;
+		readonly LOD: Enum.SlimTintMode;
+		readonly Meshes: Enum.SlimTintMode;
+		readonly MeshResourcePtr: Enum.SlimTintMode;
+		readonly ContentId: Enum.SlimTintMode;
+		readonly Zone: Enum.SlimTintMode;
+	};
+
+	interface SolidPrimitiveType extends EnumItem {}
+	const SolidPrimitiveType: {
+		readonly Capsule: Enum.SolidPrimitiveType;
+		readonly Cone: Enum.SolidPrimitiveType;
+		readonly RoundedBox: Enum.SolidPrimitiveType;
 	};
 
 	interface SolverConvergenceMetricType extends EnumItem {}
@@ -4322,6 +4601,31 @@ declare namespace Enum {
 	const StrokeSizingMode: {
 		readonly FixedSize: Enum.StrokeSizingMode;
 		readonly ScaledSize: Enum.StrokeSizingMode;
+	};
+
+	interface StudioAction extends EnumItem {}
+	const StudioAction: {
+		readonly Undo: Enum.StudioAction;
+		readonly Redo: Enum.StudioAction;
+		readonly SelectAll: Enum.StudioAction;
+		readonly DeleteSelected: Enum.StudioAction;
+		readonly Copy: Enum.StudioAction;
+		readonly Cut: Enum.StudioAction;
+		readonly Paste: Enum.StudioAction;
+	};
+
+	interface StudioCaptureBufferStatus extends EnumItem {}
+	const StudioCaptureBufferStatus: {
+		readonly NotStarted: Enum.StudioCaptureBufferStatus;
+		readonly Pending: Enum.StudioCaptureBufferStatus;
+		readonly Ready: Enum.StudioCaptureBufferStatus;
+		readonly Error: Enum.StudioCaptureBufferStatus;
+	};
+
+	interface StudioCaptureScreenshotFormat extends EnumItem {}
+	const StudioCaptureScreenshotFormat: {
+		readonly RGBA8: Enum.StudioCaptureScreenshotFormat;
+		readonly PNG: Enum.StudioCaptureScreenshotFormat;
 	};
 
 	interface StudioCloseMode extends EnumItem {}
@@ -4643,6 +4947,10 @@ declare namespace Enum {
 		readonly ColumnMajor: Enum.TableMajorAxis;
 	};
 
+	interface TagReplicability extends EnumItem {}
+	const TagReplicability: {
+	};
+
 	interface TeamCreateErrorState extends EnumItem {}
 	const TeamCreateErrorState: {
 		readonly PlaceSizeTooLarge: Enum.TeamCreateErrorState;
@@ -4653,11 +4961,11 @@ declare namespace Enum {
 
 	interface Technology extends EnumItem {}
 	const Technology: {
+		readonly Legacy: Enum.Technology;
 		readonly Voxel: Enum.Technology;
 		readonly Compatibility: Enum.Technology;
 		readonly ShadowMap: Enum.Technology;
 		readonly Future: Enum.Technology;
-		readonly Legacy: Enum.Technology;
 		readonly Unified: Enum.Technology;
 	};
 
@@ -4853,10 +5161,6 @@ declare namespace Enum {
 
 	interface ThreadPoolConfig extends EnumItem {}
 	const ThreadPoolConfig: {
-		readonly PerCore4: Enum.ThreadPoolConfig;
-		readonly PerCore3: Enum.ThreadPoolConfig;
-		readonly PerCore2: Enum.ThreadPoolConfig;
-		readonly PerCore1: Enum.ThreadPoolConfig;
 		readonly Auto: Enum.ThreadPoolConfig;
 		readonly Threads1: Enum.ThreadPoolConfig;
 		readonly Threads2: Enum.ThreadPoolConfig;
@@ -4864,13 +5168,17 @@ declare namespace Enum {
 		readonly Threads4: Enum.ThreadPoolConfig;
 		readonly Threads8: Enum.ThreadPoolConfig;
 		readonly Threads16: Enum.ThreadPoolConfig;
+		readonly PerCore1: Enum.ThreadPoolConfig;
+		readonly PerCore2: Enum.ThreadPoolConfig;
+		readonly PerCore3: Enum.ThreadPoolConfig;
+		readonly PerCore4: Enum.ThreadPoolConfig;
 	};
 
 	interface ThrottlingPriority extends EnumItem {}
 	const ThrottlingPriority: {
-		readonly Extreme: Enum.ThrottlingPriority;
-		readonly ElevatedOnServer: Enum.ThrottlingPriority;
 		readonly Default: Enum.ThrottlingPriority;
+		readonly ElevatedOnServer: Enum.ThrottlingPriority;
+		readonly Extreme: Enum.ThrottlingPriority;
 	};
 
 	interface ThumbnailSize extends EnumItem {}
@@ -4946,10 +5254,10 @@ declare namespace Enum {
 
 	interface TrackerExtrapolationFlagMode extends EnumItem {}
 	const TrackerExtrapolationFlagMode: {
-		readonly Auto: Enum.TrackerExtrapolationFlagMode;
 		readonly ForceDisabled: Enum.TrackerExtrapolationFlagMode;
 		readonly ExtrapolateFacsAndPose: Enum.TrackerExtrapolationFlagMode;
 		readonly ExtrapolateFacsOnly: Enum.TrackerExtrapolationFlagMode;
+		readonly Auto: Enum.TrackerExtrapolationFlagMode;
 	};
 
 	interface TrackerFaceTrackingStatus extends EnumItem {}
@@ -4965,16 +5273,16 @@ declare namespace Enum {
 
 	interface TrackerLodFlagMode extends EnumItem {}
 	const TrackerLodFlagMode: {
-		readonly Auto: Enum.TrackerLodFlagMode;
 		readonly ForceFalse: Enum.TrackerLodFlagMode;
 		readonly ForceTrue: Enum.TrackerLodFlagMode;
+		readonly Auto: Enum.TrackerLodFlagMode;
 	};
 
 	interface TrackerLodValueMode extends EnumItem {}
 	const TrackerLodValueMode: {
-		readonly Auto: Enum.TrackerLodValueMode;
 		readonly Force0: Enum.TrackerLodValueMode;
 		readonly Force1: Enum.TrackerLodValueMode;
+		readonly Auto: Enum.TrackerLodValueMode;
 	};
 
 	interface TrackerMode extends EnumItem {}
@@ -4999,9 +5307,9 @@ declare namespace Enum {
 
 	interface TriStateBoolean extends EnumItem {}
 	const TriStateBoolean: {
-		readonly False: Enum.TriStateBoolean;
-		readonly True: Enum.TriStateBoolean;
 		readonly Unknown: Enum.TriStateBoolean;
+		readonly True: Enum.TriStateBoolean;
+		readonly False: Enum.TriStateBoolean;
 	};
 
 	interface TweenStatus extends EnumItem {}
@@ -5106,6 +5414,8 @@ declare namespace Enum {
 		readonly CaptureNotInGallery: Enum.UploadCaptureResult;
 		readonly IneligibleCapture: Enum.UploadCaptureResult;
 		readonly UploadQuotaReached: Enum.UploadCaptureResult;
+		readonly UploadPending: Enum.UploadCaptureResult;
+		readonly UploadFailed: Enum.UploadCaptureResult;
 	};
 
 	interface UsageContext extends EnumItem {}
@@ -5371,6 +5681,7 @@ declare namespace Enum {
 		readonly Unknown: Enum.VoiceRccReconnectReason;
 		readonly Migration: Enum.VoiceRccReconnectReason;
 		readonly CloseRoom: Enum.VoiceRccReconnectReason;
+		readonly FAEUpdate: Enum.VoiceRccReconnectReason;
 	};
 
 	interface VolumetricAudio extends EnumItem {}
@@ -5429,6 +5740,16 @@ declare namespace Enum {
 		readonly Touching: Enum.WeldConstraintPreserve;
 	};
 
+	interface WhenUserFirstPlayed extends EnumItem {}
+	const WhenUserFirstPlayed: {
+		readonly Unknown: Enum.WhenUserFirstPlayed;
+		readonly Days0To30: Enum.WhenUserFirstPlayed;
+		readonly Days31To90: Enum.WhenUserFirstPlayed;
+		readonly Days91To180: Enum.WhenUserFirstPlayed;
+		readonly Days181To365: Enum.WhenUserFirstPlayed;
+		readonly Days366Plus: Enum.WhenUserFirstPlayed;
+	};
+
 	interface WhisperChatPrivacyMode extends EnumItem {}
 	const WhisperChatPrivacyMode: {
 		readonly AllUsers: Enum.WhisperChatPrivacyMode;
@@ -5459,6 +5780,7 @@ declare namespace Enum {
 		readonly LayerCageFittedToBase: Enum.WrapLayerDebugMode;
 		readonly LayerCageFittedToPrev: Enum.WrapLayerDebugMode;
 		readonly PreWrapDeformerOuterCage: Enum.WrapLayerDebugMode;
+		readonly SkinningTransfer: Enum.WrapLayerDebugMode;
 	};
 
 	interface WrapTargetDebugMode extends EnumItem {}

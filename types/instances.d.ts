@@ -62,13 +62,13 @@ interface ConfigSnapshot extends Object {
 	readonly UpdateAvailable: RBXScriptSignal<() => void>;
 }
 
-/** Instance which allows for the runtime creation and manipulation of images. */
+/** Object which allows for the runtime creation and manipulation of images. */
 interface EditableImage extends Object {
 	/** Size of the `EditableImage` in pixels. */
 	Size: Vector2;
 	Destroy(): undefined;
 	/** Draws a circle at the specified point. */
-	DrawCircle(center?: Vector2, radius?: number, color?: Color3, transparency?: number, combineType?: Enum.ImageCombineType): undefined;
+	DrawCircle(center?: Vector2, radius?: number, color?: Color3, transparency?: number, combineType?: Enum.ImageCombineType, antiAliasing?: Enum.AntiAliasing): undefined;
 	/** Draws another `EditableImage` into this `EditableImage` at the given position. */
 	DrawImage(position?: Vector2, image?: EditableImage, combineType?: Enum.ImageCombineType): undefined;
 	/**
@@ -80,7 +80,7 @@ interface EditableImage extends Object {
 	 */
 	DrawImageTransformed(position?: Vector2, scale?: Vector2, rotation?: number, image?: EditableImage, options?: unknown): undefined;
 	/** Draws a line between two provided points. */
-	DrawLine(p1?: Vector2, p2?: Vector2, color?: Color3, transparency?: number, combineType?: Enum.ImageCombineType): undefined;
+	DrawLine(p1?: Vector2, p2?: Vector2, color?: Color3, transparency?: number, combineType?: Enum.ImageCombineType, antiAliasing?: Enum.AntiAliasing): undefined;
 	/** Draws a rectangle of the given size at the given top-left position. */
 	DrawRectangle(position?: Vector2, size?: Vector2, color?: Color3, transparency?: number, combineType?: Enum.ImageCombineType): undefined;
 	/** Reads a rectangular region of pixels into a buffer. */
@@ -89,12 +89,10 @@ interface EditableImage extends Object {
 	WritePixelsBuffer(position?: Vector2, size?: Vector2, buffer?: buffer): undefined;
 }
 
-/** Instance which allows for the runtime creation and manipulation of meshes. */
+/** Object which allows for the runtime creation and manipulation of meshes. */
 interface EditableMesh extends Object {
 	/** Returns `true` if a mesh is fixed-size. */
 	FixedSize: boolean;
-	/** @deprecated Deprecated. */
-	SkinningEnabled: boolean;
 	/** Adds a new bone and returns a stable bone ID. */
 	AddBone(boneProperties?: unknown): number;
 	/** Adds a new color to the geometry and returns a stable color ID. */
@@ -108,6 +106,7 @@ interface EditableMesh extends Object {
 	AddUV(uv?: Vector2): number;
 	/** Adds a new vertex to the geometry and returns a stable vertex ID. */
 	AddVertex(p?: Vector3): number;
+	Clear(): undefined;
 	/** Destroys the mesh. */
 	Destroy(): undefined;
 	/** Finds the closest point on the mesh's surface. */
@@ -298,7 +297,9 @@ interface Instance extends Object {
 	Name: string;
 	/** Determines the hierarchical parent of the `Instance`. */
 	Parent: Instance;
-	/** Turns the instance to be a sandboxed container. */
+	/**
+	 * When enabled, the instance can only access abilities in its `Capabilities` list.
+	 */
 	Sandboxed: boolean;
 	/** Applies a tag to the instance. */
 	AddTag(tag?: string): undefined;
@@ -369,6 +370,9 @@ interface Instance extends Object {
 	 * Returns `true` if the value stored in the specified property is not equal to the code-instantiated default.
 	 */
 	IsPropertyModified(property?: string): boolean;
+	/**
+	 * Returns an array containing all descendants of the instance that match the `selector` string.
+	 */
 	QueryDescendants(selector?: string): Instance[];
 	/**
 	 * Sets the object's `Parent` to `nil`, and does the same for all its descendants.
@@ -403,7 +407,7 @@ interface Instance extends Object {
 	/** @deprecated Deprecated. */
 	remove(): undefined;
 	/**
-	 * Fires when the `Instance.Parent` property of the object or one of its ancestors is changed.
+	 * Fires when the `Instance.Parent` property of this object or one of its ancestors is changed.
 	 */
 	readonly AncestryChanged: RBXScriptSignal<(child: Instance, parent: Instance) => void>;
 	/** Fires whenever an attribute is changed on the `Instance`. */
@@ -487,6 +491,7 @@ interface AdPortal extends Instance {
 interface AdService extends Instance {
 	/** Creates a reward to give users who watch an entire video ad. */
 	CreateAdRewardFromDevProductId(devProductId?: number): AdReward;
+	RegisterDisclosureButton(disclosureButton?: GuiButton, adIntegrationPlacementId?: string): undefined;
 	/**
 	 * Show mobile video advertisements.
 	 * @deprecated Deprecated.
@@ -497,6 +502,7 @@ interface AdService extends Instance {
 	 * Checks if a video ad is available to be played to the current user inside the experience.
 	 */
 	GetAdAvailabilityNowAsync(adFormat?: Enum.AdFormat): unknown;
+	GetCampaignEligibilityAsync(campaignId?: string, player?: Player): unknown;
 	/**
 	 * Tracks how many times a user had the chance to watch a video ad and the rate at which they actually watched the ad.
 	 */
@@ -515,7 +521,7 @@ interface AdvancedDragger extends Instance {
 }
 
 /**
- * Collection of methods that allows developers to track how users interact with their experiences.
+ * Collection of methods that allows you to track how users interact with your experiences.
  */
 interface AnalyticsService extends Instance {
 	/**
@@ -562,10 +568,13 @@ interface AnalyticsService extends Instance {
 	LogProgressionFailEvent(player?: Player, progressionPathName?: string, level?: number, levelName?: string, customFields?: unknown): undefined;
 	/** Logs an event for when a user has started a level attempt. */
 	LogProgressionStartEvent(player?: Player, progressionPathName?: string, level?: number, levelName?: string, customFields?: unknown): undefined;
+	/** Returns coarse player segment buckets for the current experience. */
+	GetPlayerSegmentsAsync(player?: Player): unknown;
 }
 
 /** References an animation asset which can be loaded by an `AnimationController`. */
 interface Animation extends Instance {
+	AnimationContent: Content;
 	/** Asset ID of the animation an `Animation` object is referencing. */
 	AnimationId: ContentId;
 }
@@ -574,6 +583,10 @@ interface Animation extends Instance {
  * Represents all types of animation data that the Roblox animation system can consume.
  */
 interface AnimationClip extends Instance {
+	/**
+	 * Returns the length (in seconds) of this `AnimationClip`. This will return `0` until the animation has fully loaded and thus may not be immediately available.
+	 */
+	Length: number;
 	/**
 	 * Determines whether the animation stored in this `AnimationClip` is intended to loop.
 	 */
@@ -635,11 +648,11 @@ interface AnimationClipProvider extends Instance {
 	 * This function returns an `InventoryPages` object which can be used to iterate over animations owned by a specific user.
 	 * @deprecated Deprecated.
 	 */
-	GetAnimations(userId?: number): Instance;
+	GetAnimations(userId?: User): Instance;
 	/**
 	 * This function returns an `InventoryPages` object which can be used to iterate over animations owned by a specific user.
 	 */
-	GetAnimationsAsync(userId?: number): Instance;
+	GetAnimationsAsync(userId?: User): Instance;
 	GetClipEvaluatorAsync(assetId?: ContentId): ClipEvaluator;
 }
 
@@ -763,12 +776,14 @@ interface Animator extends Instance {
 	PreferLodEnabled: boolean;
 	RootMotion: CFrame;
 	RootMotionWeight: number;
-	/**
-	 * Computes relative velocities between parts and apply them to `Motor6D.Part1`. These relative velocity calculations and assignments happen in the order provided.
-	 */
+	/** Computes relative velocities between parts and applies them to `Motor6D.Part1`. */
 	ApplyJointVelocities(motors?: unknown): undefined;
-	/** Returns the list of currently playing `AnimationTracks`. */
+	/** Returns the list of currently active `AnimationTracks`. */
 	GetPlayingAnimationTracks(): unknown;
+	/**
+	 * Returns an existing `AnimationTrack` on this `Animator` that was loaded from an `Animation` with the given animation ID. Unlike `LoadAnimation()`, this method does not create a new `AnimationTrack` instance.
+	 */
+	GetTrackByAnimationId(animationId?: ContentId): AnimationTrack;
 	/** Loads an `Animation` onto an `Animator`, returning an `AnimationTrack`. */
 	LoadAnimation(animation?: Animation): AnimationTrack;
 	RegisterEvaluationParallelCallback(callback?: Function): undefined;
@@ -776,7 +791,7 @@ interface Animator extends Instance {
 	 * Increments the `AnimationTrack.TimePosition` of all playing `AnimationTracks` that are loaded onto the `Animator`, applying the offsets to the model associated with the `Animator`. For use in the command bar or by plugins only.
 	 */
 	StepAnimations(deltaTime?: number): undefined;
-	/** Fires when the Animator starts playing an AnimationTrack. */
+	/** Fires when the `Animator` starts playing an `AnimationTrack`. */
 	readonly AnimationPlayed: RBXScriptSignal<(animationTrack: AnimationTrack) => void>;
 }
 
@@ -787,6 +802,9 @@ interface WorkspaceAnnotation extends Annotation {
 }
 
 interface AnnotationsService extends Instance {
+}
+
+interface AppAgeSignalsService extends Instance {
 }
 
 interface AppLifecycleObserverService extends Instance {
@@ -838,6 +856,8 @@ interface AssetService extends Instance {
 	CreateAssetAsync(object?: Object, assetType?: Enum.AssetType, requestParameters?: unknown): unknown;
 	/** Uploads a new version for an existing asset from the given object. */
 	CreateAssetVersionAsync(object?: Object, assetType?: Enum.AssetType, assetId?: number, requestParameters?: unknown): unknown;
+	/** Creates ephemeral, `DataModel`-scoped content from the provided content input. */
+	CreateDataModelContentAsync(content?: Content, options?: unknown): unknown;
 	/** Creates a new `EditableImage` object populated with the given image. */
 	CreateEditableImageAsync(content?: Content, editableImageOptions?: unknown): EditableImage;
 	/** Returns a new `EditableMesh` object created from an existing mesh content ID. */
@@ -986,6 +1006,7 @@ interface AudioAnalyzer extends Instance {
 	RmsLevel: number;
 	/** Enables usage of `GetSpectrum`. */
 	SpectrumEnabled: boolean;
+	/** Controls the resolution and timeliness of `GetSpectrum`. */
 	WindowSize: Enum.AudioWindowSize;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
 	GetConnectedWires(pin?: string): Instance[];
@@ -1203,6 +1224,7 @@ interface AudioEcho extends Instance {
 	DryLevel: number;
 	/** How slowly echoes fade away. */
 	Feedback: number;
+	/** The time taken to interpolate between `DelayTime` values. */
 	RampTime: number;
 	/** Gain level determining how loud the echoed stream will be. */
 	WetLevel: number;
@@ -1224,6 +1246,7 @@ interface AudioEcho extends Instance {
 
 /** Emits audio streams into the world. */
 interface AudioEmitter extends Instance {
+	/** Determines whether acoustic simulation should be used for this `AudioEmitter`. */
 	AcousticSimulationEnabled: boolean;
 	/** Controls which `AudioListeners` are capable of hearing this `AudioEmitter`. */
 	AudioInteractionGroup: string;
@@ -1385,10 +1408,19 @@ interface AudioFlanger extends Instance {
 interface AudioFocusService extends Instance {
 }
 
+/** Mutes audio streams that fall below a certain volume threshold. */
 interface AudioGate extends Instance {
+	/**
+	 * Controls how long it takes for the gate to open when the signal level rises above the `Threshold`.
+	 */
 	Attack: number;
+	/** Whether audio streams are passed-through unaffected by this effect. */
 	Bypass: boolean;
+	/**
+	 * Controls how long it takes for the gate to close when the signal level drops below the `Threshold`.
+	 */
 	Release: number;
+	/** The gain value(s) around which the gate opens and closes. */
 	Threshold: NumberRange;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
 	GetConnectedWires(pin?: string): Instance[];
@@ -1401,7 +1433,7 @@ interface AudioGate extends Instance {
 	 */
 	GetOutputPins(): unknown;
 	/**
-	 * Fires when another instance is connected to or disconnected from the `AudioAnalyzer` via a `Wire`.
+	 * Fires when another instance is connected to or disconnected from the `AudioGate` via a `Wire`.
 	 */
 	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
@@ -1434,6 +1466,7 @@ interface AudioLimiter extends Instance {
 
 /** Records an audio stream from its surrounding `AudioEmitters` in the 3D world. */
 interface AudioListener extends Instance {
+	/** Determines whether acoustic simulation should be used for this `AudioListener`. */
 	AcousticSimulationEnabled: boolean;
 	/** Controls which `AudioEmitters` are audible to this `AudioListener`. */
 	AudioInteractionGroup: string;
@@ -1484,6 +1517,7 @@ interface AudioPitchShifter extends Instance {
 	Bypass: boolean;
 	/** Pitch modification to be multiplied by the pitch of the input stream. */
 	Pitch: number;
+	/** Controls how much audio will be buffered and shifted at once. */
 	WindowSize: Enum.AudioWindowSize;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
 	GetConnectedWires(pin?: string): Instance[];
@@ -1511,7 +1545,7 @@ interface AudioPlayer extends Instance {
 	 * Denotes whether this `AudioPlayer` starts playing as soon as it spawns in for the first time.
 	 */
 	AutoPlay: boolean;
-	/** Denotes whether this `AudioPlayer` is currently playing. */
+	/** Denotes whether this `AudioPlayer` is currently playing or planning to play. */
 	readonly IsPlaying: boolean;
 	/** Denotes whether this `AudioPlayer` is loaded, buffered, and ready to play. */
 	IsReady: boolean;
@@ -1533,6 +1567,8 @@ interface AudioPlayer extends Instance {
 	TimePosition: number;
 	/** Controls how loudly the asset will be played. */
 	Volume: number;
+	/** Attempts to cancel a pre-planned future `Play` or `Stop` command. */
+	Cancel(actionId?: unknown): boolean;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
 	GetConnectedWires(pin?: string): Instance[];
 	/**
@@ -1544,9 +1580,10 @@ interface AudioPlayer extends Instance {
 	 */
 	GetOutputPins(): unknown;
 	/** Plays the `AudioPlayer` from wherever its `TimePosition` is. */
-	Play(): undefined;
+	Play(atTime?: unknown): unknown;
 	/** Stops the `AudioPlayer` wherever its `TimePosition` is. */
-	Stop(): undefined;
+	Stop(atTime?: unknown): unknown;
+	/** Returns a sampling of the waveform data for the loaded `Asset`. */
 	GetWaveformAsync(timeRange?: NumberRange, samples?: number): unknown;
 	/** Fires when the `AudioPlayer` has completed playback and stopped. */
 	readonly Ended: RBXScriptSignal<() => void>;
@@ -1560,8 +1597,11 @@ interface AudioPlayer extends Instance {
 
 /** Records audio streams in-experience. */
 interface AudioRecorder extends Instance {
+	/** Whether the `AudioRecorder` is currently recording. */
 	readonly IsRecording: boolean;
+	/** The current length of the recording in seconds. */
 	TimeLength: number;
+	/** Clears out the recording from the `AudioRecorder`. */
 	Clear(): undefined;
 	/** Returns an array of `Wires` that are connected to the specified pin. */
 	GetConnectedWires(pin?: string): Instance[];
@@ -1573,13 +1613,18 @@ interface AudioRecorder extends Instance {
 	 * Gets the list of pins that `Wire` can use in `Wire.SourceName` to connect to this instance via its `Wire.SourceInstance` property.
 	 */
 	GetOutputPins(): unknown;
+	/** Returns a `Content` object representing the current audio recording. */
 	GetTemporaryContent(): Content;
+	/** Stops recording audio. */
 	Stop(): undefined;
+	/** Returns whether the `AudioRecorder` can currently record. */
 	CanRecordAsync(): boolean;
+	/** Returns any instances which cannot be recorded. */
 	GetUnrecordableInstancesAsync(): Instance[];
+	/** Starts recording audio. */
 	RecordAsync(): undefined;
 	/**
-	 * Fires when another instance is connected to or disconnected from the `AudioAnalyzer` via a `Wire`.
+	 * Fires when another instance is connected to or disconnected from the `AudioRecorder` via a `Wire`.
 	 */
 	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
@@ -1640,6 +1685,7 @@ interface AudioSearchParams extends Instance {
 	Album: string;
 	/** The artist that created the audio asset. */
 	Artist: string;
+	/** The subtype of the audio asset. */
 	AudioSubType: Enum.AudioSubType;
 	/**
 	 * The subtype of the audio asset.
@@ -1716,6 +1762,7 @@ interface AudioTextToSpeech extends Instance {
 	Play(): undefined;
 	/** Unload the generated speech audio. */
 	Unload(): undefined;
+	/** Returns a sampling of the waveform data for the generated audio. */
 	GetWaveformAsync(timeRange?: NumberRange, samples?: number): unknown;
 	/** Generates speech audio. */
 	LoadAsync(): Enum.AssetFetchStatus;
@@ -1733,6 +1780,7 @@ interface AudioTextToSpeech extends Instance {
  * Creates a trembling effect on a sound by varying the volume of the sound up and down.
  */
 interface AudioTremolo extends Instance {
+	/** Whether audio streams are passed-through unaffected by this effect. */
 	Bypass: boolean;
 	/** Controls how much the volume will raise and lower. */
 	Depth: number;
@@ -1757,7 +1805,7 @@ interface AudioTremolo extends Instance {
 	 */
 	GetOutputPins(): unknown;
 	/**
-	 * Fires when another instance is connected to or disconnected from the `AudioAnalyzer` via a `Wire`.
+	 * Fires when another instance is connected to or disconnected from the `AudioTremolo` via a `Wire`.
 	 */
 	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
 }
@@ -1767,6 +1815,9 @@ interface AuroraScriptObject extends Instance {
 	FrameId: number;
 	LODLevel: number;
 	PriorFrameInvoked: number;
+}
+
+interface AvatarAbilityRules extends Instance {
 }
 
 interface AvatarAccessoryRules extends Instance {
@@ -1793,7 +1844,7 @@ interface AvatarCreationService extends Instance {
 	GetValidationRules(): unknown;
 	/** Automatically sets up a custom `Model` and/or avatar accessories. */
 	AutoSetupAvatarAsync(player?: Player, autoSetupParams?: unknown, progressCallback?: Function?): string;
-	/** Creates a 2D avatar preview and returns a previewId. */
+	/** Creates a 2D avatar preview and returns a `previewId`. */
 	GenerateAvatar2DPreviewAsync(avatarGeneration2dPreviewParams?: unknown): string;
 	/** Generates an avatar and returns a generationId. */
 	GenerateAvatarAsync(avatarGenerationParams?: unknown): string;
@@ -1843,7 +1894,7 @@ interface AvatarEditorService extends Instance {
 	/**
 	 * Prompts the `Players.LocalPlayer` to save the given `HumanoidDescription` as an outfit.
 	 */
-	PromptCreateOutfit(outfit?: HumanoidDescription, rigType?: Enum.HumanoidRigType): undefined;
+	PromptCreateOutfit(outfit?: HumanoidDescription, rigType?: Enum.HumanoidRigType, outfitOptions?: unknown, outfitType?: unknown): undefined;
 	/** Prompts the `Players.LocalPlayer` to delete the given outfit. */
 	PromptDeleteOutfit(outfitId?: number): undefined;
 	/** Prompts the `Players.LocalPlayer` to rename the given outfit. */
@@ -1867,6 +1918,9 @@ interface AvatarEditorService extends Instance {
 	CheckApplyDefaultClothingAsync(humanoidDescription?: HumanoidDescription): HumanoidDescription;
 	/** @deprecated Deprecated. */
 	ConformToAvatarRules(humanoidDescription?: HumanoidDescription): HumanoidDescription;
+	/**
+	 * Returns a copy of the given `HumanoidDescription` that conforms to the platform Avatar rules.
+	 */
 	ConformToAvatarRulesAsync(humanoidDescription?: HumanoidDescription): HumanoidDescription;
 	/**
 	 * Returns the platform Avatar rules for things such as scaling, default shirts and pants, number of wearable assets.
@@ -1884,6 +1938,7 @@ interface AvatarEditorService extends Instance {
 	GetBatchItemDetails(itemIds?: unknown, itemType?: Enum.AvatarItemType): unknown;
 	/** Gets the item details for a list of items at once. */
 	GetBatchItemDetailsAsync(itemIds?: unknown, itemType?: Enum.AvatarItemType): unknown;
+	GetBundlesByAssetIdAsync(assetId: number, limit?: number): CatalogPages;
 	/**
 	 * Returns if the `Players.LocalPlayer` has favorited the given bundle or asset.
 	 * @deprecated Deprecated.
@@ -1891,6 +1946,7 @@ interface AvatarEditorService extends Instance {
 	GetFavorite(itemId?: number, itemType?: Enum.AvatarItemType): boolean;
 	/** Returns if the `Players.LocalPlayer` has favorited the given bundle or asset. */
 	GetFavoriteAsync(itemId?: number, itemType?: Enum.AvatarItemType): boolean;
+	/** Returns an array of head shape names that the `Players.LocalPlayer` owns. */
 	GetHeadShapesAsync(): unknown;
 	/**
 	 * Returns an `InventoryPages` object with information about owned items in the users inventory with the given AvatarAssetTypes.
@@ -1977,7 +2033,7 @@ interface AvatarSettings extends Instance {
 }
 
 /**
- * A container object that holds a player's inventory. Any `Tool` in a player's Backpack will be displayed in their inventory at the bottom of their screen.
+ * A container object that holds a player's inventory. Any `Tool` in a player's `Backpack` will be displayed in their inventory at the bottom of the screen.
  */
 interface Backpack extends Instance {
 }
@@ -1988,13 +2044,13 @@ interface BadgeService extends Instance {
 	 * Award a badge to a player given the ID of each.
 	 * @deprecated Deprecated.
 	 */
-	AwardBadge(userId?: number, badgeId?: number): boolean;
+	AwardBadge(userId?: User, badgeId?: number): boolean;
 	/** Award a badge to a player given the ID of each. */
-	AwardBadgeAsync(userId?: number, badgeId?: number): boolean;
+	AwardBadgeAsync(userId?: User, badgeId?: number): boolean;
 	/**
 	 * Checks a list of badge IDs against a `UserId` and returns a list of badge IDs that the player owns.
 	 */
-	CheckUserBadgesAsync(userId?: number, badgeIds?: unknown): unknown;
+	CheckUserBadgesAsync(userId?: User, badgeIds?: unknown): unknown;
 	/** Fetch information about a badge given its ID. */
 	GetBadgeInfoAsync(badgeId?: number): unknown;
 	/**
@@ -2011,11 +2067,11 @@ interface BadgeService extends Instance {
 	 * Checks whether a user has the badge given the `Player.UserId` and the badge ID.
 	 * @deprecated Deprecated.
 	 */
-	UserHasBadge(userId?: number, badgeId?: number): boolean;
+	UserHasBadge(userId?: User, badgeId?: number): boolean;
 	/**
 	 * Checks whether a player has the badge given the `Player.UserId` and the badge ID.
 	 */
-	UserHasBadgeAsync(userId?: number, badgeId?: number): boolean;
+	UserHasBadgeAsync(userId?: User, badgeId?: number): boolean;
 }
 
 interface BaseCoreGuiConfiguration extends Instance {
@@ -2102,22 +2158,25 @@ interface RootImportData extends BaseImportData {
 	InvertNegativeFaces: boolean;
 	KeepZeroInfluenceBones: boolean;
 	MergeMeshes: boolean;
+	PhysicalConstraintType: Enum.PhysicalConstraintType;
 	PolygonCount: number;
 	PreferredUploadId: number;
 	RestPose: Enum.RestPose;
 	RigScale: Enum.RigScale;
 	RigType: Enum.RigType;
 	RigVisualization: boolean;
+	ScaleFactor: number;
 	ScaleUnit: Enum.MeshScaleUnit;
 	UseSceneOriginAsPivot: boolean;
 	UsesCages: boolean;
 	ValidateUgcBody: boolean;
+	VersionedAssetId: number;
 	WorldForward: Enum.NormalId;
 	WorldUp: Enum.NormalId;
 }
 
 /**
- * The BasePlayerGui is an abstract class which the GUI drawing storage classes inherit from.
+ * `BasePlayerGui` is an abstract class which the GUI drawing storage classes inherit from.
  */
 interface BasePlayerGui extends Instance {
 	/**
@@ -2136,7 +2195,7 @@ interface CoreGui extends BasePlayerGui {
 	Version: number;
 }
 
-/** A container for a player's currently rendered `ScreenGuis`. */
+/** A container that holds a player's UI. */
 interface PlayerGui extends BasePlayerGui {
 	/** Describes the player's current screen orientation. */
 	CurrentScreenOrientation: Enum.ScreenOrientation;
@@ -2345,6 +2404,7 @@ interface Beam extends Instance {
 	Segments: number;
 	/** The content ID of the texture to be displayed on the beam. */
 	Texture: ContentId;
+	TextureContent: Content;
 	/** Sets the length of the beam's texture, dependent on `TextureMode`. */
 	TextureLength: number;
 	/** Determines the manner in which the `Texture` scales and repeats. */
@@ -2638,10 +2698,12 @@ interface CaptureService extends Instance {
 	StopVideoCapture(): undefined;
 	/** Initiates a screenshot capture. */
 	TakeScreenshotCaptureAsync(onCaptureReady?: Function, captureParams?: unknown): undefined;
+	CheckUploadCaptureStatusAsync(token?: string): unknown;
 	InternalCheckPlayabilityAsync(universeId: number): boolean;
 	InternalGetStartPlaceIdAsync(universeId: number): number;
 	PromptCaptureGalleryPermissionAsync(captureGalleryPermission?: Enum.CaptureGalleryPermission): boolean;
 	ReadCapturesFromGalleryAsync(captureTypeFilters?: unknown, readFromAllEligibleExperiences?: boolean): unknown;
+	StartUploadCaptureAsync(capture?: Capture): unknown;
 	/** Initiates a video capture recording. */
 	StartVideoCaptureAsync(onCaptureReady?: Function, captureParams?: unknown): Enum.VideoCaptureStartedResult;
 	UploadCaptureAsync(capture?: Capture): unknown;
@@ -2996,6 +3058,9 @@ interface DragDetector extends ClickDetector {
 interface CloudCRUDService extends Instance {
 }
 
+interface CloudExecutionService extends Instance {
+}
+
 /** Renders realistic clouds that drift slowly across the sky. */
 interface Clouds extends Instance {
 	/** Controls the material color of cloud particles. */
@@ -3108,7 +3173,7 @@ interface ConfigService extends Instance {
 }
 
 /**
- * The Configuration object is a container object that is designed to hold value objects to make values used in `Tools` or any model using `Scripts` more accessible.
+ * A container object designed to hold value objects. Makes values used in `Tools` or any model using `Scripts` more accessible.
  */
 interface Configuration extends Instance {
 }
@@ -3234,8 +3299,12 @@ interface AngularVelocity extends Constraint {
 
 /** Aligns two `BaseParts` with an animate-able kinematic or force-based joint. */
 interface AnimationConstraint extends Constraint {
+	AngularDamping: number;
+	AngularStrength: number;
 	/** Toggles whether the constraint is kinematic or physically simulated. */
 	IsKinematic: boolean;
+	LinearDamping: number;
+	LinearStrength: number;
 	/** Maximum force magnitude the constraint can apply to achieve its goal. */
 	MaxForce: number;
 	/** Maximum torque the constraint can apply to reach its goal. */
@@ -3913,9 +3982,6 @@ interface ControllerManager extends Instance {
 interface ControllerService extends Instance {
 }
 
-interface ConversationalAIAcceptanceService extends Instance {
-}
-
 /**
  * A backend service used by Roblox to control HTTP cookies. Its functions are not available to developers.
  */
@@ -4027,8 +4093,10 @@ interface CylinderMesh extends BevelMesh {
  * The FileMesh object applies a mesh to a `BasePart` when parented to it. Its properties are inherited by the `SpecialMesh` object.
  */
 interface FileMesh extends DataModelMesh {
+	MeshContent: Content;
 	/** The MeshId is the content ID of the mesh that is to be displayed. */
 	MeshId: ContentId;
+	TextureContent: Content;
 	/**
 	 * The TextureId is the content ID of the texture that is to be applied to the mesh.
 	 */
@@ -4124,6 +4192,7 @@ interface DataStoreService extends Instance {
 	GetOrderedDataStore(name?: string, scope?: string): OrderedDataStore;
 	/** Returns the number of requests that can be made by the given request type. */
 	GetRequestBudgetForRequestType(requestType?: Enum.DataStoreRequestType): number;
+	/** Sets the rate limit for a given request type per minute. */
 	SetRateLimitForRequestType(requestType?: Enum.DataStoreRequestType, baseLimit?: number, perPlayerLimit?: number): undefined;
 	/**
 	 * Returns a `DataStoreListingPages` object for enumerating through all of the experience's data stores.
@@ -4139,7 +4208,7 @@ interface DataStoreSetOptions extends Instance {
 	SetMetadata(attributes?: unknown): undefined;
 }
 
-/** Allows scheduling the guaranteed destruction of an object without yielding.   . */
+/** Allows scheduling the guaranteed destruction of an object without yielding. */
 interface Debris extends Instance {
 	/**
 	 * The maximum number of items that can be assigned to the `Debris` service at one time.
@@ -4227,6 +4296,12 @@ interface DebuggerWatch extends Instance {
 	Expression: string;
 }
 
+interface DeferredAssetManagerService extends Instance {
+}
+
+interface DesignFoundationsService extends Instance {
+}
+
 interface DeviceIdService extends Instance {
 }
 
@@ -4274,6 +4349,54 @@ interface DialogChoice extends Instance {
 	ResponseDialog: string;
 	/** Sets what the player will say when they choose this DialogChoice. */
 	UserDialog: string;
+}
+
+interface DigitsRigDescription extends Instance {
+	Index1: Instance;
+	Index1TposeAdjustment: CFrame;
+	Index2: Instance;
+	Index2TposeAdjustment: CFrame;
+	Index3: Instance;
+	Index3TposeAdjustment: CFrame;
+	IndexRange: Vector3;
+	IndexSize: number;
+	Middle1: Instance;
+	Middle1TposeAdjustment: CFrame;
+	Middle2: Instance;
+	Middle2TposeAdjustment: CFrame;
+	Middle3: Instance;
+	Middle3TposeAdjustment: CFrame;
+	MiddleRange: Vector3;
+	MiddleSize: number;
+	Pinky1: Instance;
+	Pinky1TposeAdjustment: CFrame;
+	Pinky2: Instance;
+	Pinky2TposeAdjustment: CFrame;
+	Pinky3: Instance;
+	Pinky3TposeAdjustment: CFrame;
+	PinkyRange: Vector3;
+	PinkySize: number;
+	Ring1: Instance;
+	Ring1TposeAdjustment: CFrame;
+	Ring2: Instance;
+	Ring2TposeAdjustment: CFrame;
+	Ring3: Instance;
+	Ring3TposeAdjustment: CFrame;
+	RingRange: Vector3;
+	RingSize: number;
+	Side: Enum.DigitsRigDescriptionSide;
+	Thumb1: Instance;
+	Thumb1TposeAdjustment: CFrame;
+	Thumb2: Instance;
+	Thumb2TposeAdjustment: CFrame;
+	Thumb3: Instance;
+	Thumb3TposeAdjustment: CFrame;
+	ThumbRange: Vector3;
+	ThumbSize: number;
+	GetFingerControl(fingerIndex?: number): Vector3;
+	GetFingerTip(fingerIndex?: number): Vector3;
+	SetFingerControl(fingerIndex?: number, control?: Vector3): undefined;
+	SetFingerTip(fingerIndex?: number, point?: Vector3): undefined;
 }
 
 interface DraftsService extends Instance {
@@ -4358,10 +4481,10 @@ interface ExperienceAuthService extends Instance {
 interface ExperienceInviteOptions extends Instance {
 	/** Asset ID that maps to a **Notification** asset type. */
 	InviteMessageId: string;
-	/** Roblox `UserId` of the specific connection to invite. */
+	/** Roblox `UserId` of the specific friend to invite. */
 	InviteUser: number;
 	/**
-	 * Used to set a parameter in `Player:GetJoinData()` when a connection joins from the invite notification.
+	 * Used to set a parameter in `Player:GetJoinData()` when a friend joins from the invite notification.
 	 */
 	LaunchData: string;
 	/** Custom text shown on the invite prompt for the sending player. */
@@ -4669,6 +4792,9 @@ interface File extends Instance {
 interface FileManagerService extends Instance {
 }
 
+interface FileSyncReplicationService extends Instance {
+}
+
 /** A preconfigured particle emitter with the visual aesthetic of fire. */
 interface Fire extends Instance {
 	/** Determines the color of the primary (outer) flame particles. */
@@ -4732,6 +4858,14 @@ interface NonReplicatedCSGDictionaryService extends FlyweightService {
 interface Folder extends Instance {
 }
 
+/** A container that stores `ProceduralModel` generation results. */
+interface GeneratedFolder extends Folder {
+	/**
+	 * Specifies which part within the `GeneratedFolder` should be set as the `PrimaryPart` of the `ProceduralModel`.
+	 */
+	SetPrimaryPart(part?: BasePart): undefined;
+}
+
 /**
  * Protects a `Humanoid` from taking damage dealt through the `Humanoid:TakeDamage()` method and protects `BaseParts` from having their joints broken due to an `Explosion`.
  */
@@ -4741,7 +4875,7 @@ interface ForceField extends Instance {
 }
 
 /**
- * An internal service which is used to send, cancel, accept and decline connection requests in-game.
+ * An internal service which is used to send, cancel, accept and decline friend requests in-game.
  */
 interface FriendService extends Instance {
 }
@@ -4790,6 +4924,8 @@ interface GamepadService extends Instance {
 
 /** Service that allows developers to generate 3D objects from text prompts. */
 interface GenerationService extends Instance {
+	ConnectAsync(sessionId: string, sdp: string, type: string, relay: string): unknown;
+	DisconnectAsync(sessionId: string): boolean;
 	/**
 	 * Starts the generation of a new 3D mesh from a text prompt and returns unique IDs used to track and retrieve the result.
 	 */
@@ -4798,10 +4934,15 @@ interface GenerationService extends Instance {
 	 * Enables generation of multi-mesh geometries according to provided `inputs` and a `schema`.
 	 */
 	GenerateModelAsync(inputs?: unknown, schema?: unknown, options?: unknown): unknown;
+	GetVideoGenSessionAsync(): unknown;
+	GetVideoGenTriggersAsync(sessionId: string, lookbackSeconds: number): unknown;
 	/**
 	 * Retrieves and loads a mesh generated by `GenerationService:GenerateMeshAsync()` using the provided `generationId`.
 	 */
 	LoadGeneratedMeshAsync(generationId?: string): MeshPart;
+	StartVideoGenSessionAsync(sessionId: string, prompt: string, imageData: string, imageS3Reference: string, triggers: unknown): boolean;
+	UpdateVideoGenSessionPromptAsync(sessionId: string, prompt: string, imageData: string, imageS3Reference: string, mode: string): boolean;
+	UpdateVideoGenSessionTriggersAsync(sessionId: string, triggers: unknown): boolean;
 }
 
 interface GenericChallengeService extends Instance {
@@ -4817,22 +4958,29 @@ interface GeometryService extends Instance {
 	 * Returns a table of `Constraints` and `Attachments` which you may choose to preserve, along with their respective parents.
 	 */
 	CalculateConstraintsToPreserve(source?: Instance, destination?: unknown, options?: unknown): unknown;
-	/** This API has not been released. */
+	CreateSolidPrimitive(type: Enum.SolidPrimitiveType, options?: unknown): MeshPart;
+	/**
+	 * Provides an array of positions which can easily be passed into `FragmentAsync` to perform simple types of destruction.
+	 */
 	GenerateFragmentSites(part?: BasePart, options?: unknown): unknown;
-	/** This API has not been released. */
+	/**
+	 * Breaks a `BasePart` into multiple `MeshPart` instances, according to the pattern of points passed in, by using voronoi decomposition.
+	 */
 	FragmentAsync(part?: BasePart, sites?: unknown, options?: unknown): unknown;
 	/**
-	 * Creates one or more `PartOperations` from the intersecting geometry of one part and other parts.
+	 * Creates one or more `PartOperations` or `MeshParts` from the intersecting geometry of multiple parts.
 	 */
 	IntersectAsync(part?: Instance, parts?: unknown, options?: unknown): unknown;
 	/**
-	 * Creates one or more `PartOperations` from one part minus the geometry occupied by other parts.
+	 * Creates one or more `PartOperations` or `MeshParts` from one part minus the space occupied by other parts.
 	 */
 	SubtractAsync(part?: Instance, parts?: unknown, options?: unknown): unknown;
-	/** This API has not been released. */
+	/**
+	 * Creates a `MeshPart` which has the shape of the input part stretched/dragged through the given set of `CFrame` positions.
+	 */
 	SweepPartAsync(part?: BasePart, cframes?: unknown, options?: unknown): MeshPart;
 	/**
-	 * Creates one or more `PartOperations` from one part plus the geometry occupied by other parts.
+	 * Creates one or more `PartOperations` or `MeshParts` from one part plus the space occupied by other parts.
 	 */
 	UnionAsync(part?: Instance, parts?: unknown, options?: unknown): unknown;
 }
@@ -4882,7 +5030,10 @@ interface DataStore extends GlobalDataStore {
 	ListKeysAsync(prefix?: string, pageSize?: number, cursor?: string, excludeDeleted?: boolean): DataStoreKeyPages;
 	/** Enumerates all versions of a key. */
 	ListVersionsAsync(key?: string, sortDirection?: Enum.SortDirection, minDate?: number, maxDate?: number, pageSize?: number): DataStoreVersionPages;
-	/** Permanently deletes the specified version of a key. */
+	/**
+	 * Permanently deletes the specified version of a key.
+	 * @deprecated Deprecated.
+	 */
 	RemoveVersionAsync(key?: string, version?: string): undefined;
 }
 
@@ -4890,6 +5041,9 @@ interface DataStore extends GlobalDataStore {
 interface OrderedDataStore extends GlobalDataStore {
 	/** Returns a `DataStorePages` object. */
 	GetSortedAsync(ascending?: boolean, pagesize?: number, minValue?: unknown, maxValue?: unknown): DataStorePages;
+}
+
+interface GongService extends Instance {
 }
 
 /**
@@ -4909,7 +5063,11 @@ interface GroupService extends Instance {
 	/**
 	 * Returns a list of tables containing information on all of the groups a given player is a member of.
 	 */
-	GetGroupsAsync(userId?: number): unknown;
+	GetGroupsAsync(userId?: User): unknown;
+	/**
+	 * Returns all roles held by the specified user in the specified group, supporting multi-role group membership.
+	 */
+	GetRolesInGroupAsync(userId?: User, groupId?: number): unknown;
 	/** Prompts the local `Player` to join a specified Roblox group via a native modal. */
 	PromptJoinAsync(groupId?: number): Enum.GroupMembershipStatus;
 }
@@ -4985,6 +5143,7 @@ interface GuiObject extends GuiBase2d {
 	 * Determines whether the player's mouse is being actively pressed on the `GuiObject` or not.
 	 */
 	GuiState: Enum.GuiState;
+	InputSink: Enum.InputSink;
 	/**
 	 * Determines whether the `GuiButton` can be interacted with or not, or if the `GuiState` of the `GuiObject` is changing or not.
 	 */
@@ -5420,7 +5579,13 @@ interface ScrollingFrame extends GuiObject {
 	 * Indicates whether the vertical scroll bar is positioned to the left or right of the canvas.
 	 */
 	VerticalScrollBarPosition: Enum.VerticalScrollBarPosition;
+	/**
+	 * Returns a `Vector2` representing the current inertial scroll velocity after the user stops their input.
+	 */
 	GetScrollVelocity(): Vector2;
+	/**
+	 * Resets the inertial scroll velocity of the `ScrollingFrame` to `0` on both axes.
+	 */
 	ResetScrollVelocity(): undefined;
 }
 
@@ -5435,7 +5600,7 @@ interface TextBox extends GuiObject {
 	 * Determines the offset of the text cursor in bytes, or `-1` if there is no cursor.
 	 */
 	CursorPosition: number;
-	/** Determines the font used to render text. */
+	/** Determines the font face used to render text. */
 	FontFace: Font;
 	/**
 	 * Determines the font size of a `TextBox` object.
@@ -5447,43 +5612,41 @@ interface TextBox extends GuiObject {
 	/** The maximum number of graphemes the `TextBox` can show. */
 	MaxVisibleGraphemes: number;
 	/**
-	 * When set to `true`, text inside a `TextBox` is able to move onto multiple lines. This also enables players to use the enter key to move onto a new line.
+	 * When set to `true`, text inside a `TextBox` is able to move onto multiple lines.
 	 */
 	MultiLine: boolean;
 	OpenTypeFeatures: string;
 	OpenTypeFeaturesError: string;
 	/**
-	 * Sets the text color that gets used when no text has been entered into the `TextBox` yet.
+	 * Sets the text color that gets used when no text has been entered into the `TextBox`.
 	 */
 	PlaceholderColor3: Color3;
 	/**
-	 * Sets the text that gets displayed when no text has been entered into the `TextBox` yet.
+	 * Sets the text that gets displayed when no text has been entered into the `TextBox`.
 	 */
 	PlaceholderText: string;
 	/**
-	 * Determines whether the `TextBox` renders the `TextBox.Text` string using rich text formatting.
+	 * Determines whether the `TextBox` renders the `Text` string using rich text formatting.
 	 */
 	RichText: boolean;
-	/**
-	 * Determines the starting position of a text selection, or -1 if no text is selected.
-	 */
+	/** Determines the starting position of a text selection. */
 	SelectionStart: number;
 	/**
-	 * If set to true, input native to the platform is used instead of Roblox's built-in keyboard.
+	 * If set to `true`, input native to the platform is used instead of Roblox's built-in keyboard.
 	 */
 	ShowNativeInput: boolean;
-	/** Determines the string rendered by the UI element. */
+	/** Determines the string rendered by the `TextBox` element. */
 	Text: string;
-	/** The size of a UI element's text in offsets. */
+	/** The size of a `TextBox` element's text in offsets. */
 	TextBounds: Vector2;
-	/** Determines the color of rendered text. */
+	/** Determines the color of non-placeholder rendered text. */
 	TextColor3: Color3;
 	TextDirection: Enum.TextDirection;
-	/** Determines whether the user can change the `Text`. */
+	/** Determines whether the player can change the `Text`. */
 	TextEditable: boolean;
-	/** Whether the text fits within the constraints of the TextBox. */
+	/** Whether the text fits within the constraints of the `TextBox`. */
 	TextFits: boolean;
-	/** Changes whether text is resized to fit the GUI object that renders it. */
+	/** Changes whether text is resized to fit within the `TextBox`. */
 	TextScaled: boolean;
 	/** Determine the line height of text in offsets. */
 	TextSize: number;
@@ -5491,30 +5654,33 @@ interface TextBox extends GuiObject {
 	TextStrokeColor3: Color3;
 	/** Determines the transparency of the text stroke (outline). */
 	TextStrokeTransparency: number;
-	/** Determines the transparency of rendered text. */
+	/** Determines the transparency of the rendered text. */
 	TextTransparency: number;
-	/** Controls the truncation of the text displayed in this TextBox. */
+	/** Controls the truncation of the text displayed in the `TextBox`. */
 	TextTruncate: Enum.TextTruncate;
 	/** @deprecated Deprecated. */
 	TextWrap: boolean;
 	/**
-	 * Determines if text wraps to multiple lines within the `GuiObject` element space, truncating excess text.
+	 * Determines if text wraps to multiple lines within the `TextBox` element space, truncating excess text.
 	 */
 	TextWrapped: boolean;
-	/** Determines the horizontal alignment of rendered text. */
+	/** Determines the horizontal alignment of the rendered text. */
 	TextXAlignment: Enum.TextXAlignment;
-	/** Determines the vertical alignment of rendered text. */
+	/** Determines the vertical alignment of the rendered text. */
 	TextYAlignment: Enum.TextYAlignment;
-	/** Forces the client to focus on the TextBox. */
+	/** Forces the client to focus on the `TextBox`. */
 	CaptureFocus(): undefined;
 	/** Returns `true` if the `TextBox` is focused or `false` if it is not. */
 	IsFocused(): boolean;
 	/** Forces the client to unfocus the TextBox. */
 	ReleaseFocus(submitted?: boolean): undefined;
-	/** Fires when the client lets their focus leave the `TextBox`. */
+	/** Fires when the `TextBox` loses its focus. */
 	readonly FocusLost: RBXScriptSignal<(enterPressed: boolean, inputThatCausedFocusLoss: InputObject) => void>;
 	/** Fires when the `TextBox` gains focus. */
 	readonly Focused: RBXScriptSignal<() => void>;
+	/**
+	 * Fires when the `TextBox` is focused and the player presses the on-screen keyboard's return/enter button.
+	 */
 	readonly ReturnPressedFromOnScreenKeyboard: RBXScriptSignal<() => void>;
 }
 
@@ -5555,6 +5721,7 @@ interface VideoDisplay extends GuiObject {
  * A GUI object that renders a rectangle, like a `Frame` does, with a moving video image.
  */
 interface VideoFrame extends GuiObject {
+	InternalVideoUsage: Enum.InternalVideoUsage;
 	/**
 	 * Indicates when the `VideoFrame.Video` has loaded from Roblox servers and is ready to play.
 	 */
@@ -5563,12 +5730,16 @@ interface VideoFrame extends GuiObject {
 	 * Sets whether or not the `VideoFrame.Video` repeats once it has finished when it is playing.
 	 */
 	Looped: boolean;
+	MaximumResolution: Enum.VideoSampleSize;
 	/**
 	 * Indicates whether the `VideoFrame.Video` is currently playing. It can be set to start or pause playback.
 	 */
 	Playing: boolean;
 	/** Gets the original source resolution of the `VideoFrame.Video` file. */
 	Resolution: Vector2;
+	RollOffMaxDistance: number;
+	RollOffMinDistance: number;
+	RollOffMode: Enum.RollOffMode;
 	/** Indicates the length of the `VideoFrame.Video` in seconds. */
 	TimeLength: number;
 	/** Indicates the progress in seconds of the `VideoFrame.Video`. */
@@ -5785,6 +5956,7 @@ interface AdGui extends SurfaceGuiBase {
 	/** Enables the AdGui to serve video ads. */
 	EnableVideoAds: boolean;
 	FallbackImage: ContentId;
+	FallbackImageContent: Content;
 	Status: Enum.AdUnitStatus;
 	/** Used to react to the AdGui events. */
 	OnAdEvent?: (eventInfo?: unknown) => boolean;
@@ -5953,6 +6125,7 @@ interface CylinderHandleAdornment extends HandleAdornment {
 interface ImageHandleAdornment extends HandleAdornment {
 	/** Image to draw for the adornment. */
 	Image: ContentId;
+	ImageContent: Content;
 	/** Size of the image in studs. */
 	Size: Vector2;
 }
@@ -6201,6 +6374,9 @@ interface GuiService extends Instance {
 	 * Returns two `Vector2` values representing the inset of user GUIs in pixels, from the top‑left corner of the screen and the bottom‑right corner of the screen respectively.
 	 */
 	GetGuiInset(): unknown;
+	/**
+	 * Takes an `Enum.ScreenInsets` value and returns a `Rect` describing the inset region, relative to the `CoreUISafeInsets` area.
+	 */
 	GetInsetArea(screenInsets?: Enum.ScreenInsets): Rect;
 	/** Returns whether the avatar inspection menu is enabled. */
 	GetInspectMenuEnabled(): boolean;
@@ -6211,7 +6387,7 @@ interface GuiService extends Instance {
 	/**
 	 * Allows the avatar inspection menu to appear showing the user that has the given `UserId`.
 	 */
-	InspectPlayerFromUserId(userId?: number): undefined;
+	InspectPlayerFromUserId(userId?: User): undefined;
 	/**
 	 * Returns `true` if the client is using the ten foot interface, a special version of Roblox's UI exclusive to consoles.
 	 */
@@ -6240,54 +6416,6 @@ interface GuiService extends Instance {
 
 /** An internal service, whose functionality is not accessible to developers. */
 interface GuidRegistryService extends Instance {
-}
-
-interface HandRigDescription extends Instance {
-	Index1: Instance;
-	Index1TposeAdjustment: CFrame;
-	Index2: Instance;
-	Index2TposeAdjustment: CFrame;
-	Index3: Instance;
-	Index3TposeAdjustment: CFrame;
-	IndexRange: Vector3;
-	IndexSize: number;
-	Middle1: Instance;
-	Middle1TposeAdjustment: CFrame;
-	Middle2: Instance;
-	Middle2TposeAdjustment: CFrame;
-	Middle3: Instance;
-	Middle3TposeAdjustment: CFrame;
-	MiddleRange: Vector3;
-	MiddleSize: number;
-	Pinky1: Instance;
-	Pinky1TposeAdjustment: CFrame;
-	Pinky2: Instance;
-	Pinky2TposeAdjustment: CFrame;
-	Pinky3: Instance;
-	Pinky3TposeAdjustment: CFrame;
-	PinkyRange: Vector3;
-	PinkySize: number;
-	Ring1: Instance;
-	Ring1TposeAdjustment: CFrame;
-	Ring2: Instance;
-	Ring2TposeAdjustment: CFrame;
-	Ring3: Instance;
-	Ring3TposeAdjustment: CFrame;
-	RingRange: Vector3;
-	RingSize: number;
-	Side: Enum.HandRigDescriptionSide;
-	Thumb1: Instance;
-	Thumb1TposeAdjustment: CFrame;
-	Thumb2: Instance;
-	Thumb2TposeAdjustment: CFrame;
-	Thumb3: Instance;
-	Thumb3TposeAdjustment: CFrame;
-	ThumbRange: Vector3;
-	ThumbSize: number;
-	GetFingerControl(fingerIndex: number): Vector3;
-	GetFingerTip(fingerIndex: number): Vector3;
-	SetFingerControl(fingerIndex: number, control: Vector3): undefined;
-	SetFingerTip(fingerIndex: number, point: Vector3): undefined;
 }
 
 interface HapticEffect extends Instance {
@@ -6340,6 +6468,9 @@ interface HeapProfilerService extends Instance {
 	ClientRequestDataAsync(player?: Player): string;
 	ServerRequestDataAsync(): string;
 	readonly OnNewData: RBXScriptSignal<(player: Player, jsonString: buffer, id: number, compressedLength: number, uncompressedLength: number) => void>;
+}
+
+interface HeatmapQueryService extends Instance {
 }
 
 interface HeatmapService extends Instance {
@@ -6493,7 +6624,7 @@ interface Humanoid extends Instance {
 	 * Describes whether this `Humanoid` is utilizing the legacy R6 character rig, or the new R15 character rig.
 	 */
 	RigType: Enum.HumanoidRigType;
-	/** A reference to the humanoid's **HumanoidRootPart** object. */
+	/** A reference to the humanoid's `HumanoidRootPart` object. */
 	RootPart: BasePart;
 	/** A reference to the seat that a `Humanoid` is currently sitting in, if any. */
 	SeatPart: BasePart;
@@ -6557,6 +6688,10 @@ interface Humanoid extends Instance {
 	 * @deprecated Deprecated.
 	 */
 	GetPlayingAnimationTracks(): unknown;
+	/**
+	 * Returns the humanoid's actual physical velocity relative to the surface it is standing on as a `Vector3` in world-space orientation.
+	 */
+	GetRelativeVelocityAtFloor(): Vector3;
 	/** Returns the humanoid's current `Enum.HumanoidStateType`. */
 	GetState(): Enum.HumanoidStateType;
 	/** Returns whether a `Enum.HumanoidStateType` is enabled for the `Humanoid`. */
@@ -6618,7 +6753,9 @@ interface Humanoid extends Instance {
 	 * @deprecated Deprecated.
 	 */
 	ApplyDescription(humanoidDescription?: HumanoidDescription, assetTypeVerification?: Enum.AssetTypeVerification): undefined;
-	/** Makes the character's look match that of the passed in `HumanoidDescription`. */
+	/**
+	 * Makes the character's look match that of the passed in `HumanoidDescription`. If `HumanoidDescription.UseAvatarSettings` is true, the Avatar Settings for the experience will also be applied to the character.
+	 */
 	ApplyDescriptionAsync(humanoidDescription?: HumanoidDescription, assetTypeVerification?: Enum.AssetTypeVerification): undefined;
 	/**
 	 * Makes the character's look match that of the passed in `HumanoidDescription`, even after external changes.
@@ -6827,6 +6964,9 @@ interface HumanoidDescription extends Instance {
 	 * A comma-separated list of asset IDs that will be added as `Accessories` to a `Humanoid` rig when `applied`, usually those attached to its shoulders (such as shoulder-mounted critters).
 	 */
 	ShouldersAccessory: string;
+	/**
+	 * When `true`, disables facial animations on a Dynamic Head, displaying a static mood pose instead. Defaults to `false`.
+	 */
 	StaticFacialAnimation: boolean;
 	/**
 	 * When this description is `applied` to a `Humanoid`, this determines the `Animation.AnimationId` to play when its `state` is `Swimming`.
@@ -6916,11 +7056,11 @@ interface HumanoidRigDescription extends Instance {
 	LeftShoulderRangeMin: Vector3;
 	LeftShoulderSize: number;
 	LeftShoulderTposeAdjustment: CFrame;
-	LeftToes: Instance;
-	LeftToesRangeMax: Vector3;
-	LeftToesRangeMin: Vector3;
-	LeftToesSize: number;
-	LeftToesTposeAdjustment: CFrame;
+	LeftToeBase: Instance;
+	LeftToeBaseRangeMax: Vector3;
+	LeftToeBaseRangeMin: Vector3;
+	LeftToeBaseSize: number;
+	LeftToeBaseTposeAdjustment: CFrame;
 	LeftWrist: Instance;
 	LeftWristRangeMax: Vector3;
 	LeftWristRangeMin: Vector3;
@@ -6931,11 +7071,6 @@ interface HumanoidRigDescription extends Instance {
 	NeckRangeMin: Vector3;
 	NeckSize: number;
 	NeckTposeAdjustment: CFrame;
-	Pelvis: Instance;
-	PelvisRangeMax: Vector3;
-	PelvisRangeMin: Vector3;
-	PelvisSize: number;
-	PelvisTposeAdjustment: CFrame;
 	RightAnkle: Instance;
 	RightAnkleRangeMax: Vector3;
 	RightAnkleRangeMin: Vector3;
@@ -6966,11 +7101,11 @@ interface HumanoidRigDescription extends Instance {
 	RightShoulderRangeMin: Vector3;
 	RightShoulderSize: number;
 	RightShoulderTposeAdjustment: CFrame;
-	RightToes: Instance;
-	RightToesRangeMax: Vector3;
-	RightToesRangeMin: Vector3;
-	RightToesSize: number;
-	RightToesTposeAdjustment: CFrame;
+	RightToeBase: Instance;
+	RightToeBaseRangeMax: Vector3;
+	RightToeBaseRangeMin: Vector3;
+	RightToeBaseSize: number;
+	RightToeBaseTposeAdjustment: CFrame;
 	RightWrist: Instance;
 	RightWristRangeMax: Vector3;
 	RightWristRangeMin: Vector3;
@@ -6981,6 +7116,11 @@ interface HumanoidRigDescription extends Instance {
 	RootRangeMin: Vector3;
 	RootSize: number;
 	RootTposeAdjustment: CFrame;
+	Spine: Instance;
+	SpineRangeMax: Vector3;
+	SpineRangeMin: Vector3;
+	SpineSize: number;
+	SpineTposeAdjustment: CFrame;
 	Waist: Instance;
 	WaistRangeMax: Vector3;
 	WaistRangeMin: Vector3;
@@ -7051,6 +7191,9 @@ interface LegacyStudioBridge extends ILegacyStudioBridge {
 interface IXPService extends Instance {
 }
 
+interface ImageScreenCaptureService extends Instance {
+}
+
 interface ImportSession extends Instance {
 	readonly UploadComplete: RBXScriptSignal<(results: unknown) => void>;
 	readonly UploadProgress: RBXScriptSignal<(progressRatio: number) => void>;
@@ -7100,6 +7243,9 @@ interface InputBinding extends Instance {
 	 * Specifies an alternate `Enum.KeyCode` for dispatching directionally "backward" inputs to the parent `InputAction`.
 	 */
 	Backward: Enum.KeyCode;
+	/**
+	 * Specifies how the binding normalizes composite directional input to a maximum magnitude of `1`.
+	 */
 	ClampMagnitudeToOne: boolean;
 	/**
 	 * Specifies an alternate `Enum.KeyCode` for dispatching directionally "down" inputs to the parent `InputAction`.
@@ -7130,7 +7276,9 @@ interface InputBinding extends Instance {
 	 * Specifies an alternate `Enum.KeyCode` for dispatching directionally "right" inputs to the parent `InputAction`.
 	 */
 	Right: Enum.KeyCode;
-	/** Amount by which to linearly scale the values of a directional `InputAction`. */
+	/**
+	 * Scalar multiplier applied uniformly to all components of a directional `InputAction`'s output.
+	 */
 	Scale: number;
 	/**
 	 * Specifies a secondary `Enum.KeyCode` that must be pressed for the binding to activate.
@@ -7138,14 +7286,15 @@ interface InputBinding extends Instance {
 	SecondaryModifier: Enum.KeyCode;
 	/** Connects a `GuiButton` to a boolean action. */
 	UIButton: GuiButton;
+	/** Specifies a `GuiButton` that must be active for the binding to activate. */
+	UIModifier: GuiButton;
 	/**
 	 * Specifies an alternate `Enum.KeyCode` for dispatching directionally "up" inputs to the parent `InputAction`.
 	 */
 	Up: Enum.KeyCode;
-	/**
-	 * Amount by which to linearly scale the values of a two-directional `InputAction`.
-	 */
+	/** Per-component scale applied to the output of a `Direction2D` action. */
 	Vector2Scale: Vector2;
+	/** Per-component scale applied to the output of a `Direction3D` action. */
 	Vector3Scale: Vector3;
 }
 
@@ -7230,12 +7379,12 @@ interface InsertService extends Instance {
 	 */
 	GetLatestAssetVersionAsync(assetId?: number): number;
 	/** @deprecated Deprecated. */
-	GetUserCategories(userId?: number): unknown;
+	GetUserCategories(userId?: User): unknown;
 	/**
 	 * Returns an array of dictionaries, containing information about sets owned by the user.
 	 * @deprecated Deprecated.
 	 */
-	GetUserSets(userId?: number): unknown;
+	GetUserSets(userId?: User): unknown;
 	/** Returns a `Model` containing the asset. */
 	LoadAsset(assetId?: number): Instance;
 	/**
@@ -7259,6 +7408,12 @@ interface InstanceFileSyncService extends Instance {
 	GetSyncedInstance(filePath?: string): Instance;
 	/** Fires when the synchronization status of an instance changes. */
 	readonly StatusChanged: RBXScriptSignal<(instance: Instance, status: Enum.InstanceFileSyncStatus) => void>;
+}
+
+interface InternalMessagingService extends Instance {
+}
+
+interface InternalMessagingServiceVerifier extends Instance {
 }
 
 /** The base class for joints. */
@@ -7458,11 +7613,11 @@ interface KeyframeSequenceProvider extends Instance {
 	 * This function returns an `InventoryPages` object which can be used to iterate over animations owned by a specific user.
 	 * @deprecated Deprecated.
 	 */
-	GetAnimations(userId?: number): Instance;
+	GetAnimations(userId?: User): Instance;
 	/**
 	 * This function returns an `InventoryPages` object which can be used to iterate over animations owned by a specific user.
 	 */
-	GetAnimationsAsync(userId?: number): Instance;
+	GetAnimationsAsync(userId?: User): Instance;
 	/** Returns a KeyframeSequence based on the specified assetId asynchronously. */
 	GetKeyframeSequenceAsync(assetId?: ContentId): Instance;
 }
@@ -7732,14 +7887,32 @@ interface LogReporterService extends Instance {
 
 /** A service that allows you to read outputted text. */
 interface LogService extends Instance {
-	/** Clears the Roblox Studio output window. */
+	/** Clears Roblox Studio's **Output** window. */
 	ClearOutput(): undefined;
 	/**
-	 * Returns a table of tables, each with the message string, message type, and timestamp of a message that the client displays in the output window.
+	 * Logs a message at the `Enum.MessageType.MessageError` level and throws a structured error with optional context.
+	 */
+	Error(message?: string, context?: unknown): undefined;
+	/**
+	 * Returns a table of tables, each with the message string, message type, and timestamp of a message that the client displays in the **Output** window.
 	 */
 	GetLogHistory(): unknown;
+	/**
+	 * Logs a message at the `Enum.MessageType.MessageInfo` level with optional structured context.
+	 */
+	Info(message?: string, context?: unknown): undefined;
+	/** Logs a message at the specified level with optional structured context. */
+	Log(messageType?: Enum.MessageType, message?: string, context?: unknown): undefined;
+	/**
+	 * Logs a message at the `Enum.MessageType.MessageOutput` level with optional structured context.
+	 */
+	Output(message?: string, context?: unknown): undefined;
+	/**
+	 * Logs a message at the `Enum.MessageType.MessageWarning` level with optional structured context.
+	 */
+	Warn(message?: string, context?: unknown): undefined;
 	/** Fires when the client outputs text. */
-	readonly MessageOut: RBXScriptSignal<(message: string, messageType: Enum.MessageType) => void>;
+	readonly MessageOut: RBXScriptSignal<(message: string, messageType: Enum.MessageType, context: unknown) => void>;
 }
 
 /** An internal service whose functionality is not available to developers. */
@@ -7809,14 +7982,25 @@ interface MLModelDeliveryService extends Instance {
 }
 
 interface MLService extends Instance {
+	IsPostProcessReady(): boolean;
+	SetPostProcessEnabled(enabled: boolean): undefined;
 	CreateSessionAsync(assetId?: string): MLSession;
+	LoadPostProcessModelAsync(assetId: number): undefined;
 }
 
+/** Describes the appearance of a makeup item for the `HumanoidDescription`. */
 interface MakeupDescription extends Instance {
+	/** The asset ID that should be applied when applying this `MakeupDescription`. */
 	AssetId: number;
+	/**
+	 * A reference to the `Instance` that should be used when applying this `MakeupDescription`.
+	 */
 	Instance: Instance;
+	/** The `Enum.MakeupType` of the makeup item referred to by this description. */
 	MakeupType: Enum.MakeupType;
+	/** The layering sort order for the makeup item. */
 	Order: number;
+	/** Returns the applied makeup `Instance`. */
 	GetAppliedInstance(): Instance;
 }
 
@@ -7836,6 +8020,9 @@ interface MarkerCurve extends Instance {
 
 /** The service responsible for in-experience transactions. */
 interface MarketplaceService extends Instance {
+	/** Registers a callback to process receipts of a specific type. */
+	BindReceiptHandler(transactionType?: Enum.ReceiptType, handler?: Function, filter?: unknown): RBXScriptConnection;
+	OpenShop(player: Player): undefined;
 	/**
 	 * Prompts a user to purchase multiple avatar items with the given `assetId` or `bundleId`.
 	 */
@@ -7846,7 +8033,10 @@ interface MarketplaceService extends Instance {
 	PromptCancelSubscription(user?: Player, subscriptionId?: string): undefined;
 	/** Prompts a user to purchase a pass with the given `gamePassId`. */
 	PromptGamePassPurchase(player?: Instance, gamePassId?: number): undefined;
-	/** Prompts a user to purchase Roblox Premium. */
+	/**
+	 * Prompts a user to purchase Roblox Premium.
+	 * @deprecated Deprecated.
+	 */
 	PromptPremiumPurchase(player?: Instance): undefined;
 	/** Prompts a user to purchase a developer product with the given `productId`. */
 	PromptProductPurchase(player?: Instance, productId?: number, equipIfPurchased?: boolean, currencyType?: Enum.CurrencyType): undefined;
@@ -7854,6 +8044,8 @@ interface MarketplaceService extends Instance {
 	 * Prompts a user to purchase an item with the given `assetId`. Does not work for USD Creator Store purchases.
 	 */
 	PromptPurchase(player?: Instance, assetId?: number, equipIfPurchased?: boolean, currencyType?: Enum.CurrencyType): undefined;
+	/** Prompts a user to purchase a Roblox Plus subscription. */
+	PromptRobloxSubscriptionPurchase(user?: Player): undefined;
 	/** Prompts a user to purchase a subscription for the given `subscriptionId`. */
 	PromptSubscriptionPurchase(user?: Player, subscriptionId?: string): undefined;
 	/**
@@ -7867,6 +8059,10 @@ interface MarketplaceService extends Instance {
 	GetProductInfo(assetId?: number, infoType?: Enum.InfoType): unknown;
 	/** Returns the product information of an asset using its asset ID. */
 	GetProductInfoAsync(assetId?: number, infoType?: Enum.InfoType): unknown;
+	/**
+	 * Returns the subscription details for the given user for the Roblox Subscription ecosystem.
+	 */
+	GetRobloxSubscriptionDetailsAsync(user?: Player): unknown;
 	/**
 	 * Returns the product information of a subscription for the given `subscriptionId`.
 	 */
@@ -7884,7 +8080,7 @@ interface MarketplaceService extends Instance {
 	 */
 	GetUserSubscriptionStatusAsync(user?: Player, subscriptionId?: string): unknown;
 	/**
-	 * Returns the regionalized price level of a user, representing the recommended price for an item in their regional market.
+	 * Returns the regionalized price levels of users, representing the recommended price for an item in each user's regional market.
 	 */
 	GetUsersPriceLevelsAsync(userIds?: unknown): unknown;
 	/**
@@ -7901,6 +8097,8 @@ interface MarketplaceService extends Instance {
 	PlayerOwnsBundle(player?: Player, bundleId?: number): boolean;
 	/** Returns whether the given player owns the given bundle. */
 	PlayerOwnsBundleAsync(player?: Player, bundleId?: number): boolean;
+	/** Initiates a Robux transfer from the sender to another user. */
+	PromptRobuxTransferAsync(sender?: Player, receiverUserId?: number, amount?: number): string;
 	/**
 	 * Takes a list of product IDs and returns a personalized ordered list of those products.
 	 */
@@ -7912,7 +8110,7 @@ interface MarketplaceService extends Instance {
 	/**
 	 * Returns true if the player with the given `UserId` owns the pass with the given `gamePassId`.
 	 */
-	UserOwnsGamePassAsync(userId?: number, gamePassId?: number): boolean;
+	UserOwnsGamePassAsync(userId?: User, gamePassId?: number): boolean;
 	/** Fires when a purchase prompt for bulk avatar items is closed. */
 	readonly PromptBulkPurchaseFinished: RBXScriptSignal<(player: Instance, status: Enum.MarketplaceBulkPurchasePromptStatus, results: unknown) => void>;
 	readonly PromptBundlePurchaseFinished: RBXScriptSignal<(player: Instance, bundleId: number, wasPurchased: boolean) => void>;
@@ -7928,6 +8126,8 @@ interface MarketplaceService extends Instance {
 	 * Fires when a purchase prompt for an affiliate gear sale or other asset is closed. Does **not** fire for developer product or pass prompts.
 	 */
 	readonly PromptPurchaseFinished: RBXScriptSignal<(player: Instance, assetId: number, isPurchased: boolean) => void>;
+	/** Fires when a purchase prompt for Roblox Plus is closed. */
+	readonly PromptRobloxSubscriptionPurchaseFinished: RBXScriptSignal<(user: Player, didTryPurchasing: boolean) => void>;
 	/** Fires when a purchase prompt for a subscription is closed. */
 	readonly PromptSubscriptionPurchaseFinished: RBXScriptSignal<(user: Player, subscriptionId: string, didTryPurchasing: boolean) => void>;
 	/** A callback to process receipts of developer product purchases. */
@@ -8105,6 +8305,10 @@ interface MetaBreakpointManager extends Instance {
 }
 
 interface MicroProfilerService extends Instance {
+	GetDataInRange(slotId: number, offset: number, size: number, destBuffer: buffer, destBufferOffset: number): number;
+	GetDataSize(slotId: number): number;
+	ProcessCommand(cmdBuf: buffer, cmdOffset: number, cmdSize: number, respBuf: buffer, respOffset: number, respSize: number): number;
+	readonly DataChanged: RBXScriptSignal<(slotId: number, flags: number) => void>;
 }
 
 interface ModerationService extends Instance {
@@ -8247,8 +8451,24 @@ interface ServerReplicator extends NetworkReplicator {
 interface NetworkSettings extends Instance {
 	readonly HttpProxyEnabled: boolean;
 	readonly HttpProxyURL: string;
+	/** Adds jitter to playtest connections in the server-to-client direction. */
+	InboundNetworkJitterMs: number;
+	/**
+	 * Sets the probability that packets on playtest connections from server to client are dropped.
+	 */
+	InboundNetworkLossPercent: number;
+	/** Adds latency to playtest connections in the server-to-client direction. */
+	InboundNetworkMinDelayMs: number;
 	/** Simulates additional network latency in the network receiving path. */
 	IncomingReplicationLag: number;
+	/** Adds jitter to playtest connections in the client-to-server direction. */
+	OutboundNetworkJitterMs: number;
+	/**
+	 * Sets the probability that packets on playtest connections from client to server are dropped.
+	 */
+	OutboundNetworkLossPercent: number;
+	/** Adds latency to playtest connections in the client-to-server direction. */
+	OutboundNetworkMinDelayMs: number;
 	/** Prints diagnostic information about data sent on connect. */
 	PrintJoinSizeBreakdown: boolean;
 	/**
@@ -8420,6 +8640,9 @@ interface BasePart extends PVInstance {
 	Transparency: number;
 	/** @deprecated Deprecated. */
 	brickColor: BrickColor;
+	/**
+	 * Returns the torque needed to achieve a given angular acceleration on this part's assembly, optionally accounting for gyroscopic effects.
+	 */
 	AngularAccelerationToTorque(angAcceleration?: Vector3, angVelocity?: Vector3): Vector3;
 	/** Apply an angular impulse to the assembly. */
 	ApplyAngularImpulse(impulse?: Vector3): undefined;
@@ -8436,6 +8659,7 @@ interface BasePart extends PVInstance {
 	CanCollideWith(part?: BasePart): boolean;
 	/** Checks whether you can set a part's network ownership. */
 	CanSetNetworkOwnership(): unknown;
+	/** Returns the closest point on the part's surface to the given point. */
 	GetClosestPointOnSurface(position?: Vector3): Vector3;
 	/** Returns a table of parts connected to the object by any kind of rigid joint. */
 	GetConnectedParts(recursive?: boolean): Instance[];
@@ -8487,6 +8711,9 @@ interface BasePart extends PVInstance {
 	 * Lets the game engine dynamically decide who will handle the part's physics (one of the clients or the server).
 	 */
 	SetNetworkOwnershipAuto(): undefined;
+	/**
+	 * Returns the angular acceleration that would result from applying a given torque to this part's assembly, optionally accounting for gyroscopic effects.
+	 */
 	TorqueToAngularAcceleration(torque?: Vector3, angVelocity?: Vector3): Vector3;
 	/** @deprecated Deprecated. */
 	breakJoints(): undefined;
@@ -8497,15 +8724,15 @@ interface BasePart extends PVInstance {
 	/** @deprecated Deprecated. */
 	resize(normalId?: Enum.NormalId, deltaAmount?: number): boolean;
 	/**
-	 * Creates a new `IntersectOperation` from the overlapping geometry of the part and the other parts in the given array.
+	 * Note: It is highly recommended to use the newer `GeometryService:IntersectAsync` instead of this function. As well as having better performance and more features, the new function differs as follows:  - The output is an array of instances rather than a single instance. - The input parts do not need to be parented to the scene, allowing for   background operations. - When the `SplitApart` option is set to `true` (default), each distinct   body will be returned in its own `PartOperation`. - All the returned parts are in the coordinate space of the main part, so   their `PVInstance.Origin` positions are the same as the main   part's. This keeps the vertices of the mesh in the same position   relative to the object as before the operation, but it does also mean   the `(0, 0, 0)` of a returned part is not necessarily at the center of   its body.    Creates a new `IntersectOperation` from the overlapping geometry   of the part and the other parts in the given array.
 	 */
 	IntersectAsync(parts?: Instance[], collisionfidelity?: Enum.CollisionFidelity, renderFidelity?: Enum.RenderFidelity): Instance;
 	/**
-	 * Creates a new `UnionOperation` from the part, minus the geometry occupied by the parts in the given array.
+	 * Note: It is highly recommended to use the newer `GeometryService:UnionAsync` instead of this function. As well as having better performance and more features, the new function differs as follows:  - The output is an array of instances rather than a single instance. - The input parts do not need to be parented to the scene, allowing for   background operations. - When the `SplitApart` option is set to `true` (default), each distinct   body will be returned in its own `PartOperation`. - All the returned parts are in the coordinate space of the main part, so   their `PVInstance.Origin` positions are the same as the main   part's. This keeps the vertices of the mesh in the same position   relative to the object as before the operation, but it does also mean   the `(0, 0, 0)` of a returned part is not necessarily at the center of   its body.    Creates a new `UnionOperation` from the part, minus the geometry   occupied by the parts in the given array.
 	 */
 	SubtractAsync(parts?: Instance[], collisionfidelity?: Enum.CollisionFidelity, renderFidelity?: Enum.RenderFidelity): Instance;
 	/**
-	 * Creates a new `UnionOperation` from the part, plus the geometry occupied by the parts in the given array.
+	 * Note: It is highly recommended to use the newer `GeometryService:UnionAsync` instead of this function. As well as having better performance and more features, the new function differs as follows:  - The output is an array of instances rather than a single instance. - The input parts do not need to be parented to the scene, allowing for   background operations. - When the `SplitApart` option is set to `true` (default), each distinct   body will be returned in its own `PartOperation`. - All the returned parts are in the coordinate space of the main part, so   their `PVInstance.Origin` positions are the same as the main   part's. This keeps the vertices of the mesh in the same position   relative to the object as before the operation, but it does also mean   the `(0, 0, 0)` of a returned part is not necessarily at the center of   its body.          Creates a new `UnionOperation` from the part, plus the geometry    occupied by the parts in the given array.
 	 */
 	UnionAsync(parts?: Instance[], collisionfidelity?: Enum.CollisionFidelity, renderFidelity?: Enum.RenderFidelity): Instance;
 	/** @deprecated Deprecated. */
@@ -8637,54 +8864,52 @@ interface SpawnLocation extends Part {
 interface WedgePart extends FormFactorPart {
 }
 
-/** Terrain lets you to create dynamically morphable environments. */
+/** `Terrain` lets you to create dynamically morphable environments. */
 interface Terrain extends BasePart {
 	/**
-	 * Returns true if the current game is using the smooth terrain system.
+	 * Returns `true` if the game is using the smooth terrain system.
 	 * @deprecated Deprecated.
 	 */
 	IsSmooth: boolean;
 	/** Displays the boundaries of the largest possible editable region. */
 	MaxExtents: Region3int16;
-	/** The tint of the Terrain water. */
+	/** The tint of `Terrain` water. */
 	WaterColor: Color3;
-	/** Controls how opaque the Terrain's water reflections are. */
+	/** Controls how opaque `Terrain` water reflections are. */
 	WaterReflectance: number;
-	/** The transparency of the Terrain water. */
+	/** The transparency of `Terrain` water. */
 	WaterTransparency: number;
-	/** Sets the maximum height of the Terrain water waves in studs. */
+	/** Sets the maximum height of `Terrain` water waves in studs. */
 	WaterWaveSize: number;
-	/** Sets how many times the Terrain water waves will move up and down per minute. */
+	/** Sets how many times `Terrain` water waves will move up and down per minute. */
 	WaterWaveSpeed: number;
 	/**
-	 * _(OBSOLETE)_ No longer does anything.
+	 * Obsolete function which no longer does anything.
 	 * @deprecated Deprecated.
 	 */
 	AutowedgeCell(x?: number, y?: number, z?: number): boolean;
 	/**
-	 * _(OBSOLETE)_ No longer does anything.
+	 * Obsolete function which no longer does anything.
 	 * @deprecated Deprecated.
 	 */
 	AutowedgeCells(region?: Region3int16): undefined;
-	/** Returns the world position of the center of the terrain cell (x, y, z). */
+	/** Returns the world position of the center of the terrain cell. */
 	CellCenterToWorld(x?: number, y?: number, z?: number): Vector3;
-	/**
-	 * Returns the position of the lower-left-forward corner of the grid cell (x, y, z).
-	 */
+	/** Returns the position of the lower-left-forward corner of the grid cell. */
 	CellCornerToWorld(x?: number, y?: number, z?: number): Vector3;
-	/** Clears the terrain. */
+	/** Clears all terrain. */
 	Clear(): undefined;
-	ClearVoxelsAsync_beta(region?: Region3, channelIds?: unknown): undefined;
+	ClearVoxelsAsync_beta(region: Region3, channelIds: unknown): undefined;
 	/**
 	 * Transforms the legacy terrain engine into the new terrain engine.
 	 * @deprecated Deprecated.
 	 */
 	ConvertToSmooth(): undefined;
 	/**
-	 * Stores a chunk of terrain into a `TerrainRegion` object so it can be loaded back later. Note: `TerrainRegion` data does not replicate between server and client.
+	 * Stores a chunk of terrain into a `TerrainRegion` object so it can be loaded back later.
 	 */
 	CopyRegion(region?: Region3int16): TerrainRegion;
-	/** Returns the number of non-empty cells in the Terrain. */
+	/** Returns the number of non-empty cells in the terrain. */
 	CountCells(): number;
 	/** Fills a ball of smooth terrain in a given space. */
 	FillBall(center?: Vector3, radius?: number, material?: Enum.Material): undefined;
@@ -8696,27 +8921,24 @@ interface Terrain extends BasePart {
 	FillCylinder(cframe?: CFrame, height?: number, radius?: number, material?: Enum.Material): undefined;
 	/** Fills a `Region3` space with smooth terrain. */
 	FillRegion(region?: Region3, resolution?: number, material?: Enum.Material): undefined;
-	/**
-	 * Fills a wedge-shaped volume of Terrain with the given `Enum.Material` and the area's CFrame and Size.
-	 */
+	/** Fills a wedge-shaped volume of terrain with the given `Enum.Material`. */
 	FillWedge(cframe?: CFrame, size?: Vector3, material?: Enum.Material): undefined;
 	/**
-	 * Returns the closest CellMaterial from the legacy terrain engine that matches the smooth terrain voxel specified.
+	 * Returns the closest cell material from the legacy terrain engine that matches the smooth terrain voxel specified.
 	 * @deprecated Deprecated.
 	 */
 	GetCell(x?: number, y?: number, z?: number): unknown;
 	/** Returns current terrain material color for specified terrain material. */
 	GetMaterialColor(material?: Enum.Material): Color3;
+	GetMaterialSlot(slotIndex: number): unknown;
 	/**
-	 * Returns if the cell is a water cell.
+	 * Returns `true` if the cell is a water cell.
 	 * @deprecated Deprecated.
 	 */
 	GetWaterCell(x?: number, y?: number, z?: number): unknown;
-	IterateVoxelsAsync_beta(region?: Region3, resolution?: number, channelIds?: unknown): TerrainIterateOperation;
-	ModifyVoxelsAsync_beta(region?: Region3, resolution?: number, channelIds?: unknown): TerrainModifyOperation;
-	/**
-	 * Applies a chunk of terrain to the Terrain object. Note: `TerrainRegion` data does not replicate between server and client.
-	 */
+	IterateVoxelsAsync_beta(region: Region3, resolution: number, channelIds: unknown): TerrainIterateOperation;
+	ModifyVoxelsAsync_beta(region: Region3, resolution: number, channelIds: unknown): TerrainModifyOperation;
+	/** Applies a chunk of terrain to the `Terrain` object. */
 	PasteRegion(region?: TerrainRegion, corner?: Vector3int16, pasteEmptyCells?: boolean): undefined;
 	/**
 	 * Returns a region of terrain voxel data in table format based on the channel names.
@@ -8724,9 +8946,10 @@ interface Terrain extends BasePart {
 	ReadVoxelChannels(region?: Region3, resolution?: number, channelIds?: unknown): unknown;
 	/** Returns a certain region of smooth terrain in table format. */
 	ReadVoxels(region?: Region3, resolution?: number): unknown;
-	ReadVoxelsAsync_beta(region?: Region3, resolution?: number, channelIds?: unknown): TerrainReadOperation;
+	ReadVoxelsAsync_beta(region: Region3, resolution: number, channelIds: unknown): TerrainReadOperation;
 	/** Replaces the terrain of a material within a region with another material. */
 	ReplaceMaterial(region?: Region3, resolution?: number, sourceMaterial?: Enum.Material, targetMaterial?: Enum.Material): undefined;
+	ResetMaterialSlot(slotIndex: number): undefined;
 	/**
 	 * Sets the occupancy and material of a specific terrain voxel.
 	 * @deprecated Deprecated.
@@ -8739,15 +8962,16 @@ interface Terrain extends BasePart {
 	SetCells(region?: Region3int16, material?: Enum.CellMaterial, block?: Enum.CellBlock, orientation?: Enum.CellOrientation): undefined;
 	/** Sets current terrain material color for specified terrain material. */
 	SetMaterialColor(material?: Enum.Material, value?: Color3): undefined;
+	SetMaterialSlot(slotIndex: number, baseMaterial: Enum.Material, materialVariant: string, color: Color3): undefined;
 	/**
-	 * Sets the specified terrain voxel's material to ''Water'' and sets its occupancy to 1.
+	 * Sets the specified terrain voxel's material to water and sets its occupancy to `1`.
 	 * @deprecated Deprecated.
 	 */
 	SetWaterCell(x?: number, y?: number, z?: number, force?: Enum.WaterForce, direction?: Enum.WaterDirection): undefined;
-	/** Returns the grid cell location that contains the point **position**. */
+	/** Returns the grid cell location that contains the position point. */
 	WorldToCell(position?: Vector3): Vector3;
 	/**
-	 * Returns the grid cell location that contains the point position, preferring empty grid cells when position is on a grid edge.
+	 * Returns the grid cell location that contains the position point, preferring empty grid cells when position is on a grid edge.
 	 */
 	WorldToCellPreferEmpty(position?: Vector3): Vector3;
 	/**
@@ -8758,7 +8982,7 @@ interface Terrain extends BasePart {
 	WriteVoxelChannels(region?: Region3, resolution?: number, channels?: unknown): undefined;
 	/** Sets a certain region of smooth terrain using table format. */
 	WriteVoxels(region?: Region3, resolution?: number, materials?: unknown, occupancy?: unknown): undefined;
-	WriteVoxelsAsync_beta(region?: Region3, resolution?: number, channelIds?: unknown): TerrainWriteOperation;
+	WriteVoxelsAsync_beta(region: Region3, resolution: number, channelIds: unknown): TerrainWriteOperation;
 }
 
 /**
@@ -8807,7 +9031,7 @@ interface PartOperation extends TriangleMeshPart {
 	/** An angle in degrees which affects the smooth shading of a solid modeled part. */
 	SmoothingAngle: number;
 	/** The number of polygons in this solid model. */
-	TriangleCount: number;
+	readonly TriangleCount: number;
 	/**
 	 * Sets whether the `PartOperation` can be recolored using inherited color properties.
 	 */
@@ -8841,42 +9065,36 @@ interface TrussPart extends BasePart {
 /** A seat object that can be used to control a vehicle. */
 interface VehicleSeat extends BasePart {
 	/**
-	 * Displays how many hinges are detected by the VehicleSeat. Useful for debugging vehicle designs.
+	 * Displays how many hinges are detected by the `VehicleSeat`. Useful for debugging vehicle designs.
 	 */
 	AreHingesDetected: number;
 	/** Toggles whether the `VehicleSeat` is active or not. */
 	Disabled: boolean;
 	/**
-	 * If true, a fancy speed bar will be displayed speed on screen that tells you what speed the Vehicle is moving at.
+	 * If `true`, a UI speed bar will be displayed on screen that tells you what speed the vehicle is moving at.
 	 */
 	HeadsUpDisplay: boolean;
 	/** The maximum speed that can be attained. */
 	MaxSpeed: number;
-	/** The humanoid that is sitting in the seat. */
+	/** The `Humanoid` that is sitting in the seat. */
 	Occupant: Humanoid;
-	/**
-	 * The direction of movement, tied to the keys A and D. Must be one of 1 (right), 0 (straight), or -1 (left). Will refresh back to 0 unless constantly set.
-	 */
+	/** The direction of movement, tied to left and right movement inputs. */
 	Steer: number;
-	/** Functions identically to `VehicleSeat.Steer`, but the value is not an integer. */
+	/** The left-to-right movement float, tied to left and right movement inputs. */
 	SteerFloat: number;
-	/**
-	 * The direction of movement, tied to the keys W and S. Must be an integer 1 (forward) 0 (null) or -1 (reverse). Will refresh back to 0 unless constantly set.
-	 */
+	/** The direction of throttle, tied to forward and backward movement inputs. */
 	Throttle: number;
 	/**
-	 * Functions identically to `VehicleSeat.Throttle`, but the value is not an integer.
+	 * The forward-to-reverse throttle float, tied to forward and backward movement inputs.
 	 */
 	ThrottleFloat: number;
-	/**
-	 * How fast the vehicles will be able to attain `VehicleSeat.MaxSpeed`. The greater the number, the faster it will reach the maximum speed.
-	 */
+	/** How fast the vehicle will be able to attain `MaxSpeed`. */
 	Torque: number;
 	/**
 	 * The speed at which the vehicle will turn. Higher numbers can cause problems and are not necessarily better.
 	 */
 	TurnSpeed: number;
-	/** Forces the character with the specified `Humanoid` to sit in the VehicleSeat. */
+	/** Forces the character with the specified `Humanoid` to sit in the `VehicleSeat`. */
 	Sit(humanoid?: Instance): undefined;
 }
 
@@ -9173,6 +9391,23 @@ interface Flag extends Tool {
 }
 
 /**
+ * Procedural models support edit-time procedural generation. Instead of manually constructing model content, a procedural model generates its contents automatically in response to parameter changes.
+ */
+interface ProceduralModel extends Model {
+	/** Stores errors that the generator module might encounter during generation. */
+	GenerationError: string;
+	/**
+	 * A reference to a `ModuleScript` that contains code which defines how the `ProceduralModel` generates its contents in response to parameter changes.
+	 */
+	Generator: ModuleScript;
+	/** Defines the bounding volume used for generation. */
+	Size: Vector3;
+	ForceGeneration(): boolean;
+	/** Waits for generation to complete after making parameter changes. */
+	WaitForGenerationAsync(): boolean;
+}
+
+/**
  * An unfinished object which offers no functionality to developers.
  * @deprecated This class is deprecated.
  */
@@ -9259,7 +9494,7 @@ interface WorldRoot extends Model {
 }
 
 /**
- * **Workspace** houses 3D objects which are rendered to the 3D world. Objects not descending from it will not be rendered or physically interact with the world.
+ * `Workspace` houses 3D objects which are rendered to the 3D world. Objects not descending from it will not be rendered or physically interact with the world.
  */
 interface Workspace extends WorldRoot {
 	/** The air density at ground level, used in the aerodynamic force model. */
@@ -9276,6 +9511,9 @@ interface Workspace extends WorldRoot {
 	CurrentCamera: Camera;
 	/** The amount of time, in seconds, that the game has been running. */
 	DistributedGameTime: number;
+	/**
+	 * Controls whether parts that fall below `Workspace.FallenPartsDestroyHeight` are automatically destroyed.
+	 */
 	FallHeightEnabled: boolean;
 	/**
 	 * Determines the height at which falling `BaseParts` and their ancestor `Models` are removed from `Workspace`.
@@ -9287,13 +9525,19 @@ interface Workspace extends WorldRoot {
 	GlobalWind: Vector3;
 	/** Determines the acceleration due to gravity applied to falling `BaseParts`. */
 	Gravity: number;
+	/**
+	 * The world position at which new objects are placed when inserted from the toolbox.
+	 */
 	InsertPoint: Vector3;
+	/** Sets the Luau type checking mode for scripts in the experience. */
 	LuauTypeCheckMode: Enum.LuauTypeCheckMode;
+	/** Controls whether animation retargeting is enabled for character animations. */
 	Retargeting: Enum.AnimatorRetargetingMode;
 	/** Whether content streaming is enabled for the place. */
 	StreamingEnabled: boolean;
 	/** A reference to the `Terrain` object parented to the `Workspace`. */
 	Terrain: Terrain;
+	ApplyRecommendedStreamingSettings(): boolean;
 	/**
 	 * Goes through all `BaseParts` given, breaking any joints connected to these parts.
 	 * @deprecated Deprecated.
@@ -9341,6 +9585,7 @@ interface WorldModel extends WorldRoot {
 /** Links a `DataModel` instance to a corresponding asset in the cloud. */
 interface PackageLink extends Instance {
 	readonly DefaultName: string;
+	PackageContent: Content;
 	/** The ID of the asset this package corresponds to. */
 	PackageId: ContentId;
 	readonly SerializedDefaultAttributes: string;
@@ -9352,6 +9597,9 @@ interface PackageService extends Instance {
 }
 
 interface PackageUIService extends Instance {
+}
+
+interface Packages extends Instance {
 }
 
 /** An abstract class for pages objects. */
@@ -9410,15 +9658,12 @@ interface DataStoreVersionPages extends Pages {
 }
 
 /**
- * A special version of `Pages` that contains information about a player's connections.
+ * A special version of `Pages` that contains information about a player's friends.
  */
 interface FriendPages extends Pages {
 }
 
 interface InventoryPages extends Pages {
-}
-
-interface EmotesPages extends InventoryPages {
 }
 
 /**
@@ -9462,6 +9707,8 @@ interface ParticleEmitter extends Instance {
 	EmissionDirection: Enum.NormalId;
 	/** Determines if particles emit from the emitter. */
 	Enabled: boolean;
+	/** Determines whether the flipbook frames are blended between. */
+	FlipbookBlendFrames: boolean;
 	/** Determines how fast the flipbook texture animates in frames per second. */
 	FlipbookFramerate: NumberRange;
 	/** The error message to display if the `Texture` is incompatible for a flipbook. */
@@ -9526,6 +9773,7 @@ interface ParticleEmitter extends Instance {
 	Squash: NumberSequence;
 	/** Determines the image rendered on particles. */
 	Texture: ContentId;
+	TextureContent: Content;
 	/** Value between 0 and 1 that controls the speed of the particle effect. */
 	TimeScale: number;
 	/** Determines the transparency of particles over their individual lifetimes. */
@@ -9565,7 +9813,7 @@ interface PatchMapping extends Instance {
 
 /** Stores the result of paths created by `PathfindingService:CreatePath()`. */
 interface Path extends Instance {
-	/** The success of the generated `Path`. */
+	/** The `Enum.PathStatus` of the generated `Path`. */
 	Status: Enum.PathStatus;
 	/**
 	 * Returns a table of `Path` instances.
@@ -9594,17 +9842,17 @@ interface PathfindingLink extends Instance {
 	 * Enables a path to traverse a link in both directions. The default value is `true`.
 	 */
 	IsBidirectional: boolean;
-	/**
-	 * A classifying string to add additional information about the link. This Label is included in the waypoint generated by this link.
-	 */
+	/** A classifying string to add additional information about the link. */
 	Label: string;
 }
 
 /**
- * Modifiers used to represent space that has a higher or lower cost to be traversed when creating paths using the `PathfindingService`.
+ * Modifiers used to represent space that has a higher or lower cost to be traversed when creating paths using `PathfindingService`.
  */
 interface PathfindingModifier extends Instance {
-	/** The name of the navigation area inside or on top of the `Part` volume. */
+	/**
+	 * The name of the navigation area inside or on top of the parts enclosed by the modifier.
+	 */
 	Label: string;
 	/**
 	 * Determines if the parts enclosed by the modifier are traversable, even if they would normally be collided with.
@@ -9863,6 +10111,8 @@ interface Player extends Instance {
 	 * Describes the user ID of the player who was followed into an experience by a player.
 	 */
 	FollowUserId: number;
+	/** Indicates whether the player has an active Roblox subscription. */
+	readonly HasRobloxSubscription: boolean;
 	/** Indicates if a player has a **Verified** badge. */
 	HasVerifiedBadge: boolean;
 	/** Sets the distance at which this player will see other players' health bars. */
@@ -9883,12 +10133,20 @@ interface Player extends Instance {
 	 * Determines the `Team` with which the player is associated with according to that team's `Team.TeamColor`.
 	 */
 	TeamColor: BrickColor;
+	/**
+	 * The `User` representing this player's domain-scoped identity within the current experience.
+	 */
+	readonly User: User;
 	/** A unique identifying integer assigned to all user accounts. */
 	UserId: number;
 	/** @deprecated Deprecated. */
 	userId: number;
 	/** Adds an additional replication focus for the player. */
 	AddReplicationFocus(part?: BasePart): undefined;
+	/**
+	 * Clears the cached avatar appearance for the player, forcing a fresh fetch from the backend on the next respawn.
+	 */
+	ClearCachedAvatarAppearance(): undefined;
 	/**
 	 * Removes all accessories and other character appearance objects from a player's `Character`.
 	 */
@@ -9986,18 +10244,22 @@ interface Player extends Instance {
 	/** @deprecated Deprecated. */
 	saveString(key?: string, value?: string): undefined;
 	/**
-	 * Returns a dictionary of online connections. Returns the product information of an asset using its asset ID.
+	 * Returns a dictionary of online friends. Returns the product information of an asset using its asset ID.
 	 * @deprecated Deprecated.
 	 */
 	GetFriendsOnline(maxFriends?: number): unknown;
-	/** Returns a dictionary of online connections. */
+	/** Returns a dictionary of online friends. */
 	GetFriendsOnlineAsync(maxFriends?: number): unknown;
+	GetFriendsWhoPlayedAsync(): unknown;
 	/**
 	 * Returns the player's rank in the group as an integer.
 	 * @deprecated Deprecated.
 	 */
 	GetRankInGroup(groupId?: number): number;
-	/** Returns the player's rank in the group as an integer. */
+	/**
+	 * Returns the player's rank in the group as an integer.
+	 * @deprecated Deprecated.
+	 */
 	GetRankInGroupAsync(groupId?: number): number;
 	/**
 	 * Returns the player's role in the group as a string, or `Guest` if the player isn't part of the group.
@@ -10006,22 +10268,21 @@ interface Player extends Instance {
 	GetRoleInGroup(groupId?: number): string;
 	/**
 	 * Returns the player's role in the group as a string, or `Guest` if the player isn't part of the group.
+	 * @deprecated Deprecated.
 	 */
 	GetRoleInGroupAsync(groupId?: number): string;
 	/**
-	 * Returns whether a player is connections with the specified user.
+	 * Returns whether a player is friends with the specified user.
 	 * @deprecated Deprecated.
 	 */
-	IsBestFriendsWith(userId?: number): boolean;
+	IsBestFriendsWith(userId?: User): boolean;
 	/**
-	 * Checks whether a player is a connection of the user with the given `Player.UserId`.
+	 * Checks whether a player is a friend of the user with the given `Player.UserId`.
 	 * @deprecated Deprecated.
 	 */
-	IsFriendsWith(userId?: number): boolean;
-	/**
-	 * Checks whether a player is a connection of the user with the given `Player.UserId`.
-	 */
-	IsFriendsWithAsync(userId?: number): boolean;
+	IsFriendsWith(userId?: User): boolean;
+	/** Checks whether a player is a friend of the user with the given `Player.UserId`. */
+	IsFriendsWithAsync(userId?: User): boolean;
 	/**
 	 * Checks whether a player is a member of a group with the given ID.
 	 * @deprecated Deprecated.
@@ -10042,11 +10303,11 @@ interface Player extends Instance {
 	 * Spawns a player character with everything equipped in the passed in `HumanoidDescription`.
 	 * @deprecated Deprecated.
 	 */
-	LoadCharacterWithHumanoidDescription(humanoidDescription?: HumanoidDescription): undefined;
+	LoadCharacterWithHumanoidDescription(humanoidDescription?: HumanoidDescription, assetTypeVerification?: Enum.AssetTypeVerification): undefined;
 	/**
 	 * Spawns a player character with everything equipped in the passed in `HumanoidDescription`.
 	 */
-	LoadCharacterWithHumanoidDescriptionAsync(humanoidDescription?: HumanoidDescription): undefined;
+	LoadCharacterWithHumanoidDescriptionAsync(humanoidDescription?: HumanoidDescription, assetTypeVerification?: Enum.AssetTypeVerification): undefined;
 	/** Requests that the server stream to the player around the specified location. */
 	RequestStreamAroundAsync(position?: Vector3, timeOut?: number): undefined;
 	/**
@@ -10055,7 +10316,7 @@ interface Player extends Instance {
 	 */
 	WaitForDataReady(): boolean;
 	/** @deprecated Deprecated. */
-	isFriendsWith(userId?: number): boolean;
+	isFriendsWith(userId?: User): boolean;
 	/** @deprecated Deprecated. */
 	waitForDataReady(): boolean;
 	/** Fires when a player's character spawns or respawns. */
@@ -10120,19 +10381,19 @@ interface PlayerEmulatorService extends Instance {
 interface PlayerHydrationService extends Instance {
 }
 
-/** A container for LocalScripts to be run on the client. */
+/**
+ * A container for client-side scripts to be run inside `Player` objects within the `Players` service.
+ */
 interface PlayerScripts extends Instance {
 	/**
-	 * Unregisters all ComputerCameraMovementMode enums from the experience's settings menu.
+	 * Unregisters all `ComputerCameraMovementMode` enums from the game's settings menu.
 	 */
 	ClearComputerCameraMovementModes(): undefined;
-	/** Unregisters all ComputerMovementMode enums from the experience's settings menu. */
+	/** Unregisters all `ComputerMovementMode` enums from the game's settings menu. */
 	ClearComputerMovementModes(): undefined;
-	/**
-	 * Unregisters all TouchCameraMovementMode enums from the experience's settings menu.
-	 */
+	/** Unregisters all `TouchCameraMovementMode` enums from the game's settings menu. */
 	ClearTouchCameraMovementModes(): undefined;
-	/** Unregisters all TouchMovementMode enums from the experience's settings menu. */
+	/** Unregisters all `TouchMovementMode` enums from the game's settings menu. */
 	ClearTouchMovementModes(): undefined;
 	/**
 	 * Registers that a computer camera movement mode is available to be selected from the game menu.
@@ -10186,7 +10447,7 @@ interface Players extends Instance {
 	/** Makes the local player chat the given message. */
 	Chat(message?: string): undefined;
 	/** Returns the `Player` with the given `UserId` if they are in-experience. */
-	GetPlayerByUserId(userId?: number): Player;
+	GetPlayerByUserId(userId?: User): Player;
 	/**
 	 * Returns the `Player` whose `Player.Character` matches the given instance, or `nil` if one cannot be found.
 	 */
@@ -10220,33 +10481,33 @@ interface Players extends Instance {
 	 */
 	CreateHumanoidModelFromDescription(description?: HumanoidDescription, rigType?: Enum.HumanoidRigType, assetTypeVerification?: Enum.AssetTypeVerification): Model;
 	/**
-	 * Returns a character `Model` equipped with everything specified in the passed in `HumanoidDescription`.
+	 * Returns a character `Model` equipped with everything specified in the passed in `HumanoidDescription`. If `HumanoidDescription.UseAvatarSettings` is set to true, Avatar Settings in the experience will be applied to the returned model.
 	 */
 	CreateHumanoidModelFromDescriptionAsync(description?: HumanoidDescription, rigType?: Enum.HumanoidRigType, assetTypeVerification?: Enum.AssetTypeVerification): Model;
 	/**
 	 * Returns a character Model set-up with everything equipped to match the avatar of the user specified by the passed in userId.
 	 * @deprecated Deprecated.
 	 */
-	CreateHumanoidModelFromUserId(userId?: number): Model;
+	CreateHumanoidModelFromUserId(userId?: User): Model;
 	/**
 	 * Returns a character Model set-up with everything equipped to match the avatar of the user specified by the passed in userId.
 	 */
-	CreateHumanoidModelFromUserIdAsync(userId?: number): Model;
+	CreateHumanoidModelFromUserIdAsync(userId?: User): Model;
 	/**
 	 * Retrieves the ban and unban history of any user within the experience's universe. This method is enabled and disabled by the `Players.BanningEnabled` property, which you can toggle in Studio.
 	 */
-	GetBanHistoryAsync(userId?: number): BanHistoryPages;
+	GetBanHistoryAsync(userId?: User): BanHistoryPages;
 	/**
 	 * Returns a `Model` containing the assets which the player is wearing, excluding gear.
 	 * @deprecated Deprecated.
 	 */
-	GetCharacterAppearanceAsync(userId?: number): Model;
+	GetCharacterAppearanceAsync(userId?: User): Model;
 	/** Returns information about the character appearance of a given user. */
-	GetCharacterAppearanceInfoAsync(userId?: number): unknown;
+	GetCharacterAppearanceInfoAsync(userId?: User): unknown;
 	/**
-	 * Returns a `FriendPages` object which contains information for all of the given player's connections.
+	 * Returns a `FriendPages` object which contains information for all of the given player's friends.
 	 */
-	GetFriendsAsync(userId?: number): FriendPages;
+	GetFriendsAsync(userId?: User): FriendPages;
 	/**
 	 * Returns the HumanoidDescription for a specified outfit, which will be set with the parts/colors/Animations etc of the outfit.
 	 * @deprecated Deprecated.
@@ -10260,15 +10521,15 @@ interface Players extends Instance {
 	 * Returns a HumanoidDescription which specifies everything equipped for the avatar of the user specified by the passed in userId.
 	 * @deprecated Deprecated.
 	 */
-	GetHumanoidDescriptionFromUserId(userId?: number): HumanoidDescription;
+	GetHumanoidDescriptionFromUserId(userId?: User): HumanoidDescription;
 	/**
 	 * Returns a HumanoidDescription which specifies everything equipped for the avatar of the user specified by the passed in userId.
 	 */
-	GetHumanoidDescriptionFromUserIdAsync(userId?: number): HumanoidDescription;
+	GetHumanoidDescriptionFromUserIdAsync(userId?: User): HumanoidDescription;
 	/**
 	 * Sends a query to the Roblox website for the username of an account with a given `UserId`.
 	 */
-	GetNameFromUserIdAsync(userId?: number): string;
+	GetNameFromUserIdAsync(userId?: User): string;
 	/**
 	 * Sends a query to the Roblox website for the `userId` of an account with a given username.
 	 */
@@ -10276,7 +10537,7 @@ interface Players extends Instance {
 	/**
 	 * Returns the content URL of a player thumbnail given the size and type, as well as a boolean describing if the image is ready to use.
 	 */
-	GetUserThumbnailAsync(userId?: number, thumbnailType?: Enum.ThumbnailType, thumbnailSize?: Enum.ThumbnailSize): unknown;
+	GetUserThumbnailAsync(userId?: User, thumbnailType?: Enum.ThumbnailType, thumbnailSize?: Enum.ThumbnailSize): unknown;
 	/**
 	 * Unbans players banned from `Players:BanAsync()` or the User Restrictions Open Cloud API. This method is enabled and disabled by the `Players.BanningEnabled` property, which you can toggle in Studio.
 	 */
@@ -10420,6 +10681,22 @@ interface PluginAction extends Instance {
 }
 
 interface PluginCapabilities extends Instance {
+}
+
+/**
+ * This service is used by plugins to communicate with other instances of themselves running in other data models.
+ */
+interface PluginConnectionService extends Instance {
+	/**
+	 * Checks if the current data model context can ever have connections of a given type.
+	 */
+	CanHaveConnectionType(type?: Enum.PluginConnectionTargetType): boolean;
+	/**
+	 * Returns a list of currently connected `PluginConnection` objects with the given connection type.
+	 */
+	GetPluginConnectionsOfType(type?: Enum.PluginConnectionTargetType): unknown;
+	/** Fires just after a new `PluginConnection` successfully connects. */
+	readonly Connected: RBXScriptSignal<(conn: PluginConnection) => void>;
 }
 
 interface PluginDebugService extends Instance {
@@ -10652,6 +10929,12 @@ interface SunRaysEffect extends PostEffect {
 	Spread: number;
 }
 
+interface Preloaded extends Instance {
+}
+
+interface ProceduralBehaviorSchedulerService extends Instance {
+}
+
 interface ProcessInstancePhysicsService extends Instance {
 }
 
@@ -10766,12 +11049,25 @@ interface RTAnimationTracker extends Instance {
 interface RbxAnalyticsService extends Instance {
 }
 
+interface RealtimeMedia extends Instance {
+	IsConnected: boolean;
+	Disconnect(): undefined;
+	GetConnectedWires(pin: string): Instance[];
+	GetInputPins(): unknown;
+	GetOutputPins(): unknown;
+	SendMessage(message: string, binary: boolean): boolean;
+	ConnectAsync(serverUrl: string, connectParams?: unknown): boolean;
+	readonly OnMessage: RBXScriptSignal<(message: string, binary: boolean) => void>;
+	readonly WiringChanged: RBXScriptSignal<(connected: boolean, pin: string, wire: Wire, instance: Instance) => void>;
+}
+
 /**
  * A service that provides an interface for you to manage and display personalized content recommendations.
  */
 interface RecommendationService extends Instance {
 	LogActionEvent(actionType?: Enum.RecommendationActionType, itemId?: string, tracingId?: string, actionEventDetails?: unknown): undefined;
 	LogImpressionEvent(impressionType?: Enum.RecommendationImpressionType, itemId?: string, tracingId?: string, impressionEventDetails?: unknown): undefined;
+	LogPreferenceEvent(preferenceType?: Enum.RecommendationPreferenceType, targetType?: Enum.RecommendationPreferenceTargetType, targetId?: string, tracingId?: string, itemId?: string): undefined;
 	GenerateItemListAsync(generateRecommendationItemListRequest?: unknown): RecommendationPages;
 	GetRecommendationItemAsync(itemId?: string): unknown;
 	RegisterItemAsync(player?: Player, registerRecommendationItemsRequest?: unknown): unknown;
@@ -11077,7 +11373,7 @@ interface RunService extends Instance {
 	/**
 	 * Binds a custom function to be called at a fixed frequency which is independent of the frame rate.
 	 */
-	BindToSimulation(_function?: Function, frequency?: Enum.StepFrequency): RBXScriptConnection;
+	BindToSimulation(_function?: Function, frequency?: Enum.StepFrequency, priority?: number): RBXScriptConnection;
 	/**
 	 * Checks the `Enum.PredictionStatus` of a specific context instance, useful for debugging scripts affecting multiple instances where some might be predicted and others might not.
 	 */
@@ -11086,6 +11382,7 @@ interface RunService extends Instance {
 	IsClient(): boolean;
 	/** Returns whether the current environment is in `Edit` mode. */
 	IsEdit(): boolean;
+	IsResimulating(): boolean;
 	/** Returns whether a **Run** playtest has been initiated in Studio. */
 	IsRunMode(): boolean;
 	/** Returns whether the experience is currently running. */
@@ -11115,7 +11412,10 @@ interface RunService extends Instance {
 	UnbindFromRenderStep(name?: string): undefined;
 	/** Fires every frame, after the physics simulation has completed. */
 	readonly Heartbeat: RBXScriptSignal<(deltaTime: number) => void>;
-	readonly Misprediction: RBXScriptSignal<(remoteWorldStepId: number, mispredictedInstances: unknown) => void>;
+	/**
+	 * In the server authority model, fires during prediction when the engine detects that the client has diverged from the server's authoritative state. Intended for plugin-based debugging.
+	 */
+	readonly Misprediction: RBXScriptSignal<(time: number, instances: unknown, stats: unknown) => void>;
 	/** Fires every frame, after the physics simulation has completed. */
 	readonly PostSimulation: RBXScriptSignal<(deltaTimeSim: number) => void>;
 	/** Fires every frame, prior to the physics simulation but after rendering. */
@@ -11126,6 +11426,10 @@ interface RunService extends Instance {
 	readonly PreSimulation: RBXScriptSignal<(deltaTimeSim: number) => void>;
 	/** Fires every frame, prior to the frame being rendered. */
 	readonly RenderStepped: RBXScriptSignal<(deltaTime: number) => void>;
+	/**
+	 * In the server authority model, this fires after rolling back the predicted state due to a misprediction, but before resimulation begins.
+	 */
+	readonly Rollback: RBXScriptSignal<(time: number) => void>;
 	/** Fires every frame, prior to the physics simulation. */
 	readonly Stepped: RBXScriptSignal<(time: number, deltaTime: number) => void>;
 }
@@ -11143,12 +11447,22 @@ interface RuntimeScriptService extends Instance {
 interface SafetyService extends Instance {
 }
 
+interface SceneAnalysisService extends Instance {
+	GetAnimationMemoryAsync(): unknown;
+	GetAudioMemoryAsync(): unknown;
+	GetInstanceCompositionAsync(): unknown;
+	GetScriptMemoryAsync(): unknown;
+	GetTriangleCompositionAsync(): unknown;
+	GetUnparentedInstancesAsync(): unknown;
+}
+
 /**
  * A 2D user interface that allows users to capture and save screenshots to their local device.
  */
 interface ScreenshotHud extends Instance {
 	/** Asset ID of the icon used for the camera button. */
 	CameraButtonIcon: ContentId;
+	CameraButtonIconContent: Content;
 	/** Screen location of the camera button. */
 	CameraButtonPosition: UDim2;
 	/** Screen location of the close button. */
@@ -11186,6 +11500,8 @@ interface ScriptCommitService extends Instance {
 }
 
 interface ScriptContext extends Instance {
+	EnableCoverage(instance?: Instance): undefined;
+	GetCoverageStats(): unknown;
 	/** Limits how long a script is allowed to run without yielding. */
 	SetTimeout(seconds?: number): undefined;
 	/** Fired when an error occurs. */
@@ -11215,6 +11531,21 @@ interface ScriptDebugger extends Instance {
 	readonly Resuming: RBXScriptSignal<() => void>;
 	readonly WatchAdded: RBXScriptSignal<(watch: Instance) => void>;
 	readonly WatchRemoved: RBXScriptSignal<(watch: Instance) => void>;
+}
+
+interface ScriptDebuggerService extends Instance {
+	AddBreakpoint(scriptInstance: LuaSourceContainer, breakpoint: unknown): unknown;
+	ClearBreakpoints(): undefined;
+	Evaluate(expression: string, frameId?: unknown): unknown;
+	GetRootVariables(frameId: number): unknown;
+	GetStackTrace(threadId: number, startFrame?: unknown): unknown;
+	GetThreads(): unknown;
+	GetVariables(variablesReference: number): unknown;
+	Pause(): undefined;
+	RemoveBreakpoint(scriptInstance: LuaSourceContainer, line: number): boolean;
+	SetExceptionBreakMode(breakMode: Enum.DebugBreakModeType): undefined;
+	readonly Resumed: RBXScriptSignal<(threadIds: unknown) => void>;
+	OnStopped?: (stopped: unknown) => unknown;
 }
 
 interface ScriptDocument extends Instance {
@@ -11344,10 +11675,15 @@ interface ScriptService extends Instance {
  * The Selection service controls the `Instances` that are selected in Roblox Studio.
  */
 interface Selection extends Instance {
+	/**
+	 * The thickness of the selection highlight outline drawn around selected `Instances` in Roblox Studio's viewport.
+	 */
 	SelectionThickness: number;
+	/** Adds the given `Instances` to the current selection in Roblox Studio. */
 	Add(instancesToAdd?: Instance[]): undefined;
 	/** Returns an array of currently selected `Instances` in Roblox Studio. */
 	Get(): Instance[];
+	/** Removes the given `Instances` from the current selection in Roblox Studio. */
 	Remove(instancesToRemove?: Instance[]): undefined;
 	/**
 	 * Sets the currently selected objects in Roblox Studio to `Instances` in the given array.
@@ -11406,10 +11742,13 @@ interface ControllerPartSensor extends ControllerSensor {
 	 * The surface normal at the position where the sensor hit the `ControllerPartSensor.SensedPart`.
 	 */
 	HitNormal: Vector3;
+	LadderSearchHeight: number;
+	LadderSearchOffset: number;
 	/**
 	 * The distance from the sensor's parent `BasePart` to use when sensing other parts.
 	 */
 	SearchDistance: number;
+	SensedMaterial: Enum.Material;
 	/** A reference to the `BasePart` hit by the sensor. */
 	SensedPart: BasePart;
 	/** Determines what behavior this `SensorBase` uses when sensing other parts. */
@@ -11516,7 +11855,7 @@ interface DataModel extends ServiceProvider {
 	 * Describes the `UserId` of the `Player` that owns the private server if the server is private.
 	 */
 	PrivateServerOwnerId: number;
-	RunService: Instance;
+	RunService: RunService;
 	/** A reference to the `Workspace` service. */
 	Workspace: Workspace;
 	/**
@@ -11578,6 +11917,7 @@ interface DataModel extends ServiceProvider {
 	readonly ItemChanged: RBXScriptSignal<(object: Instance, descriptor: string) => void>;
 	/** Fires on the client when the game finishes loading for the first time. */
 	readonly Loaded: RBXScriptSignal<() => void>;
+	readonly ServerLifecycleChanged: RBXScriptSignal<(serverLifecycleChangedEvent: unknown) => void>;
 	/**
 	 * Invoked before the game is shut down. When this callback returns, or the timeout period is hit, the game finishes shutting down.
 	 * @deprecated Deprecated.
@@ -11670,6 +12010,9 @@ interface SlimAnimationDataEntity extends Instance {
 interface SlimAnimationReplicationService extends Instance {
 }
 
+interface SlimDebugSettings extends Instance {
+}
+
 interface SlimReplicationService extends Instance {
 }
 
@@ -11717,7 +12060,7 @@ interface SocialService extends Instance {
 	/** Indicates whether the given `Player` can invite other players to a call. */
 	CanSendCallInviteAsync(player?: Instance): boolean;
 	/** Indicates whether the given `Player` can invite other players. */
-	CanSendGameInviteAsync(player?: Instance, recipientId?: number): boolean;
+	CanSendGameInviteAsync(player?: Instance, recipientId?: User): boolean;
 	/** Returns the local player's RSVP status for the given event. */
 	GetEventRsvpStatusAsync(eventId?: string): Enum.RsvpStatus;
 	/**
@@ -11731,7 +12074,7 @@ interface SocialService extends Instance {
 	/** Returns active and upcoming experience events for the current experience. */
 	GetUpcomingExperienceEventsAsync(): unknown;
 	/** Prompts the player to submit feedback about the current experience. */
-	PromptFeedbackSubmissionAsync(): undefined;
+	PromptFeedbackSubmissionAsync(options?: unknown): undefined;
 	/** @deprecated Deprecated. */
 	PromptLinkSharing(player?: Player, options?: unknown): unknown;
 	PromptLinkSharingAsync(player?: Player, options?: unknown): unknown;
@@ -12027,6 +12370,8 @@ interface SoundService extends Instance {
 	 * Returns the current listener type used by `Sounds`, as well as what that listener is currently set to.
 	 */
 	GetListener(): unknown;
+	/** Returns the number of seconds since the audio engine began mixing. */
+	GetMixerTime(): number;
 	/**
 	 * Opens the attenuation curve editor in Studio for the provided `AudioEmitter` or `AudioListener` instances.
 	 */
@@ -12039,6 +12384,7 @@ interface SoundService extends Instance {
 	 * Plays a copy of a `Sound` locally, such that it will only be heard by the client calling this method.
 	 */
 	PlayLocalSound(sound?: Instance): undefined;
+	SetInputDevice(nameOrInstance: unknown, guidOrPin: string): undefined;
 	/** Sets the listener used by `Sounds`. */
 	SetListener(listenerType?: Enum.ListenerType, listener?: unknown): undefined;
 }
@@ -12071,13 +12417,13 @@ interface StartPageService extends Instance {
 }
 
 /**
- * If the game allows gear, StarterGear contains all of a player's appropriate gear. Whenever the player's character spawns, all of the contents of that player's StarterGear will get copied into the player's `Backpack`.
+ * If the game allows gear, `StarterGear` is a container automatically inserted into each `Player` object when the player joins the game. Whenever the player's character spawns, the contents of that player's `StarterGear` are copied into the player's `Backpack`.
  */
 interface StarterGear extends Instance {
 }
 
 /**
- * A service-level container whose contents are copied into each player's `Backpack` when the player spawns. It is generally used to hold `Tools`, but is sometimes used to hold `LocalScripts` to ensure that each player gets a copy.
+ * A container whose contents are copied into each player's `Backpack` when their player character spawns. It is generally used to hold `Tools`.
  */
 interface StarterPack extends Instance {
 }
@@ -12333,7 +12679,6 @@ interface Studio extends Instance {
 	 * Sets the speed in studs/sec that the camera moves when movement keys are pressed.
 	 */
 	["Camera Speed"]: number;
-	["Camera Speed Adjust Binding"]: Enum.CameraSpeedAdjustBinding;
 	["Camera Zoom to Mouse Position"]: boolean;
 	/**
 	 * If set to true, the output will be automatically cleared when game sessions are switched.
@@ -12418,6 +12763,7 @@ interface Studio extends Instance {
 	PluginDebuggingEnabled: boolean;
 	/** The directory where local plugins are stored. */
 	PluginsDir: QDir;
+	PreferredTextSize: Enum.PreferredTextSize;
 	["Primary Text Color"]: Color3;
 	["Property Color"]: Color3;
 	/**
@@ -12470,7 +12816,7 @@ interface Studio extends Instance {
 	["Skip Closing Brackets and Quotes"]: boolean;
 	/** Specifies the color of strings in the script editor. */
 	["String Color"]: Color3;
-	[""TODO" Color"]: Color3;
+	["\"TODO\" Color"]: Color3;
 	/** Specifies how many spaces are used to represent a tab in the script editor. */
 	["Tab Width"]: number;
 	/** Specifies the color of normal text in the script editor. */
@@ -12479,15 +12825,16 @@ interface Studio extends Instance {
 	["Text Wrapping"]: boolean;
 	/** Used to get/set current `theme` used by Studio. */
 	Theme: Instance;
+	TypeColor: Color3;
 	/**
 	 * Specifies the color of the wavy underline shown when the script analyzer picks up a problem that should be addressed in the script editor.
 	 */
 	["Warning Color"]: Color3;
 	["Whitespace Color"]: Color3;
-	[""function" Color"]: Color3;
-	[""local" Color"]: Color3;
-	[""nil" Color"]: Color3;
-	[""self" Color"]: Color3;
+	["\"function\" Color"]: Color3;
+	["\"local\" Color"]: Color3;
+	["\"nil\" Color"]: Color3;
+	["\"self\" Color"]: Color3;
 	/** Returns a list of `themes` available in Studio. */
 	GetAvailableThemes(): unknown;
 	/** Event called when Studio's `theme` changes. */
@@ -12511,10 +12858,37 @@ interface StudioCallout extends Instance {
 interface StudioCameraService extends Instance {
 }
 
+interface StudioCaptureService extends Instance {
+	CanCaptureScreenshot(): boolean;
+	CaptureScreenshot(screenshotOptions?: unknown): StudioScreenshotCapture;
+	RequestScreenshotPermissionAsync(): boolean;
+}
+
 interface StudioData extends Instance {
 }
 
 interface StudioDeviceEmulatorService extends Instance {
+}
+
+/** Service allowing you to control Studio's Device Simulator. */
+interface StudioDeviceSimulatorService extends Instance {
+	CreateDeviceAsync(config?: unknown): string;
+	GetDeviceAsync(): string;
+	GetDeviceInfoAsync(deviceId?: string): unknown;
+	GetDeviceListAsync(): unknown;
+	GetOrientationAsync(): Enum.ScreenOrientation;
+	GetPixelDensityAsync(): number;
+	GetResolutionAsync(): Vector2;
+	GetScalingModeAsync(): Enum.DeviceSimulatorScalingMode;
+	RemoveDeviceAsync(deviceId?: string): undefined;
+	SetDeviceAsync(deviceId?: string): undefined;
+	SetOrientationAsync(orientation?: Enum.ScreenOrientation): undefined;
+	SetPixelDensityAsync(density?: number): undefined;
+	SetResolutionAsync(width?: number, height?: number): undefined;
+	SetScalingModeAsync(mode?: Enum.DeviceSimulatorScalingMode): undefined;
+	StopSimulationAsync(): undefined;
+	UpdateDeviceAsync(deviceId?: string, config?: unknown): undefined;
+	readonly ConfigurationChanged: RBXScriptSignal<() => void>;
 }
 
 interface StudioObjectBase extends Instance {
@@ -12524,6 +12898,18 @@ interface StudioWidget extends StudioObjectBase {
 }
 
 interface StudioPublishService extends Instance {
+}
+
+interface StudioScreenshotCapture extends Instance {
+	BufferFormat: Enum.StudioCaptureScreenshotFormat;
+	BufferStatus: Enum.StudioCaptureBufferStatus;
+	OriginalSize: Vector2;
+	Position: Vector2;
+	Resolution: Vector2;
+	UICaptureMode: Enum.UICaptureMode;
+	GetBuffer(): buffer;
+	GetErrors(): unknown;
+	ScaleAsync(strategy?: Enum.ResamplerMode, newSize?: Vector2): StudioScreenshotCapture;
 }
 
 interface StudioScriptDebugEventListener extends Instance {
@@ -12579,8 +12965,13 @@ interface StudioService extends Instance {
 
 /** Service allowing plugins to automate and customize Test and Run mode testing. */
 interface StudioTestService extends Instance {
+	EditModeActive: boolean;
+	AddPlayers(numPlayers?: number): undefined;
+	CanLeaveTest(): boolean;
 	EndTest(value?: unknown): undefined;
 	GetTestArgs(): unknown;
+	LeaveTest(): undefined;
+	ExecuteMultiplayerTestAsync(numPlayers?: number, args?: unknown): unknown;
 	ExecutePlayModeAsync(args?: unknown): unknown;
 	ExecuteRunModeAsync(args?: unknown): unknown;
 }
@@ -12625,15 +13016,29 @@ interface StyleRule extends StyleBase {
 	/** A read-only string that displays errors from the `Selector` property. */
 	SelectorError: string;
 	/**
+	 * Returns the default transition applied to all properties of the `StyleRule` that don't have an explicit transition set.
+	 */
+	GetDefaultPropertyTransition(): unknown;
+	/**
 	 * Returns a dictionary of key-value pairs describing the properties of the `StyleRule`.
 	 */
 	GetProperties(): unknown;
 	/** Returns the value of a specific property in the `StyleRule`. */
 	GetProperty(name?: string): unknown;
+	/** Returns a dictionary of all property transitions set on the `StyleRule`. */
 	GetPropertyTransitions(): unknown;
+	/**
+	 * Sets or clears a default transition that applies to all properties of the `StyleRule` that don't have an explicit transition set.
+	 */
+	SetDefaultPropertyTransition(transitionParams?: unknown): undefined;
 	/** Lets you declare and set multiple properties of the `StyleRule` at once. */
 	SetProperties(styleProperties?: unknown): undefined;
 	SetProperty(name?: string, value?: unknown): undefined;
+	/** Sets or clears the transition for a single property on the `StyleRule`. */
+	SetPropertyTransition(property?: string, transitionParams?: unknown): undefined;
+	/**
+	 * Lets you declare and set transitions for multiple properties of the `StyleRule` at once.
+	 */
 	SetPropertyTransitions(properties?: unknown): undefined;
 }
 
@@ -12675,12 +13080,23 @@ interface StyleLink extends Instance {
 	StyleSheet: StyleSheet;
 }
 
+/**
+ * Instance used to set conditions such as `"MaxSize"` and `"PreferredInput"` for a `StyleRule`.
+ */
 interface StyleQuery extends Instance {
+	/**
+	 * A boolean that determines whether a `StyleRule.Selector` of `@` will match the `StyleQuery` name.
+	 */
 	IsActive: boolean;
-	GetCondition(name: string): unknown;
+	/** Returns the value of a specific condition in the `StyleQuery`. */
+	GetCondition(name?: string): unknown;
+	/**
+	 * Returns a dictionary of key-value pairs describing the conditoins set on the `StyleQuery`.
+	 */
 	GetConditions(): unknown;
-	SetCondition(name: string, value: unknown): undefined;
-	SetConditions(conditions: unknown): undefined;
+	SetCondition(name?: string, value?: unknown): undefined;
+	/** Lets you declare and set multiple conditions of the `StyleQuery` at once. */
+	SetConditions(conditions?: unknown): undefined;
 }
 
 interface StylingService extends Instance {
@@ -12710,6 +13126,7 @@ interface SurfaceAppearance extends Instance {
 	 * Modifies the lighting of the surface by adding bumps, dents, cracks, and curves.
 	 */
 	NormalMap: ContentId;
+	ResampleMode: Enum.ResamplerMode;
 	/** Determines the apparent roughness across the surface. */
 	RoughnessMap: ContentId;
 }
@@ -12870,7 +13287,7 @@ interface TeleportService extends Instance {
 	/**
 	 * Returns the `PlaceId` and `JobId` of the server the user with the given `UserId` is in provided it is in the same game as the current place.
 	 */
-	GetPlayerPlaceInstanceAsync(userId?: number): unknown;
+	GetPlayerPlaceInstanceAsync(userId?: User): unknown;
 	/**
 	 * Prompts a `Player` with information about the specified experience. The player can choose to teleport to the target experience through the prompt.
 	 */
@@ -12961,6 +13378,13 @@ interface TerrainRegion extends Instance {
 	ConvertToSmooth(): undefined;
 }
 
+interface TestCase extends Instance {
+	Assert(condition: boolean, message?: string, source?: Instance, line?: number): undefined;
+	EndTest(message?: string, source?: Instance, line?: number): undefined;
+	Message(text: string, source?: Instance, line?: number): undefined;
+	Require(condition: boolean, message?: string, source?: Instance, line?: number): undefined;
+}
+
 /**
  * A service used by Roblox to run controlled tests of the engine. It is available for developers to use, to a limited degree.
  */
@@ -13018,6 +13442,7 @@ interface TestService extends Instance {
 	Fail(description?: string, source?: Instance, line?: number): undefined;
 	/** Prints `TestService:` followed by a string to the output in blue text. */
 	Message(text?: string, source?: Instance, line?: number): undefined;
+	RegisterTest(testOptions?: unknown): TestCase;
 	/** Prints whether a condition is true along with a description string. */
 	Require(condition?: boolean, description?: string, source?: Instance, line?: number): undefined;
 	ScopeTime(): unknown;
@@ -13028,6 +13453,8 @@ interface TestService extends Instance {
 	Warn(condition?: boolean, description?: string, source?: Instance, line?: number): undefined;
 	getTestSessionProviderStats(providerName: string): unknown;
 	isFeatureEnabled(name?: string): boolean;
+	CaptureScreenshotAsync(artifactName?: string, options?: unknown): unknown;
+	RequestValidationAsync(artifactType: string, artifactName: string): unknown;
 	/**
 	 * Runs scripts which are parented to `TestService`.
 	 * @deprecated Deprecated.
@@ -13057,7 +13484,7 @@ interface TextChannel extends Instance {
 	 */
 	SetDirectChatRequester(requester?: Player): undefined;
 	/** Adds a `TextSource` to the `TextChannel` given userId of a `Player`. */
-	AddUserAsync(userId?: number): unknown;
+	AddUserAsync(userId?: User): unknown;
 	/** Sends a `TextChatMessage` to the server. */
 	SendAsync(message?: string, metadata?: string): TextChatMessage;
 	/**
@@ -13313,13 +13740,13 @@ interface TextChatService extends Instance {
 	/** Displays a chat bubble above the provided part or player character. */
 	DisplayBubble(partOrCharacter?: Instance, message?: string): undefined;
 	/** Determines whether a user has permission to chat in experiences. */
-	CanUserChatAsync(userId?: number): boolean;
-	/** Determines whether or not two users would receive messages between each other. */
-	CanUsersChatAsync(userIdFrom?: number, userIdTo?: number): boolean;
+	CanUserChatAsync(userId?: User): boolean;
+	/** Determines whether or not two users can receive messages from each other. */
+	CanUsersChatAsync(userIdFrom?: User, userIdTo?: User): boolean;
 	/**
 	 * Determines whether a user has permission to chat directly with other users in experiences based on factors such as their parental control settings.
 	 */
-	CanUsersDirectChatAsync(requesterUserId?: number, userIds?: unknown): unknown;
+	CanUsersDirectChatAsync(requesterUserId?: User, userIds?: unknown): unknown;
 	/**
 	 * Returns chat group IDs that indicate which players can synchronously text chat together.
 	 */
@@ -13501,6 +13928,7 @@ interface Trail extends Instance {
 	MinLength: number;
 	/** The content ID of the texture to be displayed on the trail. */
 	Texture: ContentId;
+	TextureContent: Content;
 	/** Sets the length of the trail's texture, dependent on `TextureMode`. */
 	TextureLength: number;
 	/**
@@ -13636,8 +14064,16 @@ interface UITextSizeConstraint extends UIConstraint {
 
 /** UI modifier which applies deformation to corners of its parent `GuiObject`. */
 interface UICorner extends UIComponent {
-	/** Determines the radius of the component. */
+	/** Determines the radius of the bottom-left corner. */
+	BottomLeftRadius: UDim;
+	/** Determines the radius of the bottom-right corner. */
+	BottomRightRadius: UDim;
+	/** Sets all four corner radii at once and reads from `TopLeftRadius`. */
 	CornerRadius: UDim;
+	/** Determines the radius of the top-left corner. */
+	TopLeftRadius: UDim;
+	/** Determines the radius of the top-right corner. */
+	TopRightRadius: UDim;
 }
 
 /**
@@ -13715,7 +14151,7 @@ interface UIDragDetector extends UIComponent {
 	/** Maximum angle per second the `UIDragDetector` can rotate at. */
 	SelectionModeRotateSpeed: number;
 	/**
-	 * `Enum.UIDragSpeedAxisMapping` value that determines the **X**/**Y** dimension dragging speeds.
+	 * `Enum.UIDragSpeedAxisMapping` value that determines the **X**​/**Y** dimension dragging speeds.
 	 */
 	UIDragSpeedAxisMapping: Enum.UIDragSpeedAxisMapping;
 	/** Adds a function to modify or constrain proposed motion. */
@@ -13939,6 +14375,24 @@ interface UIScale extends UIComponent {
 	Scale: number;
 }
 
+/** Renders a shadow below the parent UI instance. */
+interface UIShadow extends UIComponent {
+	/** Determines the shadow's blurriness. */
+	BlurRadius: UDim;
+	/** Determines the shadow's color. */
+	Color: Color3;
+	/** Determines whether the `UIShadow` is visible. */
+	Enabled: boolean;
+	/** Moves the shadow relative to the parent's position. */
+	Offset: UDim2;
+	/** Expands or shrinks the shadow relative to the parent's size. */
+	Spread: UDim2;
+	/** Sets the shadow's transparency. */
+	Transparency: number;
+	/** Determines the shadow's render order relative to sibling `UIShadow` instances. */
+	ZIndex: number;
+}
+
 /** Applies an outline to text or a UI border. */
 interface UIStroke extends UIComponent {
 	/**
@@ -13999,7 +14453,13 @@ interface UserGameSettings extends Instance {
 	 * A float between 0 and 4 representing the sensitivity of the client's camera sensitivity.
 	 */
 	MouseSensitivity: number;
+	/**
+	 * Internal MicroProfiler setting specifying the frame rate used when capturing server-side RCC profiler data.
+	 */
 	RCCProfilerRecordFrameRate: number;
+	/**
+	 * Internal MicroProfiler setting specifying the duration over which server-side RCC profiler data is captured.
+	 */
 	RCCProfilerRecordTimeFrame: number;
 	/** Controls how the client's character is rotated. */
 	RotationType: Enum.RotationType;
@@ -14009,7 +14469,9 @@ interface UserGameSettings extends Instance {
 	TouchCameraMovementMode: Enum.TouchCameraMovementMode;
 	/** The type of controls being used by the client on a mobile device. */
 	TouchMovementMode: Enum.TouchMovementMode;
+	/** Indicates whether smooth rotation is used instead of snap rotation in VR. */
 	readonly VRSmoothRotationEnabled: boolean;
+	/** Indicates whether the VR vignette comfort effect is enabled. */
 	readonly VignetteEnabled: boolean;
 	/** Returns the camera's Y-invert value. */
 	GetCameraYInvertValue(): number;
@@ -14087,6 +14549,10 @@ interface UserInputService extends Instance {
 	UserHeadCFrame: CFrame;
 	/** Indicates whether the user is using a virtual reality headset. */
 	VREnabled: boolean;
+	/**
+	 * Creates a `VirtualInput` object for simulating mouse, keyboard, and pointer input.
+	 */
+	CreateVirtualInput(): Object;
 	/**
 	 * Returns whether the given `Enum.UserInputType` gamepad supports a button corresponding with the given `Enum.KeyCode`.
 	 */
@@ -14243,6 +14709,8 @@ interface UserInputService extends Instance {
 
 /** A service that handles queries regarding users on the Roblox platform. */
 interface UserService extends Instance {
+	/** Returns a `User` for the given global user ID within the current experience. */
+	GetUserFromGlobalUserIdAsync(userId?: number): User;
 	/** Returns an array of user information including user name and display name. */
 	GetUserInfosByUserIdsAsync(userIds?: unknown): unknown;
 }
@@ -14516,12 +14984,14 @@ interface VideoDeviceInput extends Instance {
 
 /** Used to play video assets. */
 interface VideoPlayer extends Instance {
+	InternalVideoUsage: Enum.InternalVideoUsage;
 	/** Indicates when the `VideoContent` has loaded and is ready to play. */
 	IsLoaded: boolean;
 	/** Denotes whether this `VideoPlayer` is currently playing. */
 	IsPlaying: boolean;
 	/** Controls whether this `VideoPlayer` loops. */
 	Looping: boolean;
+	MaximumResolution: Enum.VideoSampleSize;
 	/** Controls the speed at which the video is played. */
 	PlaybackSpeed: number;
 	/** Gets the original source resolution of the `VideoContent` file. */
@@ -14608,8 +15078,6 @@ interface VoiceChatInternal extends Instance {
 	/** @deprecated Deprecated. */
 	GetParticipants(): unknown;
 	/** @deprecated Deprecated. */
-	GetSpeakerDevices(): unknown;
-	/** @deprecated Deprecated. */
 	GetVoiceChatApiVersion(): number;
 	/** @deprecated Deprecated. */
 	GetVoiceChatAvailable(): number;
@@ -14627,8 +15095,6 @@ interface VoiceChatInternal extends Instance {
 	PublishPause(paused: boolean): boolean;
 	/** @deprecated Deprecated. */
 	SetMicDevice(micDeviceName: string, micDeviceGuid: string): undefined;
-	/** @deprecated Deprecated. */
-	SetSpeakerDevice(speakerDeviceName: string, speakerDeviceGuid: string): undefined;
 	/** @deprecated Deprecated. */
 	SubscribePause(userId: number, paused: boolean): boolean;
 	/** @deprecated Deprecated. */
@@ -14655,7 +15121,7 @@ interface VoiceChatService extends Instance {
 	/** Returns chat group IDs that indicate which players can voice chat together. */
 	GetChatGroupsAsync(players?: Instance[]): unknown;
 	/** Returns whether or not the given user has voice enabled. */
-	IsVoiceEnabledForUserIdAsync(userId?: number): boolean;
+	IsVoiceEnabledForUserIdAsync(userId?: User): boolean;
 }
 
 interface WebSocketClient extends Instance {
@@ -14723,13 +15189,39 @@ interface MLSession extends Object {
 	ForwardAsync(data?: unknown): unknown;
 }
 
+interface OutputLink extends Object {
+}
+
+/**
+ * Encapsulates a connection between the current data model and another for plugin communication.
+ */
+interface PluginConnection extends Object {
+	/** Whether this `PluginConnection` object is still connected. */
+	Connected: boolean;
+	/** A unique ID for the target data model. */
+	TargetId: string;
+	/**
+	 * This `Enum.PluginConnectionTargetType` describes the relationship of the target data model to the current one.
+	 */
+	Type: Enum.PluginConnectionTargetType;
+	/**
+	 * Binds a callback to this `PluginConnection` to receive messages from `SendMessage()`.
+	 */
+	BindToMessage(callbackFunction: Function): RBXScriptConnection;
+	/** Sends a payload to the remote data model. */
+	SendMessage(message?: unknown): undefined;
+}
+
+interface StudioActionOverride extends Object {
+}
+
 interface TerrainIterateOperation extends Object {
-	CommitBlock(block?: unknown): RBXScriptSignal;
+	CommitBlock(block: unknown): RBXScriptSignal;
 	readonly Ready: RBXScriptSignal<(block: unknown) => void>;
 }
 
 interface TerrainModifyOperation extends Object {
-	CommitBlock(block?: unknown): RBXScriptSignal;
+	CommitBlock(block: unknown): RBXScriptSignal;
 	readonly Ready: RBXScriptSignal<(block: unknown) => void>;
 }
 
@@ -14738,7 +15230,7 @@ interface TerrainReadOperation extends Object {
 }
 
 interface TerrainWriteOperation extends Object {
-	CommitBlock(block?: unknown): RBXScriptSignal;
+	CommitBlock(block: unknown): RBXScriptSignal;
 	GetBlock(): unknown;
 }
 
@@ -14750,6 +15242,28 @@ interface VideoSampler extends Object {
 	VideoContent: Content;
 	/** Gets image frames at the specified timestamps. */
 	GetSamplesAtTimesAsync(times?: unknown): unknown;
+}
+
+/**
+ * Simulates mouse, keyboard, and pointer input as if it were performed by a real player.
+ */
+interface VirtualInput extends Object {
+	/** Injects a keyboard key press or release event. */
+	SendKey(isPressed?: boolean, keyCode?: Enum.KeyCode, isRepeatedKey?: boolean): undefined;
+	/** Injects a mouse button press or release event at the specified screen position. */
+	SendMouseButton(position?: Vector2, button?: Enum.UserInputType, isDown?: boolean, repeatCount?: number): undefined;
+	/**
+	 * Injects a relative mouse movement event. Only works while the player's cursor is locked.
+	 */
+	SendMouseDelta(positionDelta?: Vector2): undefined;
+	/** Moves the virtual mouse cursor to the specified absolute screen position. */
+	SendMousePosition(position?: Vector2): undefined;
+	/**
+	 * Injects a scroll wheel, trackpad pan, or pinch gesture event at the specified screen position.
+	 */
+	SendPointerAction(position?: Vector2, pointerAction?: unknown): undefined;
+	/** Injects a text input event as if the specified string was typed on a keyboard. */
+	SendTextInput(text?: string): undefined;
 }
 
 interface VoxelBuffer extends Object {
@@ -14820,6 +15334,7 @@ interface CreatableInstances {
 	AudioSpeechToText: AudioSpeechToText;
 	AudioTextToSpeech: AudioTextToSpeech;
 	AudioTremolo: AudioTremolo;
+	AvatarAbilityRules: AvatarAbilityRules;
 	AvatarAccessoryRules: AvatarAccessoryRules;
 	AvatarAnimationRules: AvatarAnimationRules;
 	AvatarBodyRules: AvatarBodyRules;
@@ -14885,6 +15400,7 @@ interface CreatableInstances {
 	DebuggerWatch: DebuggerWatch;
 	Dialog: Dialog;
 	DialogChoice: DialogChoice;
+	DigitsRigDescription: DigitsRigDescription;
 	Dragger: Dragger;
 	EulerRotationCurve: EulerRotationCurve;
 	ExperienceInviteOptions: ExperienceInviteOptions;
@@ -14896,6 +15412,7 @@ interface CreatableInstances {
 	Fire: Fire;
 	FloatCurve: FloatCurve;
 	Folder: Folder;
+	GeneratedFolder: GeneratedFolder;
 	ForceField: ForceField;
 	GetTextBoundsParams: GetTextBoundsParams;
 	CanvasGroup: CanvasGroup;
@@ -14929,7 +15446,6 @@ interface CreatableInstances {
 	Handles: Handles;
 	SurfaceSelection: SurfaceSelection;
 	Path2D: Path2D;
-	HandRigDescription: HandRigDescription;
 	HapticEffect: HapticEffect;
 	HiddenSurfaceRemovalAsset: HiddenSurfaceRemovalAsset;
 	Highlight: Highlight;
@@ -14975,6 +15491,7 @@ interface CreatableInstances {
 	Model: Model;
 	Actor: Actor;
 	Tool: Tool;
+	ProceduralModel: ProceduralModel;
 	WorldModel: WorldModel;
 	PartOperationAsset: PartOperationAsset;
 	ParticleEmitter: ParticleEmitter;
@@ -14993,6 +15510,7 @@ interface CreatableInstances {
 	SunRaysEffect: SunRaysEffect;
 	ProximityPrompt: ProximityPrompt;
 	RTAnimationTracker: RTAnimationTracker;
+	RealtimeMedia: RealtimeMedia;
 	ReflectionMetadata: ReflectionMetadata;
 	ReflectionMetadataCallbacks: ReflectionMetadataCallbacks;
 	ReflectionMetadataClasses: ReflectionMetadataClasses;
@@ -15061,6 +15579,7 @@ interface CreatableInstances {
 	UITableLayout: UITableLayout;
 	UIPadding: UIPadding;
 	UIScale: UIScale;
+	UIShadow: UIShadow;
 	UIStroke: UIStroke;
 	BinaryStringValue: BinaryStringValue;
 	BoolValue: BoolValue;
@@ -15102,6 +15621,7 @@ interface CheckableServices {
 	AnimationFromVideoCreatorService: AnimationFromVideoCreatorService;
 	AnimationFromVideoCreatorStudioService: AnimationFromVideoCreatorStudioService;
 	AnnotationsService: AnnotationsService;
+	AppAgeSignalsService: AppAgeSignalsService;
 	AppLifecycleObserverService: AppLifecycleObserverService;
 	AppRatingPromptService: AppRatingPromptService;
 	AppUpdateService: AppUpdateService;
@@ -15134,6 +15654,7 @@ interface CheckableServices {
 	ChangeHistoryStreamingService: ChangeHistoryStreamingService;
 	Chat: Chat;
 	CloudCRUDService: CloudCRUDService;
+	CloudExecutionService: CloudExecutionService;
 	ClusterPacketCache: ClusterPacketCache;
 	CollaboratorsService: CollaboratorsService;
 	CollectionService: CollectionService;
@@ -15144,7 +15665,6 @@ interface CheckableServices {
 	ContentProvider: ContentProvider;
 	ContextActionService: ContextActionService;
 	ControllerService: ControllerService;
-	ConversationalAIAcceptanceService: ConversationalAIAcceptanceService;
 	CookiesService: CookiesService;
 	CoreGuiConfiguration: CoreGuiConfiguration;
 	CorePackages: CorePackages;
@@ -15161,6 +15681,8 @@ interface CheckableServices {
 	DebuggerConnectionManager: DebuggerConnectionManager;
 	DebuggerManager: DebuggerManager;
 	DebuggerUIService: DebuggerUIService;
+	DeferredAssetManagerService: DeferredAssetManagerService;
+	DesignFoundationsService: DesignFoundationsService;
 	DeviceIdService: DeviceIdService;
 	DraftsService: DraftsService;
 	DraggerService: DraggerService;
@@ -15180,6 +15702,7 @@ interface CheckableServices {
 	FacialAnimationStreamingServiceV2: FacialAnimationStreamingServiceV2;
 	FeatureRestrictionManager: FeatureRestrictionManager;
 	FileManagerService: FileManagerService;
+	FileSyncReplicationService: FileSyncReplicationService;
 	FlagStandService: FlagStandService;
 	FlyweightService: FlyweightService;
 	CSGDictionaryService: CSGDictionaryService;
@@ -15192,12 +15715,14 @@ interface CheckableServices {
 	GenericChallengeService: GenericChallengeService;
 	Geometry: Geometry;
 	GeometryService: GeometryService;
+	GongService: GongService;
 	GroupService: GroupService;
 	GuiService: GuiService;
 	GuidRegistryService: GuidRegistryService;
 	HapticService: HapticService;
 	HarmonyService: HarmonyService;
 	HeapProfilerService: HeapProfilerService;
+	HeatmapQueryService: HeatmapQueryService;
 	HeatmapService: HeatmapService;
 	HeightmapImporterService: HeightmapImporterService;
 	Hopper: Hopper;
@@ -15206,10 +15731,13 @@ interface CheckableServices {
 	ILegacyStudioBridge: ILegacyStudioBridge;
 	LegacyStudioBridge: LegacyStudioBridge;
 	IXPService: IXPService;
+	ImageScreenCaptureService: ImageScreenCaptureService;
 	IncrementalPatchBuilder: IncrementalPatchBuilder;
 	InsertService: InsertService;
 	InstanceExtensionsService: InstanceExtensionsService;
 	InstanceFileSyncService: InstanceFileSyncService;
+	InternalMessagingService: InternalMessagingService;
+	InternalMessagingServiceVerifier: InternalMessagingServiceVerifier;
 	JointsService: JointsService;
 	KeyboardService: KeyboardService;
 	KeyframeSequenceProvider: KeyframeSequenceProvider;
@@ -15253,6 +15781,7 @@ interface CheckableServices {
 	Workspace: Workspace;
 	PackageService: PackageService;
 	PackageUIService: PackageUIService;
+	Packages: Packages;
 	PartyEmulatorService: PartyEmulatorService;
 	PatchBundlerFileWatch: PatchBundlerFileWatch;
 	PathfindingService: PathfindingService;
@@ -15271,12 +15800,15 @@ interface CheckableServices {
 	PlayerHydrationService: PlayerHydrationService;
 	PlayerViewService: PlayerViewService;
 	Players: Players;
+	PluginConnectionService: PluginConnectionService;
 	PluginDebugService: PluginDebugService;
 	PluginGuiService: PluginGuiService;
 	PluginManagementService: PluginManagementService;
 	PluginPolicyService: PluginPolicyService;
 	PointsService: PointsService;
 	PolicyService: PolicyService;
+	Preloaded: Preloaded;
+	ProceduralBehaviorSchedulerService: ProceduralBehaviorSchedulerService;
 	ProcessInstancePhysicsService: ProcessInstancePhysicsService;
 	ProximityPromptService: ProximityPromptService;
 	PublishService: PublishService;
@@ -15301,11 +15833,13 @@ interface CheckableServices {
 	RuntimeContentService: RuntimeContentService;
 	RuntimeScriptService: RuntimeScriptService;
 	SafetyService: SafetyService;
+	SceneAnalysisService: SceneAnalysisService;
 	ScriptChangeService: ScriptChangeService;
 	ScriptCloneWatcher: ScriptCloneWatcher;
 	ScriptCloneWatcherHelper: ScriptCloneWatcherHelper;
 	ScriptCommitService: ScriptCommitService;
 	ScriptContext: ScriptContext;
+	ScriptDebuggerService: ScriptDebuggerService;
 	ScriptEditorService: ScriptEditorService;
 	ScriptProfilerService: ScriptProfilerService;
 	ScriptRegistrationService: ScriptRegistrationService;
@@ -15320,6 +15854,7 @@ interface CheckableServices {
 	SessionService: SessionService;
 	SharedTableRegistry: SharedTableRegistry;
 	SlimAnimationReplicationService: SlimAnimationReplicationService;
+	SlimDebugSettings: SlimDebugSettings;
 	SlimReplicationService: SlimReplicationService;
 	SlimService: SlimService;
 	SmoothVoxelsUpgraderService: SmoothVoxelsUpgraderService;
@@ -15337,8 +15872,10 @@ interface CheckableServices {
 	Studio: Studio;
 	StudioAssetService: StudioAssetService;
 	StudioCameraService: StudioCameraService;
+	StudioCaptureService: StudioCaptureService;
 	StudioData: StudioData;
 	StudioDeviceEmulatorService: StudioDeviceEmulatorService;
+	StudioDeviceSimulatorService: StudioDeviceSimulatorService;
 	StudioPublishService: StudioPublishService;
 	StudioScriptDebugEventListener: StudioScriptDebugEventListener;
 	StudioSdkService: StudioSdkService;
@@ -15440,6 +15977,7 @@ interface CheckableInstances {
 	Annotation: Annotation;
 	WorkspaceAnnotation: WorkspaceAnnotation;
 	AnnotationsService: AnnotationsService;
+	AppAgeSignalsService: AppAgeSignalsService;
 	AppLifecycleObserverService: AppLifecycleObserverService;
 	AppRatingPromptService: AppRatingPromptService;
 	AppUpdateService: AppUpdateService;
@@ -15480,6 +16018,7 @@ interface CheckableInstances {
 	AudioTextToSpeech: AudioTextToSpeech;
 	AudioTremolo: AudioTremolo;
 	AuroraScriptObject: AuroraScriptObject;
+	AvatarAbilityRules: AvatarAbilityRules;
 	AvatarAccessoryRules: AvatarAccessoryRules;
 	AvatarAnimationRules: AvatarAnimationRules;
 	AvatarBodyRules: AvatarBodyRules;
@@ -15553,6 +16092,7 @@ interface CheckableInstances {
 	ClickDetector: ClickDetector;
 	DragDetector: DragDetector;
 	CloudCRUDService: CloudCRUDService;
+	CloudExecutionService: CloudExecutionService;
 	Clouds: Clouds;
 	ClusterPacketCache: ClusterPacketCache;
 	Collaborator: Collaborator;
@@ -15599,7 +16139,6 @@ interface CheckableInstances {
 	SwimController: SwimController;
 	ControllerManager: ControllerManager;
 	ControllerService: ControllerService;
-	ConversationalAIAcceptanceService: ConversationalAIAcceptanceService;
 	CookiesService: CookiesService;
 	CoreGuiConfiguration: CoreGuiConfiguration;
 	CorePackages: CorePackages;
@@ -15640,9 +16179,12 @@ interface CheckableInstances {
 	DebuggerUIService: DebuggerUIService;
 	DebuggerVariable: DebuggerVariable;
 	DebuggerWatch: DebuggerWatch;
+	DeferredAssetManagerService: DeferredAssetManagerService;
+	DesignFoundationsService: DesignFoundationsService;
 	DeviceIdService: DeviceIdService;
 	Dialog: Dialog;
 	DialogChoice: DialogChoice;
+	DigitsRigDescription: DigitsRigDescription;
 	DraftsService: DraftsService;
 	Dragger: Dragger;
 	DraggerService: DraggerService;
@@ -15677,6 +16219,7 @@ interface CheckableInstances {
 	FeatureRestrictionManager: FeatureRestrictionManager;
 	File: File;
 	FileManagerService: FileManagerService;
+	FileSyncReplicationService: FileSyncReplicationService;
 	Fire: Fire;
 	FlagStandService: FlagStandService;
 	FloatCurve: FloatCurve;
@@ -15684,6 +16227,7 @@ interface CheckableInstances {
 	CSGDictionaryService: CSGDictionaryService;
 	NonReplicatedCSGDictionaryService: NonReplicatedCSGDictionaryService;
 	Folder: Folder;
+	GeneratedFolder: GeneratedFolder;
 	ForceField: ForceField;
 	FriendService: FriendService;
 	FunctionalTest: FunctionalTest;
@@ -15698,6 +16242,7 @@ interface CheckableInstances {
 	GlobalDataStore: GlobalDataStore;
 	DataStore: DataStore;
 	OrderedDataStore: OrderedDataStore;
+	GongService: GongService;
 	GroupService: GroupService;
 	GuiBase: GuiBase;
 	GuiBase2d: GuiBase2d;
@@ -15753,11 +16298,11 @@ interface CheckableInstances {
 	Path2D: Path2D;
 	GuiService: GuiService;
 	GuidRegistryService: GuidRegistryService;
-	HandRigDescription: HandRigDescription;
 	HapticEffect: HapticEffect;
 	HapticService: HapticService;
 	HarmonyService: HarmonyService;
 	HeapProfilerService: HeapProfilerService;
+	HeatmapQueryService: HeatmapQueryService;
 	HeatmapService: HeatmapService;
 	HeightmapImporterService: HeightmapImporterService;
 	HiddenSurfaceRemovalAsset: HiddenSurfaceRemovalAsset;
@@ -15773,6 +16318,7 @@ interface CheckableInstances {
 	ILegacyStudioBridge: ILegacyStudioBridge;
 	LegacyStudioBridge: LegacyStudioBridge;
 	IXPService: IXPService;
+	ImageScreenCaptureService: ImageScreenCaptureService;
 	ImportSession: ImportSession;
 	AssetImportSession: AssetImportSession;
 	IncrementalPatchBuilder: IncrementalPatchBuilder;
@@ -15783,6 +16329,8 @@ interface CheckableInstances {
 	InsertService: InsertService;
 	InstanceExtensionsService: InstanceExtensionsService;
 	InstanceFileSyncService: InstanceFileSyncService;
+	InternalMessagingService: InternalMessagingService;
+	InternalMessagingServiceVerifier: InternalMessagingServiceVerifier;
 	JointInstance: JointInstance;
 	DynamicRotate: DynamicRotate;
 	RotateP: RotateP;
@@ -15904,6 +16452,7 @@ interface CheckableInstances {
 	HopperBin: HopperBin;
 	Tool: Tool;
 	Flag: Flag;
+	ProceduralModel: ProceduralModel;
 	Status: Status;
 	WorldRoot: WorldRoot;
 	Workspace: Workspace;
@@ -15911,6 +16460,7 @@ interface CheckableInstances {
 	PackageLink: PackageLink;
 	PackageService: PackageService;
 	PackageUIService: PackageUIService;
+	Packages: Packages;
 	Pages: Pages;
 	AudioPages: AudioPages;
 	BanHistoryPages: BanHistoryPages;
@@ -15922,7 +16472,6 @@ interface CheckableInstances {
 	DataStoreVersionPages: DataStoreVersionPages;
 	FriendPages: FriendPages;
 	InventoryPages: InventoryPages;
-	EmotesPages: EmotesPages;
 	MemoryStoreHashMapPages: MemoryStoreHashMapPages;
 	OutfitPages: OutfitPages;
 	RecommendationPages: RecommendationPages;
@@ -15962,6 +16511,7 @@ interface CheckableInstances {
 	Plugin: Plugin;
 	PluginAction: PluginAction;
 	PluginCapabilities: PluginCapabilities;
+	PluginConnectionService: PluginConnectionService;
 	PluginDebugService: PluginDebugService;
 	PluginDragEvent: PluginDragEvent;
 	PluginGuiService: PluginGuiService;
@@ -15984,12 +16534,15 @@ interface CheckableInstances {
 	ColorGradingEffect: ColorGradingEffect;
 	DepthOfFieldEffect: DepthOfFieldEffect;
 	SunRaysEffect: SunRaysEffect;
+	Preloaded: Preloaded;
+	ProceduralBehaviorSchedulerService: ProceduralBehaviorSchedulerService;
 	ProcessInstancePhysicsService: ProcessInstancePhysicsService;
 	ProximityPrompt: ProximityPrompt;
 	ProximityPromptService: ProximityPromptService;
 	PublishService: PublishService;
 	RTAnimationTracker: RTAnimationTracker;
 	RbxAnalyticsService: RbxAnalyticsService;
+	RealtimeMedia: RealtimeMedia;
 	RecommendationService: RecommendationService;
 	ReflectionMetadata: ReflectionMetadata;
 	ReflectionMetadataCallbacks: ReflectionMetadataCallbacks;
@@ -16028,6 +16581,7 @@ interface CheckableInstances {
 	RuntimeContentService: RuntimeContentService;
 	RuntimeScriptService: RuntimeScriptService;
 	SafetyService: SafetyService;
+	SceneAnalysisService: SceneAnalysisService;
 	ScreenshotHud: ScreenshotHud;
 	ScriptBuilder: ScriptBuilder;
 	SyncScriptBuilder: SyncScriptBuilder;
@@ -16037,6 +16591,7 @@ interface CheckableInstances {
 	ScriptCommitService: ScriptCommitService;
 	ScriptContext: ScriptContext;
 	ScriptDebugger: ScriptDebugger;
+	ScriptDebuggerService: ScriptDebuggerService;
 	ScriptDocument: ScriptDocument;
 	ScriptEditorService: ScriptEditorService;
 	ScriptProfilerService: ScriptProfilerService;
@@ -16066,6 +16621,7 @@ interface CheckableInstances {
 	Sky: Sky;
 	SlimAnimationDataEntity: SlimAnimationDataEntity;
 	SlimAnimationReplicationService: SlimAnimationReplicationService;
+	SlimDebugSettings: SlimDebugSettings;
 	SlimReplicationService: SlimReplicationService;
 	SlimService: SlimService;
 	Smoke: Smoke;
@@ -16112,11 +16668,14 @@ interface CheckableInstances {
 	StudioAttachment: StudioAttachment;
 	StudioCallout: StudioCallout;
 	StudioCameraService: StudioCameraService;
+	StudioCaptureService: StudioCaptureService;
 	StudioData: StudioData;
 	StudioDeviceEmulatorService: StudioDeviceEmulatorService;
+	StudioDeviceSimulatorService: StudioDeviceSimulatorService;
 	StudioObjectBase: StudioObjectBase;
 	StudioWidget: StudioWidget;
 	StudioPublishService: StudioPublishService;
+	StudioScreenshotCapture: StudioScreenshotCapture;
 	StudioScriptDebugEventListener: StudioScriptDebugEventListener;
 	StudioSdkService: StudioSdkService;
 	StudioService: StudioService;
@@ -16147,6 +16706,7 @@ interface CheckableInstances {
 	TemporaryScriptService: TemporaryScriptService;
 	TerrainDetail: TerrainDetail;
 	TerrainRegion: TerrainRegion;
+	TestCase: TestCase;
 	TestService: TestService;
 	TextBoxService: TextBoxService;
 	TextChannel: TextChannel;
@@ -16205,6 +16765,7 @@ interface CheckableInstances {
 	UITableLayout: UITableLayout;
 	UIPadding: UIPadding;
 	UIScale: UIScale;
+	UIShadow: UIShadow;
 	UIStroke: UIStroke;
 	UIDragDetectorService: UIDragDetectorService;
 	UniqueIdLookupService: UniqueIdLookupService;
@@ -16253,11 +16814,15 @@ interface CheckableInstances {
 	WrapDeformMeshProvider: WrapDeformMeshProvider;
 	WrapTextureTransfer: WrapTextureTransfer;
 	MLSession: MLSession;
+	OutputLink: OutputLink;
+	PluginConnection: PluginConnection;
+	StudioActionOverride: StudioActionOverride;
 	TerrainIterateOperation: TerrainIterateOperation;
 	TerrainModifyOperation: TerrainModifyOperation;
 	TerrainReadOperation: TerrainReadOperation;
 	TerrainWriteOperation: TerrainWriteOperation;
 	VideoSampler: VideoSampler;
+	VirtualInput: VirtualInput;
 	VoxelBuffer: VoxelBuffer;
 	WebStreamClient: WebStreamClient;
 }
