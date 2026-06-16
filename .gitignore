@@ -9,3 +9,7 @@ demo/Packages
 demo/types
 docs/specs/
 .claude/
+
+# docs-site (Astro Starlight)
+docs-site/.astro/
+docs-site/public/playground/

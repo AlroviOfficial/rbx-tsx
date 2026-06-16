@@ -1,0 +1,66 @@
+---
+title: rbx-tsx
+description: TSX/TypeScript → Luau compiler targeting react-lua for Roblox. Dependency-free, fully typed output.
+template: splash
+hero:
+  tagline: Write React components in TypeScript/TSX, get clean, fully typed, dependency-free Luau for Roblox.
+  image:
+    file: ../../assets/logo.svg
+  actions:
+    - text: Get Started
+      link: /getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: Open Playground
+      link: /playground/
+      icon: external
+      variant: secondary
+    - text: View on GitHub
+      link: https://github.com/AlroviOfficial/rbx-tsx
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+## What is rbx-tsx?
+
+rbx-tsx is a TSX/TypeScript → Luau compiler targeting [react-lua](https://github.com/jsdotlua/react-lua)
+for Roblox. It parses TS/TSX with the real TypeScript compiler API, transforms the
+AST, and emits **dependency-free Luau with full type annotations preserved**.
+
+<CardGrid stagger>
+  <Card title="No runtime dependency" icon="rocket">
+    Compiles to standalone Luau. JS APIs like `console`, `Math`, `JSON`, `Array`,
+    and `RegExp` are inlined directly into the output — no polyfill package required.
+  </Card>
+  <Card title="Fully typed output" icon="approve-check">
+    Interfaces, generics, unions, and optionals all survive the trip to Luau type
+    annotations. Output is designed to be read and debugged.
+  </Card>
+  <Card title="JSX & React built-in" icon="puzzle">
+    JSX compiles straight to `React.createElement`. Write `<div>`, `<button>`,
+    `<input>` — they map to Roblox GUI classes automatically.
+  </Card>
+  <Card title="Rojo + Wally" icon="setting">
+    `rbx-tsx init` scaffolds a Rojo-ready project. Path resolution reads your
+    `default.project.json` for `game:GetService(...)` require paths.
+  </Card>
+</CardGrid>
+
+## Try it now
+
+The [**Playground**](/playground/) runs the full compiler — including the
+TypeScript type-checker — entirely in your browser. TypeScript/TSX on the left,
+compiled Luau on the right, with a live problems panel. Output matches the CLI exactly.
+
+## Next steps
+
+<CardGrid>
+  <Card title="Getting Started" icon="open-book">
+    [Install, scaffold a project, and compile your first component.](/getting-started/)
+  </Card>
+  <Card title="CLI Reference" icon="laptop">
+    [Every command and flag: `compile`, `watch`, `check`, `init`, `types`.](/guides/cli/)
+  </Card>
+</CardGrid>

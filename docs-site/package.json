@@ -1,0 +1,19 @@
+{
+  "name": "rbx-tsx-docs",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "prebuild": "bun run scripts/build-playground.ts",
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.40.0",
+    "astro": "^6.4.7",
+    "sharp": "^0.35.1"
+  }
+}

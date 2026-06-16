@@ -1,0 +1,25 @@
+/* rbx-tsx brand accent — matches the playground (#e2563f). */
+:root {
+  --sl-color-accent-low: #3a1a14;
+  --sl-color-accent: #e2563f;
+  --sl-color-accent-high: #f2a799;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #eceef2;
+  --sl-color-gray-2: #c0c2c7;
+  --sl-color-gray-3: #888b96;
+  --sl-color-gray-4: #545861;
+  --sl-color-gray-5: #353841;
+  --sl-color-gray-6: #24272f;
+  --sl-color-black: #17181c;
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent-low: #f7d9d2;
+  --sl-color-accent: #c93c25;
+  --sl-color-accent-high: #5c1c12;
+}
+
+/* Tighten code blocks a touch — the docs are dense with TS/Luau samples. */
+.sl-markdown-content pre {
+  font-size: 0.85rem;
+}
