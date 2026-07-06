@@ -28,6 +28,7 @@ import { ROBLOX_METHODS } from "../mappings/roblox-methods.ts";
 import { ROBLOX_SERVICES } from "../mappings/roblox-services.ts";
 import {
   ROBLOX_CONSTRUCTORS,
+  DOT_CALL_GLOBALS,
   ROBLOX_MATH_OPERATORS,
 } from "../mappings/roblox-constructors.ts";
 import type { TransformContext } from "./transform-context.ts";
@@ -543,8 +544,11 @@ function transformBinaryExpression(
     const left = transformExpression(node.left, ctx);
     if (ts.isIdentifier(node.right)) {
       const className = node.right.text;
-      // Roblox value types (Color3, Vector3, etc.) use typeof()
-      if (ROBLOX_CONSTRUCTORS.has(className) && className !== "Instance") {
+      // Roblox value types (Color3, Vector3, DateTime, etc.) use typeof()
+      if (
+        (ROBLOX_CONSTRUCTORS.has(className) || className === "DateTime") &&
+        className !== "Instance"
+      ) {
         return binary(
           call(ident("typeof"), [left]),
           "==",
@@ -921,6 +925,16 @@ function transformCallExpression(
       result = call(index(obj, method), args);
     } else if (
       ts.isIdentifier(receiver) &&
+      DOT_CALL_GLOBALS.has(receiver.text) &&
+      resolvesToAmbientGlobal(receiver, ctx)
+    ) {
+      // Global library call: os.time(), task.wait(), DateTime.now() — the
+      // functions are plain fields, so dot, never colon. Only when the name
+      // resolves to the ambient global; a user local named `task` keeps the
+      // instance-method colon call below.
+      result = call(index(obj, method), args);
+    } else if (
+      ts.isIdentifier(receiver) &&
       ctx.importedModules.has(receiver.text) &&
       ctx.importedModules.get(receiver.text) !== "@rbx-services"
     ) {
@@ -967,6 +981,22 @@ function transformCallExpression(
 
   const callee = transformExpression(node.expression, ctx);
   return call(callee, args);
+}
+
+/**
+ * True when an identifier resolves to the ambient global of that name (a
+ * declaration in the bundled .d.ts) rather than a user binding — import,
+ * local, or parameter — that shadows it. Without a checker (parse-only
+ * fallback) shadowing is undetectable; assume the global.
+ */
+function resolvesToAmbientGlobal(
+  node: ts.Identifier,
+  ctx: TransformContext
+): boolean {
+  if (ctx.importedModules.has(node.text)) return false;
+  const declarations = ctx.checker?.getSymbolAtLocation(node)?.declarations;
+  if (!declarations || declarations.length === 0) return true;
+  return declarations.every((d) => d.getSourceFile().isDeclarationFile);
 }
 
 function transformSimpleCallExpression(

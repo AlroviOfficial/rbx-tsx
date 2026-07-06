@@ -409,6 +409,27 @@ describe("setTimeout/setInterval", () => {
   });
 });
 
+describe("global library calls", () => {
+  test("stay dot-style, never colon", () => {
+    expect(compileStmt("const t = os.time();")).toContain("os.time()");
+    expect(compileStmt("const now = DateTime.now();")).toContain("DateTime.now()");
+  });
+
+  test("a local shadowing a global library keeps colon method calls", () => {
+    const out = compileStmt(
+      "declare const queue: { pop(): { cancel(): void } };\nconst task = queue.pop();\ntask.cancel();"
+    );
+    expect(out).toContain("task:cancel()");
+  });
+
+  test("instanceof DateTime uses typeof()", () => {
+    const out = compileStmt(
+      "declare const v: unknown;\nconst b = (v as any) instanceof DateTime;"
+    );
+    expect(out).toContain('typeof(v) == "DateTime"');
+  });
+});
+
 // ── Task 9: Missing array helpers ──
 
 describe("array flat/flatMap/fill methods", () => {

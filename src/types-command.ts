@@ -9,6 +9,8 @@ import { emitStandaloneDts } from "./type-extraction/emit.ts";
 
 export interface TypesOptions {
   output?: string;
+  /** Overwrite existing .d.ts files next to local modules */
+  force?: boolean;
 }
 
 /** Write the generated declarations to disk, returning the absolute paths. */
@@ -54,12 +56,20 @@ export function handleTypes(directory: string | undefined, opts: TypesOptions): 
 
   // A plain .luau/.lua module file: emit a sibling .d.ts.
   if (/\.luau?$/.test(target) && existsSync(target) && statSync(target).isFile()) {
-    const written = writeLocalModuleTypes([target]);
+    const written = writeLocalModuleTypes([target], opts.force ?? false);
     console.log(`Generated ${written.length} declaration(s).`);
     return;
   }
 
   const result = extractProjectTypes(target);
+
+  // Local-module mode requires an explicit path: a bare `rbx-tsx types` in a
+  // manifest-less directory should error, not recursively write .d.ts files
+  // across the whole tree on an accidental invocation.
+  if (!result && directory === undefined) {
+    console.error("No wally.toml or pesde.toml found.");
+    process.exit(1);
+  }
 
   // An explicitly-given directory that is not itself the manifest dir (e.g.
   // `rbx-tsx types src`) is treated as a tree of local .luau modules, not as
@@ -75,7 +85,7 @@ export function handleTypes(directory: string | undefined, opts: TypesOptions): 
       );
       process.exit(1);
     }
-    const written = writeLocalModuleTypes(modules);
+    const written = writeLocalModuleTypes(modules, opts.force ?? false);
     console.log(`Generated ${written.length} local module declaration(s).`);
     return;
   }
@@ -144,12 +154,18 @@ function findLocalModules(dir: string): string[] {
 }
 
 /** Emit a sibling .d.ts for each local module; returns the written paths. */
-function writeLocalModuleTypes(files: string[]): string[] {
+function writeLocalModuleTypes(files: string[], force: boolean): string[] {
   const written: string[] = [];
   for (const file of files) {
+    const out = file.replace(/\.luau?$/, ".d.ts");
+    // An existing .d.ts is likely hand-written and better than scraped types —
+    // never clobber it without --force.
+    if (!force && existsSync(out)) {
+      console.log(`  ${basename(file)} -> skipped (${relative(process.cwd(), out)} exists; use --force to overwrite)`);
+      continue;
+    }
     const module = extractFromEntry(file, dirname(file));
     const dts = emitStandaloneDts(module);
-    const out = file.replace(/\.luau?$/, ".d.ts");
     writeFileSync(out, dts);
     console.log(`  ${basename(file)} -> ${relative(process.cwd(), out)}`);
     written.push(out);

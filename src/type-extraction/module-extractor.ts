@@ -152,6 +152,11 @@ function parseFunctionDecl(
       if (g[0]?.type === "name" && isPunct(g[1], ":")) {
         return { name: g[0].value, type: parseTypeExpression(g.slice(2)) };
       }
+      // In a declaration's param list a lone name is a parameter name (with no
+      // annotation), unlike in a function *type* where it would be a type.
+      if (g[0]?.type === "name" && g.length === 1) {
+        return { name: g[0].value, type: { kind: "any" } as LuauType };
+      }
       return { type: parseTypeExpression(g) };
     });
 
@@ -277,7 +282,10 @@ export function extractModule(source: string): ExtractedModule {
       // by an operator/opener/keyword that expects a value.
       const prev = tokens[i - 1];
       const isExpression =
-        (prev?.type === "punct" && ["=", "(", ",", "{", "[", ".."].includes(prev.value)) ||
+        (prev?.type === "punct" &&
+          ["=", "(", ",", "{", "[", "..",
+           // binary operators also expect a value: `local x = 1 + if c then a else b`
+           "+", "-", "*", "/", "%", "^", "==", "~=", "<", "<=", ">", ">="].includes(prev.value)) ||
         (prev?.type === "name" &&
           ["return", "and", "or", "not", "then", "else", "elseif"].includes(prev.value));
       if (!isExpression) blockDepth++;

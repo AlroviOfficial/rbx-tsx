@@ -14,6 +14,12 @@ export interface CodegenOptions {
   directives?: string[];
   /** Whether the source had a blank line between the directives and the first statement */
   directiveGap?: boolean;
+  /**
+   * Emit `local` for every binding instead of promoting unmodified ones to
+   * `const`. `const` requires a recent Luau; this keeps output parseable by
+   * older toolchains (pinned luau-analyze, lune, ...).
+   */
+  noConst?: boolean;
 }
 
 /** Collect every identifier that is ever an assignment target, so unmodified
@@ -40,8 +46,8 @@ export function generateLuau(
   statements: LuauStatement[],
   options: CodegenOptions = {}
 ): string {
-  const ctx = new CodegenContext(options.indentStr ?? "    ");
-  collectAssignedNames(statements, ctx.assignedNames);
+  const ctx = new CodegenContext(options.indentStr ?? "    ", options.noConst ?? false);
+  if (!ctx.noConst) collectAssignedNames(statements, ctx.assignedNames);
   const lines: string[] = [];
 
   if (options.directives && options.directives.length > 0) {
@@ -74,7 +80,7 @@ export function generateLuau(
 class CodegenContext {
   assignedNames: Set<string> = new Set();
 
-  constructor(public indentStr: string) {}
+  constructor(public indentStr: string, public noConst: boolean = false) {}
 
   indent(level: number): string {
     return this.indentStr.repeat(level);
@@ -94,7 +100,9 @@ function emitStatement(
   switch (stmt.type) {
     case "local": {
       const keyword =
-        stmt.value && !ctx.assignedNames.has(stmt.name) ? "const" : "local";
+        !ctx.noConst && stmt.value && !ctx.assignedNames.has(stmt.name)
+          ? "const"
+          : "local";
       let line = `${t}${keyword} ${stmt.name}`;
       if (stmt.typeAnnotation) {
         line += `: ${stmt.typeAnnotation}`;
@@ -110,6 +118,7 @@ function emitStatement(
       const names = stmt.names.join(", ");
       const values = stmt.values.map((v) => emitExpr(v, ctx, depth)).join(", ");
       const keyword =
+        !ctx.noConst &&
         stmt.values.length > 0 &&
         stmt.names.every((n) => !ctx.assignedNames.has(n))
           ? "const"
@@ -166,7 +175,7 @@ function emitStatement(
         lines.push(`${t}function ${fnRef}${typeParams}(${params})${returnPart}`);
       } else {
         const prefix = stmt.local
-          ? `${ctx.assignedNames.has(stmt.name) ? "local" : "const"} function`
+          ? `${ctx.noConst || ctx.assignedNames.has(stmt.name) ? "local" : "const"} function`
           : "function";
         lines.push(`${t}${prefix} ${stmt.name}${typeParams}(${params})${returnPart}`);
       }

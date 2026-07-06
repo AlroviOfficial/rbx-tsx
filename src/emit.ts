@@ -27,6 +27,8 @@ export interface CompilerOptions {
   sourcemap?: boolean;
   /** Omit the auto-generated header comments in the Luau output */
   silent?: boolean;
+  /** Emit `local` everywhere instead of promoting unmodified bindings to `const` */
+  noConst?: boolean;
   warnLevel?: WarningLevel;
   cssManifest?: CSSManifest;
   /** Directory-to-Luau-path mappings for cross-boundary imports */
@@ -116,6 +118,7 @@ export function emitFromSource(
   const luau = generateLuau(luauStatements, {
     sourceFile: filename,
     silent: options.silent ?? false,
+    noConst: options.noConst ?? false,
     directives,
     directiveGap,
   });
