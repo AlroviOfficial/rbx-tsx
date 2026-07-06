@@ -7,7 +7,7 @@ rbx-tsx transforms JavaScript and TypeScript language constructs into idiomatic 
 
 | TypeScript | Luau |
 |------------|------|
-| `const` / `let` | `local` |
+| `const` / `let` | `const` / `local` (see below) |
 | `===` / `!==` | `==` / `~=` |
 | `&&` / `\|\|` / `!` | `and` / `or` / `not` |
 | `a ?? b` | `if a ~= nil then a else b` |
@@ -35,7 +35,15 @@ rbx-tsx transforms JavaScript and TypeScript language constructs into idiomatic 
 | `[key]() {}` / `"name"() {}` | Computed/string method name → `Class[key] = function` |
 | `` tag`a${x}b` `` | `tag({ "a", "b" }, x)` |
 | `LuaTuple<[A, B]>` return | `(A, B)` multiple return values |
-| `const [a, b] = tupleCall()` | `local a, b = tupleCall()` |
+| `const [a, b] = tupleCall()` | `const a, b = tupleCall()` |
+
+## `const` bindings
+
+Any binding that is never reassigned — including `let` variables and function
+declarations — is emitted as Luau [`const`](https://rfcs.luau.org/const-keyword.html)
+instead of `local`, so the immutability survives compilation. Reassigned bindings and
+uninitialized locals stay `local`. If your toolchain doesn't support `const` yet, pass
+`--no-const` to emit `local` everywhere.
 
 ## Async, generators, and decorators
 

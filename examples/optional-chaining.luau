@@ -6,24 +6,29 @@ type User = {
     name: string,
     profile: { avatar: string?, settings: { theme: string? }? }?,
 }
-local user: User? = {
+
+const user: User? = {
     name = "Player",
     profile = { avatar = "rbxassetid://123", settings = { theme = "dark" } },
 }
+
 -- Optional chaining — short-circuits to undefined if any part is null/undefined
-local _opt0 = if user ~= nil then user.profile else nil
-local _opt1 = if _opt0 ~= nil then _opt0.settings else nil
-local theme = if _opt1 ~= nil then _opt1.theme else nil
-local _opt2 = if user ~= nil then user.profile else nil
-local _opt3 = if _opt2 ~= nil then _opt2.missing else nil
-local missing = if _opt3 ~= nil then _opt3.nested else nil
+const _opt0 = if user ~= nil then user.profile else nil
+const _opt1 = if _opt0 ~= nil then _opt0.settings else nil
+const theme = if _opt1 ~= nil then _opt1.theme else nil
+const _opt2 = if user ~= nil then user.profile else nil
+const _opt3 = if _opt2 ~= nil then _opt2.missing else nil
+const missing = if _opt3 ~= nil then _opt3.nested else nil
+
 -- Nullish coalescing — use default only for null/undefined (not 0 or "")
-local displayTheme = if theme ~= nil then theme else "light"
-local displayName = if (if user ~= nil then user.name else nil) ~= nil then if user ~= nil then user.name else nil else "Anonymous"
+const displayTheme = if theme ~= nil then theme else "light"
+const displayName = if (if user ~= nil then user.name else nil) ~= nil then if user ~= nil then user.name else nil else "Anonymous"
+
 -- Optional call
 type Callback = ((() -> ()))?
-local cb: Callback = nil
+const cb: Callback = nil
 if cb ~= nil then
     cb()
 end
+
 print(displayTheme, displayName)

@@ -8,12 +8,12 @@ with Rojo-aware path resolution.
 
 | TypeScript | Luau |
 |------------|------|
-| `import React from "react"` | `local React = require(...)` |
-| `import { useState } from "react"` | `local useState = React.useState` |
-| `import { Players } from "@rbx-services"` | `local Players = game:GetService("Players")` |
-| `import Card from "./Card"` | `local Card = require(script.Parent.Card)` |
-| `import * as Utils from "./utils"` | `local Utils = require(script.Parent.utils)` |
-| `import styles from "./Card.module.css"` | `local styles = require(script.Parent["Card.style"])` |
+| `import React from "react"` | `const React = require(...)` |
+| `import { useState } from "react"` | `const useState = React.useState` |
+| `import { Players } from "@rbx-services"` | `const Players = game:GetService("Players")` |
+| `import Card from "./Card"` | `const Card = require(script.Parent.Card)` |
+| `import * as Utils from "./utils"` | `const Utils = require(script.Parent.utils)` |
+| `import styles from "./Card.module.css"` | `const styles = require(script.Parent["Card.style"])` |
 | `export default function App()` | `return App` |
 | `export function helper()` | `return { helper = helper }` |
 | `export { X } from "./module"` | Re-export handling |
@@ -34,8 +34,8 @@ import { Players, RunService } from "@rbx-services";
 ```
 
 ```lua
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+const Players = game:GetService("Players")
+const RunService = game:GetService("RunService")
 ```
 
 See [Roblox Integration](/guides/roblox/) for more on services and the Instance API.

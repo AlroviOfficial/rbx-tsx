@@ -1,6 +1,6 @@
 {
   "name": "rbx-tsx",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "TSX to Luau compiler targeting react-lua for Roblox",
   "license": "MIT",
   "repository": {

@@ -15,7 +15,7 @@ interface Props {              // type Props = {
   onClick: () => void;         //   onClick: (() -> ()),
 }                              // }
 
-enum Direction { Up, Down }    // local Direction = { Up = 0, Down = 1 }
+enum Direction { Up, Down }    // const Direction = { Up = 0, Down = 1 }
                                // type Direction = number
 ```
 

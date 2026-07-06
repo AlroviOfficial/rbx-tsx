@@ -91,20 +91,20 @@ export default function Counter({ label, initialCount = 0 }: CounterProps) {
 **Output** (`Counter.luau`):
 
 ```lua
-local React = require(game:GetService("ReplicatedStorage").Packages.React)
-local useState = React.useState
-local useCallback = React.useCallback
+const React = require(game:GetService("ReplicatedStorage").Packages.React)
+const useState = React.useState
+const useCallback = React.useCallback
 
 type CounterProps = {
     label: string,
     initialCount: number?,
 }
 
-local function Counter(props: CounterProps)
-    local label = props.label
-    local initialCount = if props.initialCount ~= nil then props.initialCount else 0
-    local count, setCount = useState(initialCount)
-    local increment = useCallback(function()
+const function Counter(props: CounterProps)
+    const label = props.label
+    const initialCount = if props.initialCount ~= nil then props.initialCount else 0
+    const count, setCount = useState(initialCount)
+    const increment = useCallback(function()
         setCount(function(c) return c + 1 end)
     end, {})
 

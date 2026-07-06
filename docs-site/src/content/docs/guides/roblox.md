@@ -44,7 +44,24 @@ event.Connect(handler);           // → event:Connect(handler)
 ```
 
 The compiler distinguishes method calls (`:`) from static/value-type calls (`.`) using the
-resolved type from the TypeScript checker.
+resolved type from the TypeScript checker. Calls on the global libraries (`os`, `task`,
+`coroutine`, `utf8`, `bit32`, `buffer`, `DateTime`) always stay dot-style — unless a local
+variable of the same name shadows the global.
+
+## Luau directives
+
+Top-of-file `//!` comments are promoted to Luau hot-comment directives, emitted as the
+very first lines of the output where Luau requires them:
+
+```ts
+//!native
+//!optimize 2
+```
+
+```lua
+--!native
+--!optimize 2
+```
 
 ## Services
 
@@ -55,9 +72,9 @@ import { Players, RunService, ReplicatedStorage } from "@rbx-services";
 ```
 
 ```lua
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+const Players = game:GetService("Players")
+const RunService = game:GetService("RunService")
+const ReplicatedStorage = game:GetService("ReplicatedStorage")
 ```
 
 ## CSS support

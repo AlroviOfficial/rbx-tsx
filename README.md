@@ -44,14 +44,14 @@ export default function Counter({ label }: { label: string }) {
 **Output** (`Counter.luau`):
 
 ```lua
-local React = require(game:GetService("ReplicatedStorage").Packages.React)
-local useState = React.useState
-local useCallback = React.useCallback
+const React = require(game:GetService("ReplicatedStorage").Packages.React)
+const useState = React.useState
+const useCallback = React.useCallback
 
-local function Counter(props: { label: string })
-    local label = props.label
-    local count, setCount = useState(0)
-    local increment = useCallback(function()
+const function Counter(props: { label: string })
+    const label = props.label
+    const count, setCount = useState(0)
+    const increment = useCallback(function()
         setCount(function(c) return c + 1 end)
     end, {})
 
@@ -77,7 +77,7 @@ rbx-tsx compile <input>   # compile a file or directory (stdout or -o <path>)
 rbx-tsx watch <path>      # recompile on change
 rbx-tsx check <input>     # type-check without emitting
 rbx-tsx init <name>       # scaffold a new project
-rbx-tsx types [dir]       # generate .d.ts from installed wally/pesde packages
+rbx-tsx types [path]      # generate .d.ts from wally/pesde packages or local .luau modules
 ```
 
 Full flag reference and feature details are in the **[docs](https://rbx-tsx.alrovi.com/guides/cli/)**:

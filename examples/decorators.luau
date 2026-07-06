@@ -3,13 +3,15 @@
 
 -- Decorators — class decorators as wrapper calls, method decorators as descriptor modifications
 -- Class decorator: receives constructor, can return replacement
-local function sealed(target: any)
+const function sealed(target: any)
     return target
 end
+
 -- Method decorator: receives (target, propertyKey, descriptor), can return modified descriptor
-local function log(target: any, key: string, desc: any)
+const function log(target: any, key: string, desc: any)
     return desc
 end
+
 local Greeter = {}
 Greeter.__index = Greeter
 type GreeterData = {
@@ -17,16 +19,17 @@ type GreeterData = {
 }
 type Greeter = typeof(setmetatable({} :: GreeterData, Greeter))
 function Greeter.new(name: string): Greeter
-    local self = {}
+    const self = {}
     self.name = name
     return setmetatable(self, Greeter)
 end
-local _opt0 = function(self: Greeter): string return `Hello, {self.name}` end
+const _opt0 = function(self: Greeter): string return `Hello, {self.name}` end
 local _opt1 = { value = _opt0 }
 _opt1 = log(Greeter, "greet", _opt1) or _opt1
 Greeter.greet = if _opt1 and _opt1.value then _opt1.value else _opt0
 local _opt2 = Greeter
 _opt2 = sealed(_opt2) or _opt2
 Greeter = _opt2
-local g = Greeter.new("World")
+
+const g = Greeter.new("World")
 print(g:greet())

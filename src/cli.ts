@@ -25,13 +25,14 @@ import { execSync } from "child_process";
 import { handleInit, type InitOptions } from "./init.ts";
 import { handleTypes, generatePackageTypes, type TypesOptions } from "./types-command.ts";
 import { findPackageManifest } from "./package-manifest.ts";
+import { version } from "../package.json";
 
 export function createCLI(): Command {
   const program = new Command();
   program
     .name("rbx-tsx")
     .description("TSX to Luau compiler targeting react-lua for Roblox")
-    .version("0.1.0");
+    .version(version);
 
   program
     .command("compile")
