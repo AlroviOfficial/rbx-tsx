@@ -268,6 +268,63 @@ describe("declare module emission", () => {
   });
 });
 
+describe("self parameter handling", () => {
+  test("drops self typed as the enclosing type; keeps a foreign self", () => {
+    const mod = extractModule(`
+      export type Thing = {
+        Stop: (self: Thing, fade: number) -> (),
+        onChanged: (self: Widget) -> (),
+      }
+      local T = {}
+      return T
+    `);
+    const dts = emitDeclareModule(mod, { specifier: "t" });
+    // colon-called method: receiver self is implicit in TS
+    expect(dts).toContain("Stop: (fade: number) => void");
+    // callback field with a differently-typed self keeps its arity
+    expect(dts).toContain("onChanged: (self: any) => void");
+  });
+
+  test("standalone function type aliases never drop self", () => {
+    const mod = extractModule(`
+      export type Callback = (self: Widget, value: number) -> ()
+      local T = {}
+      return T
+    `);
+    const dts = emitDeclareModule(mod, { specifier: "t" });
+    expect(dts).toContain("export type Callback = (self: any, value: number) => void;");
+  });
+
+  test("drops an untyped self on a module function member", () => {
+    const mod = extractModule(`
+      local M = {}
+      function M.foo(self, x: number): number
+        return x
+      end
+      return M
+    `);
+    const dts = emitDeclareModule(mod, { specifier: "m" });
+    expect(dts).toContain("foo: (x: number) => number");
+  });
+});
+
+describe("if-expression depth tracking", () => {
+  test("if-expression after a binary operator does not drift block depth", () => {
+    const mod = extractModule(`
+      local M = {}
+      local x = 1 + if true then 1 else 2
+      function M.f(): number
+        return 1
+      end
+      return M
+    `);
+    expect(mod.shape.kind).toBe("object");
+    if (mod.shape.kind === "object") {
+      expect(mod.shape.members.map((m) => m.name)).toContain("f");
+    }
+  });
+});
+
 describe("end-to-end extraction against demo packages", () => {
   const demoDir = join(import.meta.dir, "../../demo");
 

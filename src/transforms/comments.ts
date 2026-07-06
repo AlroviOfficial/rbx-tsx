@@ -35,6 +35,8 @@ function getCommentsFromRanges(
   if (!ranges) return result;
   for (const range of ranges) {
     const commentText = text.slice(range.pos, range.end).trim();
+    // Hot-comments (//!native etc.) are handled separately as file directives.
+    if (commentText.startsWith("//!")) continue;
     const normalized = normalizeCommentText(commentText);
     if (normalized) {
       result.push({ type: "comment", text: normalized });

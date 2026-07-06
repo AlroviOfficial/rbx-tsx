@@ -13,12 +13,12 @@ function gen(stmts: LuauStatement[]): string {
 describe("local declarations", () => {
   test("simple local", () => {
     const result = gen([{ type: "local", name: "x", value: num(5) }]);
-    expect(result).toContain("local x = 5");
+    expect(result).toContain("const x = 5");
   });
 
   test("local with type annotation", () => {
     const result = gen([{ type: "local", name: "x", value: num(5), typeAnnotation: "number" }]);
-    expect(result).toContain("local x: number = 5");
+    expect(result).toContain("const x: number = 5");
   });
 
   test("multi-local", () => {
@@ -27,7 +27,7 @@ describe("local declarations", () => {
       names: ["a", "b"],
       values: [call(ident("foo"), [])],
     }]);
-    expect(result).toContain("local a, b = foo()");
+    expect(result).toContain("const a, b = foo()");
   });
 });
 
@@ -40,7 +40,7 @@ describe("function declarations", () => {
       params: [{ name: "x", type: "number" }],
       body: [{ type: "return", value: binary(ident("x"), "+", num(1)) }],
     }]);
-    expect(result).toContain("local function hello(x: number)");
+    expect(result).toContain("const function hello(x: number)");
     expect(result).toContain("return x + 1");
     expect(result).toContain("end");
   });

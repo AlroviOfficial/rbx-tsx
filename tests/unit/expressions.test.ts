@@ -14,27 +14,27 @@ function compileStmt(stmt: string): string {
 
 describe("literals", () => {
   test("string literal", () => {
-    expect(compileExpr('"hello"')).toContain('local result = "hello"');
+    expect(compileExpr('"hello"')).toContain('const result = "hello"');
   });
 
   test("number literal", () => {
-    expect(compileExpr("42")).toContain("local result = 42");
+    expect(compileExpr("42")).toContain("const result = 42");
   });
 
   test("boolean true", () => {
-    expect(compileExpr("true")).toContain("local result = true");
+    expect(compileExpr("true")).toContain("const result = true");
   });
 
   test("boolean false", () => {
-    expect(compileExpr("false")).toContain("local result = false");
+    expect(compileExpr("false")).toContain("const result = false");
   });
 
   test("null → nil", () => {
-    expect(compileExpr("null")).toContain("local result = nil");
+    expect(compileExpr("null")).toContain("const result = nil");
   });
 
   test("undefined → nil", () => {
-    expect(compileExpr("undefined")).toContain("local result = nil");
+    expect(compileExpr("undefined")).toContain("const result = nil");
   });
 });
 
@@ -232,7 +232,7 @@ describe("Map/Set checker-driven resolution", () => {
     const src = `function f(cache: Map<string, number>) { return cache.size; }`;
     const result = compileStmt(src);
     expect(result).toContain("_mapSize(cache)");
-    expect(result).toContain("local function _mapSize");
+    expect(result).toContain("const function _mapSize");
   });
 
   test("Map.clear → table.clear", () => {
@@ -246,7 +246,7 @@ describe("Map/Set checker-driven resolution", () => {
     const result = compileStmt(src);
     // make() is hoisted to a temp; the mutation indexes the temp, not a 2nd call
     expect(result).not.toContain('make()["a"]');
-    expect(result).toMatch(/local \w+ = make\(\)/);
+    expect(result).toMatch(/const \w+ = make\(\)/);
   });
 });
 
@@ -409,13 +409,34 @@ describe("setTimeout/setInterval", () => {
   });
 });
 
+describe("global library calls", () => {
+  test("stay dot-style, never colon", () => {
+    expect(compileStmt("const t = os.time();")).toContain("os.time()");
+    expect(compileStmt("const now = DateTime.now();")).toContain("DateTime.now()");
+  });
+
+  test("a local shadowing a global library keeps colon method calls", () => {
+    const out = compileStmt(
+      "declare const queue: { pop(): { cancel(): void } };\nconst task = queue.pop();\ntask.cancel();"
+    );
+    expect(out).toContain("task:cancel()");
+  });
+
+  test("instanceof DateTime uses typeof()", () => {
+    const out = compileStmt(
+      "declare const v: unknown;\nconst b = (v as any) instanceof DateTime;"
+    );
+    expect(out).toContain('typeof(v) == "DateTime"');
+  });
+});
+
 // ── Task 9: Missing array helpers ──
 
 describe("array flat/flatMap/fill methods", () => {
   test(".flat() emits _arrayFlat helper", () => {
     const result = compileStmt("const x = arr.flat();");
     expect(result).toContain("_arrayFlat(arr, 1)");
-    expect(result).toContain("local function _arrayFlat");
+    expect(result).toContain("const function _arrayFlat");
   });
 
   test(".flat(2) passes depth argument", () => {
@@ -426,13 +447,13 @@ describe("array flat/flatMap/fill methods", () => {
   test(".flatMap() emits _arrayFlatMap helper", () => {
     const result = compileStmt("const x = arr.flatMap(fn);");
     expect(result).toContain("_arrayFlatMap(arr, fn)");
-    expect(result).toContain("local function _arrayFlatMap");
+    expect(result).toContain("const function _arrayFlatMap");
   });
 
   test(".fill() emits _arrayFill helper", () => {
     const result = compileStmt("const x = arr.fill(0);");
     expect(result).toContain("_arrayFill(arr, 0)");
-    expect(result).toContain("local function _arrayFill");
+    expect(result).toContain("const function _arrayFill");
   });
 });
 
@@ -440,13 +461,13 @@ describe("Number static methods", () => {
   test("Number.isInteger emits helper", () => {
     const result = compileStmt("const x = Number.isInteger(val);");
     expect(result).toContain("_numberIsInteger");
-    expect(result).toContain("local function _numberIsInteger");
+    expect(result).toContain("const function _numberIsInteger");
   });
 
   test("Number.isNaN emits helper", () => {
     const result = compileStmt("const x = Number.isNaN(val);");
     expect(result).toContain("_numberIsNaN");
-    expect(result).toContain("local function _numberIsNaN");
+    expect(result).toContain("const function _numberIsNaN");
   });
 });
 
@@ -456,7 +477,7 @@ describe("regex literals", () => {
   test("regex literal compiles to RegExp(pattern, flags)", () => {
     const result = compile("const r = /test/gi;", "test.ts", { warnLevel: "none" });
     expect(result.luau).toContain('RegExp("test", "gi")');
-    expect(result.luau).toContain("local RegExp = require");
+    expect(result.luau).toContain("const RegExp = require");
   });
 
   test("regex.test(str) compiles to :test() method call", () => {
@@ -514,7 +535,7 @@ describe("chained optional chaining", () => {
 
   test("chained property access extracts temp var", () => {
     const result = compileStmt("const x = a?.b?.c;");
-    expect(result).toContain("local _opt0");
+    expect(result).toContain("const _opt0");
     expect(result).toContain("if _opt0 ~= nil then _opt0.c else nil");
   });
 
@@ -523,7 +544,7 @@ describe("chained optional chaining", () => {
       'const x = part.Parent?.FindFirstChildOfClass("Humanoid")?.TakeDamage(100);',
       'declare const part: { Parent: any };'
     );
-    expect(result).toContain("local _opt0");
+    expect(result).toContain("const _opt0");
     expect(result).toContain("_opt0:TakeDamage(100)");
     // Should NOT duplicate the inner if-expression
     const matches = result.match(/FindFirstChildOfClass/g);
@@ -532,25 +553,25 @@ describe("chained optional chaining", () => {
 
   test("triple chained optional extracts multiple temps", () => {
     const result = compileStmt("const x = a?.b?.c?.d;");
-    expect(result).toContain("local _opt0");
-    expect(result).toContain("local _opt1");
+    expect(result).toContain("const _opt0");
+    expect(result).toContain("const _opt1");
   });
 
   test("chained optional in arrow expression body", () => {
     const result = compileStmt("const f = (x: any) => x?.a?.b;");
-    expect(result).toContain("local _opt0");
+    expect(result).toContain("const _opt0");
     expect(result).toContain("if _opt0 ~= nil then _opt0.b else nil");
   });
 
   test("chained optional call a?.()?.b extracts temp", () => {
     const result = compileStmt("const x = a?.()?.b;");
-    expect(result).toContain("local _opt");
+    expect(result).toContain("const _opt");
     expect(result).not.toMatch(/if \(if.*then.*else nil\) ~= nil then \(if/);
   });
 
   test("chained optional bracket access a?.b?.[c] extracts temp", () => {
     const result = compileStmt("const x = a?.b?.[c];");
-    expect(result).toContain("local _opt0");
+    expect(result).toContain("const _opt0");
   });
 });
 

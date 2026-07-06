@@ -173,7 +173,23 @@ export function transformSourceFile(
 
   // Phase 3: Transform body statements (this populates ctx.requiredServices, ctx.requiredHelpers, ctx.needsPromise)
   const transformedBody: LuauStatement[] = [];
+  // Preserve blank lines between top-level statements 1:1 with the source.
+  let prevEndLine = -1;
   for (const stmt of bodyStatements) {
+    if (stmt.pos >= 0 && stmt.end >= 0) {
+      const ranges =
+        ts.getLeadingCommentRanges(sourceFile.text, stmt.getFullStart()) ?? [];
+      const startPos =
+        ranges.length > 0 ? ranges[0].pos : stmt.getStart(sourceFile);
+      const startLine =
+        sourceFile.getLineAndCharacterOfPosition(startPos).line;
+      if (prevEndLine >= 0) {
+        for (let gap = startLine - prevEndLine - 1; gap > 0; gap--) {
+          transformedBody.push({ type: "comment", text: "" });
+        }
+      }
+      prevEndLine = sourceFile.getLineAndCharacterOfPosition(stmt.end).line;
+    }
     transformedBody.push(...getLeadingComments(sourceFile, stmt));
     const stmts = transformStatement(stmt, ctx);
     const pre = ctx.flushPreStatements();
@@ -183,7 +199,6 @@ export function transformSourceFile(
 
   // Now emit services (after body transform so we know which ones are needed)
   if (ctx.requiredServices.size > 0) {
-    allStatements.push({ type: "comment", text: "" });
     for (const service of ctx.requiredServices) {
       allStatements.push({
         type: "local",
@@ -228,7 +243,6 @@ export function transformSourceFile(
 
   // Emit helper functions
   if (ctx.requiredHelpers.size > 0) {
-    allStatements.push({ type: "comment", text: "" });
     for (const helper of ctx.requiredHelpers) {
       const helperStmts = getHelperFunction(helper);
       if (helperStmts) {

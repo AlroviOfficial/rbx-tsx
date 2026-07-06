@@ -22,7 +22,7 @@ import {
 import type { LuauType } from "./type-parser.ts";
 import { emitDeclareModule } from "./emit.ts";
 import {
-  packagesDir,
+  packagesDirs,
   resolveEntry,
   resolveSubModule,
   packagesDirExists,
@@ -60,7 +60,7 @@ export function extractProjectTypes(projectDir: string): ExtractResult | null {
     return { manifest, manifestDir, packages: [], skipped: [] };
   }
 
-  const pkgDir = packagesDir(manifestDir, manifest.pm);
+  const pkgDirs = packagesDirs(manifestDir, manifest.pm);
   const packages: PackageTypes[] = [];
   const skipped: ExtractResult["skipped"] = [];
 
@@ -70,7 +70,11 @@ export function extractProjectTypes(projectDir: string): ExtractResult | null {
       continue;
     }
 
-    const resolved = resolveEntry(pkgDir, key);
+    let resolved = null;
+    for (const pkgDir of pkgDirs) {
+      resolved = resolveEntry(pkgDir, key);
+      if (resolved) break;
+    }
     if (!resolved) {
       skipped.push({ key, reason: "unresolved" });
       continue;

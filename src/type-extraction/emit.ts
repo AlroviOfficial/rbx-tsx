@@ -47,7 +47,37 @@ function knownAlias(name: string, args: string[]): string | null {
   }
 }
 
-export function luauTypeToTS(type: LuauType, knownNames: Set<string>): string {
+/**
+ * Drop a leading `self` param from a member's function type: rbx-tsx compiles
+ * member calls with colon syntax (`obj.method(args)` → `obj:method(args)`),
+ * which binds the receiver as self — keeping it in the TS signature would make
+ * callers pass it again and double it at runtime. Only applies in member
+ * positions, and only when `self` is untyped or typed as the enclosing table's
+ * own type; a differently-typed `self` (e.g. a callback field
+ * `onChanged: (self: Widget) -> ()` on some other table) is a real parameter
+ * and keeps its slot.
+ */
+function dropSelfParam(
+  fn: Extract<LuauType, { kind: "function" }>,
+  ownerName?: string
+): Extract<LuauType, { kind: "function" }> {
+  const first = fn.params[0];
+  if (first?.name !== "self") return fn;
+  const t = first.type;
+  const isReceiver =
+    t.kind === "any" ||
+    (t.kind === "name" &&
+      ownerName !== undefined &&
+      (t.name.includes(".") ? t.name.slice(t.name.lastIndexOf(".") + 1) : t.name) === ownerName);
+  return isReceiver ? { ...fn, params: fn.params.slice(1) } : fn;
+}
+
+export function luauTypeToTS(
+  type: LuauType,
+  knownNames: Set<string>,
+  /** Enclosing type-alias name; enables `self`-dropping on direct table fields. */
+  ownerName?: string
+): string {
   switch (type.kind) {
     case "any":
       return "any";
@@ -64,23 +94,30 @@ export function luauTypeToTS(type: LuauType, knownNames: Set<string>): string {
       return parts.length === 1 ? parts[0]! : parts.join(" | ");
     }
     case "intersection":
-      return type.types.map((t) => luauTypeToTS(t, knownNames)).join(" & ");
+      // Intersections commonly compose a table of methods with mixins; keep
+      // the owner so those methods still drop their `self` receiver.
+      return type.types.map((t) => luauTypeToTS(t, knownNames, ownerName)).join(" & ");
     case "tuple":
       if (type.types.length === 0) return "void";
       return `[${type.types.map((t) => luauTypeToTS(t, knownNames)).join(", ")}]`;
     case "function": {
+      // Type parameters of a generic function are in scope for its signature.
+      const scoped = type.typeParams?.length
+        ? new Set([...knownNames, ...type.typeParams])
+        : knownNames;
       const params = type.params.map((p, idx) => {
         const name = safeParamName(p.name ?? `arg${idx}`);
-        if (p.variadic) return `...${name}: ${luauTypeToTS(p.type, knownNames)}[]`;
-        return `${name}: ${luauTypeToTS(p.type, knownNames)}`;
+        if (p.variadic) return `...${name}: ${luauTypeToTS(p.type, scoped)}[]`;
+        return `${name}: ${luauTypeToTS(p.type, scoped)}`;
       });
       const ret =
         type.returns.length === 0
           ? "void"
           : type.returns.length === 1
-            ? luauTypeToTS(type.returns[0]!, knownNames)
-            : `[${type.returns.map((t) => luauTypeToTS(t, knownNames)).join(", ")}]`;
-      return `(${params.join(", ")}) => ${ret}`;
+            ? luauTypeToTS(type.returns[0]!, scoped)
+            : `[${type.returns.map((t) => luauTypeToTS(t, scoped)).join(", ")}]`;
+      const generics = type.typeParams?.length ? `<${type.typeParams.join(", ")}>` : "";
+      return `${generics}(${params.join(", ")}) => ${ret}`;
     }
     case "table": {
       if (type.arrayElement) return arrayElement(luauTypeToTS(type.arrayElement, knownNames));
@@ -97,7 +134,9 @@ export function luauTypeToTS(type: LuauType, knownNames: Set<string>): string {
       }
       for (const f of type.fields) {
         const opt = f.optional ? "?" : "";
-        parts.push(`${tsPropName(f.name)}${opt}: ${luauTypeToTS(f.type, knownNames)}`);
+        const fieldType =
+          f.type.kind === "function" ? dropSelfParam(f.type, ownerName) : f.type;
+        parts.push(`${tsPropName(f.name)}${opt}: ${luauTypeToTS(fieldType, knownNames)}`);
       }
       if (parts.length === 0) return "Record<string, any>";
       return `{ ${parts.join("; ")} }`;
@@ -144,7 +183,15 @@ function tsPropName(name: string): string {
 }
 
 function memberType(member: ExtractedMember, knownNames: Set<string>): string {
-  if (member.value.kind === "type") return luauTypeToTS(member.value.type, knownNames);
+  if (member.value.kind === "type") {
+    // Module-table members are called with colon syntax; drop an untyped
+    // leading `self` (e.g. from `function M.foo(self, ...)`).
+    const t =
+      member.value.type.kind === "function"
+        ? dropSelfParam(member.value.type)
+        : member.value.type;
+    return luauTypeToTS(t, knownNames);
+  }
   // Unresolved require target — the resolver should have replaced this. Degrade.
   return "any";
 }
@@ -155,20 +202,34 @@ export interface EmitOptions {
 }
 
 export function emitDeclareModule(module: ExtractedModule, opts: EmitOptions): string {
-  const knownNames = new Set(module.typeAliases.map((a) => a.name));
   const lines: string[] = [];
   lines.push(`declare module ${JSON.stringify(opts.specifier)} {`);
-
-  for (const alias of module.typeAliases) {
-    lines.push("\t" + emitTypeAlias(alias, knownNames));
-  }
-  if (module.typeAliases.length) lines.push("");
-
-  const def = emitDefault(module, knownNames);
-  lines.push(...def.map((l) => (l ? "\t" + l : l)));
-
+  lines.push(...moduleBody(module).map((l) => (l ? "\t" + l : l)));
   lines.push("}");
   return lines.join("\n") + "\n";
+}
+
+/**
+ * Emit a standalone `.d.ts` (no `declare module` wrapper) for a local Luau
+ * module, meant to sit next to the `.luau` file so relative imports from TS
+ * resolve to it.
+ */
+export function emitStandaloneDts(module: ExtractedModule): string {
+  const lines = moduleBody(module).map((l) =>
+    l.startsWith("const _default") ? `declare ${l}` : l
+  );
+  return lines.join("\n") + "\n";
+}
+
+function moduleBody(module: ExtractedModule): string[] {
+  const knownNames = new Set(module.typeAliases.map((a) => a.name));
+  const lines: string[] = [];
+  for (const alias of module.typeAliases) {
+    lines.push(emitTypeAlias(alias, knownNames));
+  }
+  if (module.typeAliases.length) lines.push("");
+  lines.push(...emitDefault(module, knownNames));
+  return lines;
 }
 
 function emitTypeAlias(alias: ExtractedTypeAlias, knownNames: Set<string>): string {
@@ -177,7 +238,7 @@ function emitTypeAlias(alias: ExtractedTypeAlias, knownNames: Set<string>): stri
   // Type params are valid names inside their own RHS.
   const scoped = new Set(knownNames);
   for (const p of alias.typeParams) scoped.add(p);
-  let rhs = luauTypeToTS(alias.type, scoped);
+  let rhs = luauTypeToTS(alias.type, scoped, alias.name);
   // Guard against self-referential aliases (e.g. a package's `Map<K,V>` that
   // resolves back to a same-named global) — TS rejects these as circular.
   if (rhs === alias.name || rhs.startsWith(`${alias.name}<`)) rhs = "any";

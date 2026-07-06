@@ -22,23 +22,23 @@ describe("Inventory: imports and requires", () => {
 
   test("requires React via GetService", () => {
     expect(luau).toContain(
-      'local React = require(game:GetService("ReplicatedStorage").Packages.React)'
+      'const React = require(game:GetService("ReplicatedStorage").Packages.React)'
     );
   });
 
   test("imports all seven React hooks as locals", () => {
-    expect(luau).toContain("local useState = React.useState");
-    expect(luau).toContain("local useEffect = React.useEffect");
-    expect(luau).toContain("local useCallback = React.useCallback");
-    expect(luau).toContain("local useMemo = React.useMemo");
-    expect(luau).toContain("local useRef = React.useRef");
-    expect(luau).toContain("local createContext = React.createContext");
-    expect(luau).toContain("local useContext = React.useContext");
+    expect(luau).toContain("const useState = React.useState");
+    expect(luau).toContain("const useEffect = React.useEffect");
+    expect(luau).toContain("const useCallback = React.useCallback");
+    expect(luau).toContain("const useMemo = React.useMemo");
+    expect(luau).toContain("const useRef = React.useRef");
+    expect(luau).toContain("const createContext = React.createContext");
+    expect(luau).toContain("const useContext = React.useContext");
   });
 
   test("imports Roblox services via GetService", () => {
-    expect(luau).toContain('local Players = game:GetService("Players")');
-    expect(luau).toContain('local RunService = game:GetService("RunService")');
+    expect(luau).toContain('const Players = game:GetService("Players")');
+    expect(luau).toContain('const RunService = game:GetService("RunService")');
   });
 });
 
@@ -46,20 +46,20 @@ describe("Inventory: imports and requires", () => {
 
 describe("Inventory: auto-generated helper functions", () => {
   test("generates _arrayFilter helper", () => {
-    expect(luau).toContain("local function _arrayFilter(t, fn)");
+    expect(luau).toContain("const function _arrayFilter(t, fn)");
     expect(luau).toContain("table.insert(result, v)");
   });
 
   test("generates _arrayFind helper", () => {
-    expect(luau).toContain("local function _arrayFind(t, fn)");
+    expect(luau).toContain("const function _arrayFind(t, fn)");
   });
 
   test("generates _arrayMap helper", () => {
-    expect(luau).toContain("local function _arrayMap(t, fn)");
+    expect(luau).toContain("const function _arrayMap(t, fn)");
   });
 
   test("generates _merge helper for object spread", () => {
-    expect(luau).toContain("local function _merge(...: any)");
+    expect(luau).toContain("const function _merge(...: any)");
   });
 });
 
@@ -93,12 +93,12 @@ describe("Inventory: type system", () => {
   });
 
   test("compiles Record type to index signature", () => {
-    expect(luau).toContain("local RARITY_ORDER: { [string]: number }");
+    expect(luau).toContain("const RARITY_ORDER: { [string]: number }");
   });
 
   test("compiles inline prop type", () => {
     expect(luau).toContain(
-      "local function Inventory(props: { playerId: number })"
+      "const function Inventory(props: { playerId: number })"
     );
   });
 });
@@ -111,11 +111,11 @@ describe("Inventory: constants and context", () => {
   });
 
   test("compiles numeric constant", () => {
-    expect(luau).toContain("local MAX_EQUIPPED = 3");
+    expect(luau).toContain("const MAX_EQUIPPED = 3");
   });
 
   test("compiles createContext call", () => {
-    expect(luau).toContain("local TooltipContext = createContext(nil)");
+    expect(luau).toContain("const TooltipContext = createContext(nil)");
   });
 });
 
@@ -124,23 +124,23 @@ describe("Inventory: constants and context", () => {
 describe("Inventory: ItemSlot sub-component", () => {
   test("declares ItemSlot as local function with typed props", () => {
     expect(luau).toContain(
-      "local function ItemSlot(props: ItemSlotProps)"
+      "const function ItemSlot(props: ItemSlotProps)"
     );
   });
 
   test("destructures props from props table", () => {
-    expect(luau).toContain("local item = props.item");
-    expect(luau).toContain("local isSelected = props.isSelected");
-    expect(luau).toContain("local onSelect = props.onSelect");
-    expect(luau).toContain("local onEquip = props.onEquip");
+    expect(luau).toContain("const item = props.item");
+    expect(luau).toContain("const isSelected = props.isSelected");
+    expect(luau).toContain("const onSelect = props.onSelect");
+    expect(luau).toContain("const onEquip = props.onEquip");
   });
 
   test("calls useContext with TooltipContext", () => {
-    expect(luau).toContain("local tooltip = useContext(TooltipContext)");
+    expect(luau).toContain("const tooltip = useContext(TooltipContext)");
   });
 
   test("compiles useCallback with dependency array", () => {
-    expect(luau).toContain("local handleClick = useCallback(function()");
+    expect(luau).toContain("const handleClick = useCallback(function()");
     expect(luau).toContain("end, { item.id, onSelect })");
   });
 
@@ -220,15 +220,15 @@ describe("Inventory: DetailPanel sub-component", () => {
 
 describe("Inventory: main component state and hooks", () => {
   test("compiles multiple useState calls", () => {
-    expect(luau).toContain("local items, setItems = useState(");
-    expect(luau).toContain("local selectedId, setSelectedId = useState(nil)");
-    expect(luau).toContain('local filter, setFilter = useState("")');
-    expect(luau).toContain('local sortBy, setSortBy = useState("name")');
-    expect(luau).toContain("local tooltipText, setTooltipText = useState(nil)");
+    expect(luau).toContain("const items, setItems = useState(");
+    expect(luau).toContain("const selectedId, setSelectedId = useState(nil)");
+    expect(luau).toContain('const filter, setFilter = useState("")');
+    expect(luau).toContain('const sortBy, setSortBy = useState("name")');
+    expect(luau).toContain("const tooltipText, setTooltipText = useState(nil)");
   });
 
   test("compiles useRef", () => {
-    expect(luau).toContain("local containerRef = useRef(nil)");
+    expect(luau).toContain("const containerRef = useRef(nil)");
   });
 
   test("compiles useEffect with cleanup return", () => {
@@ -243,9 +243,9 @@ describe("Inventory: main component state and hooks", () => {
   });
 
   test("compiles useMemo for computed values", () => {
-    expect(luau).toContain("local displayItems = useMemo(function()");
-    expect(luau).toContain("local selectedItem = useMemo(function()");
-    expect(luau).toContain("local equippedCount = useMemo(function()");
+    expect(luau).toContain("const displayItems = useMemo(function()");
+    expect(luau).toContain("const selectedItem = useMemo(function()");
+    expect(luau).toContain("const equippedCount = useMemo(function()");
   });
 
   test("uses _arrayFilter inside useMemo", () => {

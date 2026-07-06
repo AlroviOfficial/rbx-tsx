@@ -43,6 +43,8 @@ export function createCLI(): Command {
     .option("--react-roblox-path <path>", "Require path for react-roblox")
     .option("--strict", "Treat warnings as errors", false)
     .option("--sourcemap", "Emit source map comments", false)
+    .option("-s, --silent", "Omit the auto-generated header comments", false)
+    .option("--no-const", "Emit `local` everywhere (const requires a recent Luau)")
     .option("--warn <level>", "Warning level: all, unsupported, none", "all")
     .action((input: string, opts) => {
       handleCompile(input, opts);
@@ -55,6 +57,8 @@ export function createCLI(): Command {
     .option("-o, --output <path>", "Output directory")
     .option("--react-path <path>", "Require path for react-lua")
     .option("--react-roblox-path <path>", "Require path for react-roblox")
+    .option("-s, --silent", "Omit the auto-generated header comments", false)
+    .option("--no-const", "Emit `local` everywhere (const requires a recent Luau)")
     .option("--warn <level>", "Warning level", "all")
     .action((watchPath: string, opts) => {
       handleWatch(watchPath, opts);
@@ -72,9 +76,15 @@ export function createCLI(): Command {
 
   program
     .command("types")
-    .description("Generate TypeScript declarations from installed Luau packages")
-    .argument("[directory]", "Project directory (defaults to current dir)")
+    .description(
+      "Generate TypeScript declarations from installed Luau packages, a local .luau module, or a directory of local modules"
+    )
+    .argument(
+      "[path]",
+      "Project directory, .luau module file, or directory of local modules (defaults to current dir)"
+    )
     .option("-o, --output <dir>", "Output directory (defaults to types/packages)")
+    .option("-f, --force", "Overwrite existing .d.ts files next to local modules", false)
     .action((directory: string | undefined, opts: TypesOptions) => {
       handleTypes(directory, opts);
     });
@@ -235,6 +245,9 @@ function handleCompile(
     reactRobloxPath?: string;
     strict: boolean;
     sourcemap: boolean;
+    silent: boolean;
+    /** Commander negatable --no-const: false when the flag is passed */
+    const: boolean;
     warn: string;
   }
 ): void {
@@ -252,6 +265,8 @@ function handleCompile(
     ...(opts.reactRobloxPath ? { reactRobloxPath: opts.reactRobloxPath } : {}),
     strict: opts.strict,
     sourcemap: opts.sourcemap,
+    silent: opts.silent,
+    noConst: opts.const === false,
     warnLevel: opts.warn as WarningLevel,
     packageManifest: manifest ?? undefined,
   };
@@ -375,6 +390,9 @@ function handleWatch(
     output?: string;
     reactPath?: string;
     reactRobloxPath?: string;
+    silent: boolean;
+    /** Commander negatable --no-const: false when the flag is passed */
+    const: boolean;
     warn: string;
   }
 ): void {
@@ -392,6 +410,8 @@ function handleWatch(
     ...(opts.reactPath ? { reactPath: opts.reactPath } : {}),
     ...(opts.reactRobloxPath ? { reactRobloxPath: opts.reactRobloxPath } : {}),
     strict: false,
+    silent: opts.silent,
+    noConst: opts.const === false,
     warnLevel: opts.warn as WarningLevel,
     packageManifest: manifest ?? undefined,
   };

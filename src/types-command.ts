@@ -1,9 +1,16 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { join, relative, resolve } from "path";
-import { extractProjectTypes, type ExtractResult } from "./type-extraction/index.ts";
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "fs";
+import { basename, dirname, join, relative, resolve } from "path";
+import {
+  extractFromEntry,
+  extractProjectTypes,
+  type ExtractResult,
+} from "./type-extraction/index.ts";
+import { emitStandaloneDts } from "./type-extraction/emit.ts";
 
 export interface TypesOptions {
   output?: string;
+  /** Overwrite existing .d.ts files next to local modules */
+  force?: boolean;
 }
 
 /** Write the generated declarations to disk, returning the absolute paths. */
@@ -45,14 +52,42 @@ export function generatePackageTypes(projectDir: string): void {
  * wally/pesde Luau packages so they import with real types.
  */
 export function handleTypes(directory: string | undefined, opts: TypesOptions): void {
-  const projectDir = directory ? resolve(directory) : process.cwd();
+  const target = directory ? resolve(directory) : process.cwd();
 
-  const result = extractProjectTypes(projectDir);
-  if (!result) {
-    console.error(
-      "No wally.toml or pesde.toml found. Run this from a project with installed packages."
-    );
+  // A plain .luau/.lua module file: emit a sibling .d.ts.
+  if (/\.luau?$/.test(target) && existsSync(target) && statSync(target).isFile()) {
+    const written = writeLocalModuleTypes([target], opts.force ?? false);
+    console.log(`Generated ${written.length} declaration(s).`);
+    return;
+  }
+
+  const result = extractProjectTypes(target);
+
+  // Local-module mode requires an explicit path: a bare `rbx-tsx types` in a
+  // manifest-less directory should error, not recursively write .d.ts files
+  // across the whole tree on an accidental invocation.
+  if (!result && directory === undefined) {
+    console.error("No wally.toml or pesde.toml found.");
     process.exit(1);
+  }
+
+  // An explicitly-given directory that is not itself the manifest dir (e.g.
+  // `rbx-tsx types src`) is treated as a tree of local .luau modules, not as
+  // the package project the manifest above it belongs to.
+  const localMode = !result || (directory !== undefined && result.manifestDir !== target);
+  if (localMode) {
+    const modules = findLocalModules(target);
+    if (modules.length === 0) {
+      console.error(
+        result
+          ? "No .luau modules found under the given path."
+          : "No wally.toml or pesde.toml found, and no .luau modules under the given path."
+      );
+      process.exit(1);
+    }
+    const written = writeLocalModuleTypes(modules, opts.force ?? false);
+    console.log(`Generated ${written.length} local module declaration(s).`);
+    return;
   }
 
   const outDir = opts.output ? resolve(opts.output) : defaultOutDir(result);
@@ -83,6 +118,59 @@ export function handleTypes(directory: string | undefined, opts: TypesOptions): 
   }
 
   if (result.packages.length > 0) warnIfNotIncluded(result.manifestDir, outDir);
+}
+
+/** Directories that hold installed packages or tooling, not project modules. */
+const SKIP_DIRS = new Set([
+  "node_modules",
+  "Packages",
+  "ServerPackages",
+  "DevPackages",
+  "roblox_packages",
+  "roblox_server_packages",
+  "luau_packages",
+  "lune_packages",
+  "_Index",
+  ".pesde",
+  ".git",
+]);
+
+/** Recursively find local ModuleScript .luau/.lua files (skips Scripts/LocalScripts). */
+function findLocalModules(dir: string): string[] {
+  if (!existsSync(dir) || !statSync(dir).isDirectory()) return [];
+  const found: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) {
+      if (!SKIP_DIRS.has(entry)) found.push(...findLocalModules(full));
+      continue;
+    }
+    if (!/\.luau?$/.test(entry)) continue;
+    // .server/.client files are Scripts — they don't return a module.
+    if (/\.(server|client)\.luau?$/.test(entry)) continue;
+    found.push(full);
+  }
+  return found;
+}
+
+/** Emit a sibling .d.ts for each local module; returns the written paths. */
+function writeLocalModuleTypes(files: string[], force: boolean): string[] {
+  const written: string[] = [];
+  for (const file of files) {
+    const out = file.replace(/\.luau?$/, ".d.ts");
+    // An existing .d.ts is likely hand-written and better than scraped types —
+    // never clobber it without --force.
+    if (!force && existsSync(out)) {
+      console.log(`  ${basename(file)} -> skipped (${relative(process.cwd(), out)} exists; use --force to overwrite)`);
+      continue;
+    }
+    const module = extractFromEntry(file, dirname(file));
+    const dts = emitStandaloneDts(module);
+    writeFileSync(out, dts);
+    console.log(`  ${basename(file)} -> ${relative(process.cwd(), out)}`);
+    written.push(out);
+  }
+  return written;
 }
 
 /** Warn (don't patch) if the project's tsconfig won't pick up the output dir. */

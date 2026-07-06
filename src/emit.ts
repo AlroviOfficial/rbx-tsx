@@ -25,6 +25,10 @@ export interface CompilerOptions {
   promisePath?: string;
   strict?: boolean;
   sourcemap?: boolean;
+  /** Omit the auto-generated header comments in the Luau output */
+  silent?: boolean;
+  /** Emit `local` everywhere instead of promoting unmodified bindings to `const` */
+  noConst?: boolean;
   warnLevel?: WarningLevel;
   cssManifest?: CSSManifest;
   /** Directory-to-Luau-path mappings for cross-boundary imports */
@@ -90,6 +94,33 @@ export function emitFromSource(
   const ctx = new TransformContext(warnings, buildCompileOptions(filename, options));
   ctx.checker = checker;
   const luauStatements = transformSourceFile(sourceFile, ctx);
-  const luau = generateLuau(luauStatements, { sourceFile: filename });
+
+  // Promote top-of-file hot-comments (//!native, //!optimize, ...) to Luau
+  // directives, which must be the first lines of the output.
+  const directives: string[] = [];
+  let directiveEnd = -1;
+  for (const range of ts.getLeadingCommentRanges(sourceFile.text, 0) ?? []) {
+    const text = sourceFile.text.slice(range.pos, range.end).trim();
+    if (text.startsWith("//!")) {
+      directives.push(`--${text.slice(2)}`);
+      directiveEnd = range.end;
+    }
+  }
+  let directiveGap = false;
+  if (directiveEnd >= 0 && sourceFile.statements.length > 0) {
+    const endLine = sourceFile.getLineAndCharacterOfPosition(directiveEnd).line;
+    const nextLine = sourceFile.getLineAndCharacterOfPosition(
+      sourceFile.statements[0].getStart(sourceFile)
+    ).line;
+    directiveGap = nextLine - endLine > 1;
+  }
+
+  const luau = generateLuau(luauStatements, {
+    sourceFile: filename,
+    silent: options.silent ?? false,
+    noConst: options.noConst ?? false,
+    directives,
+    directiveGap,
+  });
   return { luau, warnings };
 }

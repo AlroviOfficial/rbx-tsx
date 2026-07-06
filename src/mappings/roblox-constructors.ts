@@ -30,6 +30,24 @@ export const ROBLOX_CONSTRUCTORS = new Set([
 ]);
 
 /**
+ * Luau/Roblox global libraries whose functions are plain fields, so calls must
+ * stay dot-style (os.time(), task.wait(), DateTime.now()) — never colon. Kept
+ * separate from ROBLOX_CONSTRUCTORS because these are not constructible with
+ * `new` (DateTime has no `.new`), and because common names like `task` are
+ * often shadowed by user locals — callers must check the identifier actually
+ * resolves to the ambient global before forcing a dot call.
+ */
+export const DOT_CALL_GLOBALS = new Set([
+  "DateTime",
+  "os",
+  "task",
+  "coroutine",
+  "utf8",
+  "bit32",
+  "buffer",
+]);
+
+/**
  * Math operator macros for Roblox value types. A method call like
  * `a.add(b)` compiles to the Luau binary expression `a + b`. This mirrors
  * roblox-ts, since TypeScript has no operator overloading but Luau's value
