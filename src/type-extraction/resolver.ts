@@ -10,9 +10,14 @@ import type { PackageManager } from "../package-manifest.ts";
 
 const LUAU_EXTS = [".luau", ".lua"];
 
-/** The packages install directory for a given package manager. */
-export function packagesDir(projectDir: string, pm: PackageManager): string {
-  return join(projectDir, pm === "pesde" ? "roblox_packages" : "Packages");
+/** The packages install directories for a given package manager. pesde splits
+ * installs by scope (shared vs server-only), so it has more than one. */
+export function packagesDirs(projectDir: string, pm: PackageManager): string[] {
+  const names =
+    pm === "pesde"
+      ? ["roblox_packages", "roblox_server_packages"]
+      : ["Packages", "ServerPackages", "DevPackages"];
+  return names.map((name) => join(projectDir, name));
 }
 
 function firstExisting(paths: string[]): string | null {
@@ -27,16 +32,26 @@ function findInit(dir: string): string | null {
 }
 
 /**
- * Parse a redirect/link file like:
- *   return require(script.Parent._Index["jsdotlua_react@17.2.1"]["react"])
- * Returns the bracketed string keys after `_Index`.
+ * Parse a redirect/link file. Two formats exist:
+ *   wally: return require(script.Parent._Index["jsdotlua_react@17.2.1"]["react"])
+ *   pesde: require(script.Parent:FindFirstChild(".pesde"):FindFirstChild("lm-loleris_profilestore@1.0.3"):FindFirstChild("profilestore"))
+ * Returns the container dir name and the two path keys under it.
  */
-function parseIndexRedirect(content: string): { full: string; inner: string } | null {
+function parseIndexRedirect(
+  content: string
+): { container: string; full: string; inner: string } | null {
   const idx = content.indexOf("_Index");
-  if (idx === -1) return null;
-  const after = content.slice(idx);
-  const keys = [...after.matchAll(/\[\s*["']([^"']+)["']\s*\]/g)].map((m) => m[1]!);
-  if (keys.length >= 2) return { full: keys[0]!, inner: keys[1]! };
+  if (idx !== -1) {
+    const after = content.slice(idx);
+    const keys = [...after.matchAll(/\[\s*["']([^"']+)["']\s*\]/g)].map((m) => m[1]!);
+    if (keys.length >= 2) return { container: "_Index", full: keys[0]!, inner: keys[1]! };
+  }
+  const children = [
+    ...content.matchAll(/FindFirstChild\(\s*["']([^"']+)["']\s*\)/g),
+  ].map((m) => m[1]!);
+  if (children.length >= 3 && children[0] === ".pesde") {
+    return { container: ".pesde", full: children[1]!, inner: children[2]! };
+  }
   return null;
 }
 
@@ -55,7 +70,7 @@ export function resolveEntry(
   if (redirect) {
     const parsed = parseIndexRedirect(readFileSync(redirect, "utf-8"));
     if (parsed) {
-      innerDir = join(pkgDir, "_Index", parsed.full, parsed.inner);
+      innerDir = join(pkgDir, parsed.container, parsed.full, parsed.inner);
     }
   }
 
@@ -115,10 +130,11 @@ export function resolveSubModule(baseDir: string, target: string): string | null
 
 /** List dependency keys for which a packages directory has a resolvable entry. */
 export function packagesDirExists(projectDir: string, pm: PackageManager): boolean {
-  const dir = packagesDir(projectDir, pm);
-  try {
-    return existsSync(dir) && readdirSync(dir).length > 0;
-  } catch {
-    return false;
-  }
+  return packagesDirs(projectDir, pm).some((dir) => {
+    try {
+      return existsSync(dir) && readdirSync(dir).length > 0;
+    } catch {
+      return false;
+    }
+  });
 }
