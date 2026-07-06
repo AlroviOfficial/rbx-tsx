@@ -69,18 +69,28 @@ export function luauTypeToTS(type: LuauType, knownNames: Set<string>): string {
       if (type.types.length === 0) return "void";
       return `[${type.types.map((t) => luauTypeToTS(t, knownNames)).join(", ")}]`;
     case "function": {
-      const params = type.params.map((p, idx) => {
+      // Type parameters of a generic function are in scope for its signature.
+      const scoped = type.typeParams?.length
+        ? new Set([...knownNames, ...type.typeParams])
+        : knownNames;
+      // Drop a leading `self` param: methods are called with rbx-tsx's colon
+      // convention (`obj.method(args)` → `obj:method(args)`), which binds the
+      // receiver as self — passing it explicitly would double it at runtime.
+      const effectiveParams =
+        type.params[0]?.name === "self" ? type.params.slice(1) : type.params;
+      const params = effectiveParams.map((p, idx) => {
         const name = safeParamName(p.name ?? `arg${idx}`);
-        if (p.variadic) return `...${name}: ${luauTypeToTS(p.type, knownNames)}[]`;
-        return `${name}: ${luauTypeToTS(p.type, knownNames)}`;
+        if (p.variadic) return `...${name}: ${luauTypeToTS(p.type, scoped)}[]`;
+        return `${name}: ${luauTypeToTS(p.type, scoped)}`;
       });
       const ret =
         type.returns.length === 0
           ? "void"
           : type.returns.length === 1
-            ? luauTypeToTS(type.returns[0]!, knownNames)
-            : `[${type.returns.map((t) => luauTypeToTS(t, knownNames)).join(", ")}]`;
-      return `(${params.join(", ")}) => ${ret}`;
+            ? luauTypeToTS(type.returns[0]!, scoped)
+            : `[${type.returns.map((t) => luauTypeToTS(t, scoped)).join(", ")}]`;
+      const generics = type.typeParams?.length ? `<${type.typeParams.join(", ")}>` : "";
+      return `${generics}(${params.join(", ")}) => ${ret}`;
     }
     case "table": {
       if (type.arrayElement) return arrayElement(luauTypeToTS(type.arrayElement, knownNames));
@@ -155,20 +165,34 @@ export interface EmitOptions {
 }
 
 export function emitDeclareModule(module: ExtractedModule, opts: EmitOptions): string {
-  const knownNames = new Set(module.typeAliases.map((a) => a.name));
   const lines: string[] = [];
   lines.push(`declare module ${JSON.stringify(opts.specifier)} {`);
-
-  for (const alias of module.typeAliases) {
-    lines.push("\t" + emitTypeAlias(alias, knownNames));
-  }
-  if (module.typeAliases.length) lines.push("");
-
-  const def = emitDefault(module, knownNames);
-  lines.push(...def.map((l) => (l ? "\t" + l : l)));
-
+  lines.push(...moduleBody(module).map((l) => (l ? "\t" + l : l)));
   lines.push("}");
   return lines.join("\n") + "\n";
+}
+
+/**
+ * Emit a standalone `.d.ts` (no `declare module` wrapper) for a local Luau
+ * module, meant to sit next to the `.luau` file so relative imports from TS
+ * resolve to it.
+ */
+export function emitStandaloneDts(module: ExtractedModule): string {
+  const lines = moduleBody(module).map((l) =>
+    l.startsWith("const _default") ? `declare ${l}` : l
+  );
+  return lines.join("\n") + "\n";
+}
+
+function moduleBody(module: ExtractedModule): string[] {
+  const knownNames = new Set(module.typeAliases.map((a) => a.name));
+  const lines: string[] = [];
+  for (const alias of module.typeAliases) {
+    lines.push(emitTypeAlias(alias, knownNames));
+  }
+  if (module.typeAliases.length) lines.push("");
+  lines.push(...emitDefault(module, knownNames));
+  return lines;
 }
 
 function emitTypeAlias(alias: ExtractedTypeAlias, knownNames: Set<string>): string {

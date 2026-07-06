@@ -27,6 +27,15 @@ export const ROBLOX_CONSTRUCTORS = new Set([
   "PhysicalProperties",
   "PathWaypoint",
   "Random",
+  "DateTime",
+  // Luau/Roblox global libraries: their functions are plain fields, so calls
+  // must stay dot-style (os.time(), task.wait()) — never colon.
+  "os",
+  "task",
+  "coroutine",
+  "utf8",
+  "bit32",
+  "buffer",
 ]);
 
 /**

@@ -74,8 +74,13 @@ export function createCLI(): Command {
 
   program
     .command("types")
-    .description("Generate TypeScript declarations from installed Luau packages")
-    .argument("[directory]", "Project directory (defaults to current dir)")
+    .description(
+      "Generate TypeScript declarations from installed Luau packages, a local .luau module, or a directory of local modules"
+    )
+    .argument(
+      "[path]",
+      "Project directory, .luau module file, or directory of local modules (defaults to current dir)"
+    )
     .option("-o, --output <dir>", "Output directory (defaults to types/packages)")
     .action((directory: string | undefined, opts: TypesOptions) => {
       handleTypes(directory, opts);

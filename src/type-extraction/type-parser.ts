@@ -11,7 +11,7 @@ export type LuauType =
   | { kind: "name"; name: string; typeArgs: LuauType[] }
   | { kind: "literal"; value: string; literalKind: "string" | "number" | "boolean" }
   | { kind: "table"; fields: LuauField[]; indexer?: { key: LuauType; value: LuauType }; arrayElement?: LuauType }
-  | { kind: "function"; params: LuauParam[]; returns: LuauType[] }
+  | { kind: "function"; params: LuauParam[]; returns: LuauType[]; typeParams?: string[] }
   | { kind: "union"; types: LuauType[] }
   | { kind: "intersection"; types: LuauType[] }
   | { kind: "optional"; inner: LuauType }
@@ -98,6 +98,24 @@ class Parser {
     // Parenthesized group: either `( ... ) -> ret` (function) or a tuple/paren.
     if (t.type === "punct" && t.value === "(") {
       return this.parseParenOrFunction();
+    }
+
+    // Generic function type: `<T, U>(...) -> ret`.
+    if (t.type === "punct" && t.value === "<") {
+      this.pos++;
+      const typeParams: string[] = [];
+      while (!this.isPunct(">") && !this.atEnd()) {
+        const p = this.next()!;
+        if (p.type === "name") typeParams.push(p.value);
+        if (!this.eat(",")) break;
+      }
+      this.eat(">");
+      if (this.isPunct("(")) {
+        const fn = this.parseParenOrFunction();
+        if (fn.kind === "function") return { ...fn, typeParams };
+        return fn;
+      }
+      return ANY;
     }
 
     // Table type.

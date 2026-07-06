@@ -248,6 +248,8 @@ export function extractModule(source: string): ExtractedModule {
   const typeAliases: ExtractedTypeAlias[] = [];
   const localFuncs = new Map<string, LuauType>();
   const localRequires = new Map<string, string>();
+  // Explicit type annotations on module-level locals (`local M: Module = ...`).
+  const localAnnotations = new Map<string, LuauType>();
   // Members assigned onto a table var: ownerVar -> [{name, value}]
   const tableMembers = new Map<string, ExtractedMember[]>();
   const tableVars = new Set<string>();
@@ -269,7 +271,19 @@ export function extractModule(source: string): ExtractedModule {
     // do-blocks, so it is the opener we count; `for`/`while` headers themselves
     // are not counted to avoid double-counting their trailing `do`.
     if (t.value === "end" || t.value === "until") { blockDepth = Math.max(0, blockDepth - 1); continue; }
-    if (t.value === "if" || t.value === "do" || t.value === "repeat") { blockDepth++; continue; }
+    if (t.value === "if") {
+      // Luau if-EXPRESSIONS (`x = if c then a else b`) have no `end`; counting
+      // them drifts the depth forever. An `if` is an expression when preceded
+      // by an operator/opener/keyword that expects a value.
+      const prev = tokens[i - 1];
+      const isExpression =
+        (prev?.type === "punct" && ["=", "(", ",", "{", "[", ".."].includes(prev.value)) ||
+        (prev?.type === "name" &&
+          ["return", "and", "or", "not", "then", "else", "elseif"].includes(prev.value));
+      if (!isExpression) blockDepth++;
+      continue;
+    }
+    if (t.value === "do" || t.value === "repeat") { blockDepth++; continue; }
 
     const topLevel = blockDepth === 0;
 
@@ -295,8 +309,8 @@ export function extractModule(source: string): ExtractedModule {
       continue;
     }
 
-    // local function name(...) — opens a body block.
-    if (topLevel && t.value === "local" && tokens[i + 1]?.value === "function" && tokens[i + 2]?.type === "name" && isPunct(tokens[i + 3], "(")) {
+    // local/const function name(...) — opens a body block.
+    if (topLevel && (t.value === "local" || t.value === "const") && tokens[i + 1]?.value === "function" && tokens[i + 2]?.type === "name" && isPunct(tokens[i + 3], "(")) {
       const fnName = tokens[i + 2]!.value;
       const fn = parseFunctionDecl(tokens, i + 3);
       localFuncs.set(fnName, fn.type);
@@ -305,16 +319,26 @@ export function extractModule(source: string): ExtractedModule {
       continue;
     }
 
-    // local name = require(...) / local name = {}
-    if (topLevel && t.value === "local" && tokens[i + 1]?.type === "name" && isPunct(tokens[i + 2], "=")) {
+    // local name = require(...) / local name = {} — allows an optional
+    // `: Type` annotation between the name and the `=`.
+    if (topLevel && (t.value === "local" || t.value === "const") && tokens[i + 1]?.type === "name") {
+      let eq = i + 2;
+      let annotation: LuauType | null = null;
+      if (isPunct(tokens[eq], ":")) {
+        const annStart = eq + 1;
+        eq = collectTypeSpan(tokens, annStart);
+        annotation = parseTypeExpression(tokens.slice(annStart, eq));
+      }
+      if (!isPunct(tokens[eq], "=")) continue;
       const varName = tokens[i + 1]!.value;
-      const rhs = tokens[i + 3];
+      if (annotation && annotation.kind !== "any") localAnnotations.set(varName, annotation);
+      const rhs = tokens[eq + 1];
       if (rhs?.type === "name" && rhs.value === "require") {
-        const target = requireTarget(tokens.slice(i + 3, collectStatementEnd(tokens, i + 3)));
+        const target = requireTarget(tokens.slice(eq + 1, collectStatementEnd(tokens, eq + 1)));
         if (target) localRequires.set(varName, target);
-      } else if (rhs?.type === "name" && rhs.value === "function" && isPunct(tokens[i + 4], "(")) {
+      } else if (rhs?.type === "name" && rhs.value === "function" && isPunct(tokens[eq + 2], "(")) {
         // local foo = function(...) ... end — opens a body block.
-        const fn = parseFunctionDecl(tokens, i + 4);
+        const fn = parseFunctionDecl(tokens, eq + 2);
         localFuncs.set(varName, fn.type);
         i = fn.end;
         blockDepth++;
@@ -346,7 +370,7 @@ export function extractModule(source: string): ExtractedModule {
 
     // Owner.field = value (gated by tableVars, so only module-table assignments;
     // not gated on top level, matching the function-member rule above).
-    if (t.value !== "local" && tokens[i + 1] && isPunct(tokens[i + 1], ".") &&
+    if (t.value !== "local" && t.value !== "const" && tokens[i + 1] && isPunct(tokens[i + 1], ".") &&
         tokens[i + 2]?.type === "name" && isPunct(tokens[i + 3], "=") && tableVars.has(t.value)) {
       const owner = t.value;
       const field = tokens[i + 2]!.value;
@@ -363,7 +387,7 @@ export function extractModule(source: string): ExtractedModule {
     }
   }
 
-  const shape = analyzeReturn(tokens, returnStart, tableMembers, localFuncs, localRequires);
+  const shape = analyzeReturn(tokens, returnStart, tableMembers, localFuncs, localRequires, localAnnotations);
   return { typeAliases, shape };
 }
 
@@ -376,8 +400,8 @@ function collectStatementEnd(tokens: Token[], start: number): number {
     if (t.type === "punct" && STMT_OPENERS[t.value]) depth++;
     else if (t.type === "punct" && STMT_CLOSERS.has(t.value)) depth = Math.max(0, depth - 1);
     else if (depth === 0 && t.type === "name" &&
-             (t.value === "local" || t.value === "function" || t.value === "return" ||
-              t.value === "export" || t.value === "end")) break;
+             (t.value === "local" || t.value === "const" || t.value === "function" ||
+              t.value === "return" || t.value === "export" || t.value === "end")) break;
     i++;
   }
   return i;
@@ -388,7 +412,8 @@ function analyzeReturn(
   returnStart: number,
   tableMembers: Map<string, ExtractedMember[]>,
   localFuncs: Map<string, LuauType>,
-  localRequires: Map<string, string>
+  localRequires: Map<string, string>,
+  localAnnotations: Map<string, LuauType>
 ): ModuleShape {
   if (returnStart < 0 || returnStart >= tokens.length) return { kind: "none" };
   const first = tokens[returnStart]!;
@@ -413,6 +438,9 @@ function analyzeReturn(
   // return <identifier>
   if (first.type === "name") {
     const id = first.value;
+    // An explicit annotation on the returned local is authoritative — scraped
+    // members from untyped `function M.x()` bodies are all-any by comparison.
+    if (localAnnotations.has(id)) return { kind: "value", type: localAnnotations.get(id)! };
     if (tableMembers.has(id)) return { kind: "object", members: tableMembers.get(id)! };
     if (localRequires.has(id)) return { kind: "reexport", target: localRequires.get(id)! };
     if (localFuncs.has(id)) return { kind: "value", type: localFuncs.get(id)! };
