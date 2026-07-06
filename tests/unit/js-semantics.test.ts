@@ -135,7 +135,7 @@ describe("logical assignment truthiness", () => {
 
   test("&&= computed target is transformed once (no duplicate temps)", () => {
     const result = compileStmt("a[foo().bar?.c] &&= 1;");
-    const matches = result.match(/local _opt\d+ =/g) ?? [];
+    const matches = result.match(/(?:local|const) _opt\d+ =/g) ?? [];
     expect(matches.length).toBe(1);
   });
 });

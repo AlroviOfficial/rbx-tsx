@@ -16,7 +16,7 @@ describe("React imports", () => {
       import React from "react";
       export default function App() { return <div />; }
     `);
-    expect(result).toContain('local React = require(game:GetService("ReplicatedStorage").Packages.React)');
+    expect(result).toContain('const React = require(game:GetService("ReplicatedStorage").Packages.React)');
   });
 
   test("named React imports", () => {
@@ -28,8 +28,8 @@ describe("React imports", () => {
         return <div />;
       }
     `);
-    expect(result).toContain("local useState = React.useState");
-    expect(result).toContain("local useEffect = React.useEffect");
+    expect(result).toContain("const useState = React.useState");
+    expect(result).toContain("const useEffect = React.useEffect");
   });
 });
 
@@ -104,8 +104,8 @@ describe("exports", () => {
       export { foo, bar } from "./utils";
     `);
     expect(result).toContain("require(script.Parent.utils)");
-    expect(result).toContain("local foo = ");
-    expect(result).toContain("local bar = ");
+    expect(result).toContain("const foo = ");
+    expect(result).toContain("const bar = ");
     expect(result).toContain("foo = foo");
     expect(result).toContain("bar = bar");
   });
@@ -144,7 +144,7 @@ describe("CSS imports", () => {
       import styles from "./Card.module.css";
       export default function App() { return <div className={styles.card} />; }
     `);
-    expect(result).toContain("local styles = require(");
+    expect(result).toContain("const styles = require(");
     expect(result).toContain("Card.style");
   });
 });
@@ -156,8 +156,8 @@ describe("ReactRoblox imports", () => {
       import { createRoot } from "react-roblox";
       const root = createRoot(gui);
     `);
-    expect(result).toContain("local ReactRoblox = require(");
-    expect(result).toContain("local createRoot = ReactRoblox.createRoot");
+    expect(result).toContain("const ReactRoblox = require(");
+    expect(result).toContain("const createRoot = ReactRoblox.createRoot");
   });
 });
 

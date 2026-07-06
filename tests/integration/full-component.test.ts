@@ -22,13 +22,13 @@ describe("Card component (full example from spec)", () => {
 
   test("includes React require", () => {
     const result = compileFixture("Card.tsx");
-    expect(result.luau).toContain('local React = require(game:GetService("ReplicatedStorage").Packages.React)');
+    expect(result.luau).toContain('const React = require(game:GetService("ReplicatedStorage").Packages.React)');
   });
 
   test("includes useState and useCallback locals", () => {
     const result = compileFixture("Card.tsx");
-    expect(result.luau).toContain("local useState = React.useState");
-    expect(result.luau).toContain("local useCallback = React.useCallback");
+    expect(result.luau).toContain("const useState = React.useState");
+    expect(result.luau).toContain("const useCallback = React.useCallback");
   });
 
   test("declares CardProps type", () => {
@@ -38,23 +38,23 @@ describe("Card component (full example from spec)", () => {
 
   test("generates function Card(props)", () => {
     const result = compileFixture("Card.tsx");
-    expect(result.luau).toContain("local function Card(props: CardProps)");
+    expect(result.luau).toContain("const function Card(props: CardProps)");
   });
 
   test("destructures props with defaults", () => {
     const result = compileFixture("Card.tsx");
-    expect(result.luau).toContain("local title = props.title");
+    expect(result.luau).toContain("const title = props.title");
     expect(result.luau).toContain("initialCount");
   });
 
   test("transforms useState hook", () => {
     const result = compileFixture("Card.tsx");
-    expect(result.luau).toContain("local count, setCount = useState(");
+    expect(result.luau).toContain("const count, setCount = useState(");
   });
 
   test("transforms useCallback hook", () => {
     const result = compileFixture("Card.tsx");
-    expect(result.luau).toContain("local increment = useCallback(function()");
+    expect(result.luau).toContain("const increment = useCallback(function()");
   });
 
   test("maps div to Frame", () => {

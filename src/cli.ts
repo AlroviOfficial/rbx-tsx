@@ -43,6 +43,7 @@ export function createCLI(): Command {
     .option("--react-roblox-path <path>", "Require path for react-roblox")
     .option("--strict", "Treat warnings as errors", false)
     .option("--sourcemap", "Emit source map comments", false)
+    .option("-s, --silent", "Omit the auto-generated header comments", false)
     .option("--warn <level>", "Warning level: all, unsupported, none", "all")
     .action((input: string, opts) => {
       handleCompile(input, opts);
@@ -55,6 +56,7 @@ export function createCLI(): Command {
     .option("-o, --output <path>", "Output directory")
     .option("--react-path <path>", "Require path for react-lua")
     .option("--react-roblox-path <path>", "Require path for react-roblox")
+    .option("-s, --silent", "Omit the auto-generated header comments", false)
     .option("--warn <level>", "Warning level", "all")
     .action((watchPath: string, opts) => {
       handleWatch(watchPath, opts);
@@ -252,6 +254,7 @@ function handleCompile(
     ...(opts.reactRobloxPath ? { reactRobloxPath: opts.reactRobloxPath } : {}),
     strict: opts.strict,
     sourcemap: opts.sourcemap,
+    silent: opts.silent,
     warnLevel: opts.warn as WarningLevel,
     packageManifest: manifest ?? undefined,
   };
@@ -392,6 +395,7 @@ function handleWatch(
     ...(opts.reactPath ? { reactPath: opts.reactPath } : {}),
     ...(opts.reactRobloxPath ? { reactRobloxPath: opts.reactRobloxPath } : {}),
     strict: false,
+    silent: opts.silent,
     warnLevel: opts.warn as WarningLevel,
     packageManifest: manifest ?? undefined,
   };

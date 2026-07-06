@@ -8,17 +8,17 @@ function compileTS(source: string): string {
 describe("basic type annotations", () => {
   test("string type", () => {
     const result = compileTS("const x: string = 'hello';");
-    expect(result).toContain("local x: string");
+    expect(result).toContain("const x: string");
   });
 
   test("number type", () => {
     const result = compileTS("const x: number = 42;");
-    expect(result).toContain("local x: number");
+    expect(result).toContain("const x: number");
   });
 
   test("boolean type", () => {
     const result = compileTS("const x: boolean = true;");
-    expect(result).toContain("local x: boolean");
+    expect(result).toContain("const x: boolean");
   });
 });
 
@@ -107,7 +107,7 @@ describe("interface declarations", () => {
 describe("enum declarations", () => {
   test("numeric enum", () => {
     const result = compileTS("enum Dir { Up, Down, Left, Right }");
-    expect(result).toContain("local Dir = {");
+    expect(result).toContain("const Dir = {");
     expect(result).toContain("Up = 0");
     expect(result).toContain("Down = 1");
     expect(result).toContain("Left = 2");
@@ -189,19 +189,19 @@ describe("LuaTuple / multi-return", () => {
     const result = compileTS(
       "function f(): LuaTuple<[number, string]> { return [1, 'a']; }\nconst [n, s] = f();"
     );
-    expect(result).toContain("local n, s = f()");
+    expect(result).toContain("const n, s = f()");
   });
 
   test("destructuring with a hole keeps positions aligned", () => {
     const result = compileTS(
       "function f(): LuaTuple<[number, string]> { return [1, 'a']; }\nconst [, s] = f();"
     );
-    expect(result).toContain("local _, s = f()");
+    expect(result).toContain("const _, s = f()");
   });
 
   test("pcall destructures to multi-local", () => {
     const result = compileTS("const [ok, result] = pcall(() => 1);");
-    expect(result).toContain("local ok, result = pcall(");
+    expect(result).toContain("const ok, result = pcall(");
   });
 
   test("non-tuple array destructuring still uses temp var", () => {

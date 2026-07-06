@@ -6,19 +6,19 @@ function compileStmt(source: string): string {
 }
 
 describe("variable declarations", () => {
-  test("const → local", () => {
+  test("const → const", () => {
     const result = compileStmt("const x = 5;");
-    expect(result).toContain("local x = 5");
+    expect(result).toContain("const x = 5");
   });
 
-  test("let → local", () => {
+  test("never-reassigned let → const", () => {
     const result = compileStmt("let y = 'hello';");
-    expect(result).toContain('local y = "hello"');
+    expect(result).toContain('const y = "hello"');
   });
 
   test("const with type annotation", () => {
     const result = compileStmt("const x: number = 5;");
-    expect(result).toContain("local x: number = 5");
+    expect(result).toContain("const x: number = 5");
   });
 });
 
@@ -92,14 +92,14 @@ describe("loops", () => {
 });
 
 describe("function declarations", () => {
-  test("function → local function", () => {
+  test("function → const function", () => {
     const result = compileStmt("function hello(x: number): string { return tostring(x); }");
-    expect(result).toContain("local function hello");
+    expect(result).toContain("const function hello");
   });
 
   test("arrow function in variable", () => {
     const result = compileStmt("const add = (a: number, b: number) => a + b;");
-    expect(result).toContain("local add = function(a: number, b: number)");
+    expect(result).toContain("const add = function(a: number, b: number)");
     expect(result).toContain("return a + b");
   });
 });
@@ -107,8 +107,8 @@ describe("function declarations", () => {
 describe("destructuring", () => {
   test("object destructuring", () => {
     const result = compileStmt("const { a, b } = obj;");
-    expect(result).toContain("local a = obj.a");
-    expect(result).toContain("local b = obj.b");
+    expect(result).toContain("const a = obj.a");
+    expect(result).toContain("const b = obj.b");
   });
 
   test("object destructuring with defaults", () => {
@@ -118,8 +118,8 @@ describe("destructuring", () => {
 
   test("array destructuring", () => {
     const result = compileStmt("const [first, second] = items;");
-    expect(result).toContain("local first = ");
-    expect(result).toContain("local second = ");
+    expect(result).toContain("const first = ");
+    expect(result).toContain("const second = ");
   });
 });
 
@@ -143,7 +143,7 @@ describe("type declarations", () => {
 
   test("enum → table + type", () => {
     const result = compileStmt("enum Direction { Up, Down, Left, Right }");
-    expect(result).toContain("local Direction = {");
+    expect(result).toContain("const Direction = {");
     expect(result).toContain("Up = 0");
     expect(result).toContain("Right = 3");
     expect(result).toContain("type Direction = number");
@@ -208,14 +208,14 @@ describe("logical assignment operators", () => {
 describe("nested destructuring", () => {
   test("nested object destructuring", () => {
     const result = compileStmt("const { a: { b, c } } = obj;");
-    expect(result).toContain("local b = ");
-    expect(result).toContain("local c = ");
+    expect(result).toContain("const b = ");
+    expect(result).toContain("const c = ");
   });
 
   test("mixed nested destructuring (object → array)", () => {
     const result = compileStmt("const { items: [first, second] } = data;");
-    expect(result).toContain("local first = ");
-    expect(result).toContain("local second = ");
+    expect(result).toContain("const first = ");
+    expect(result).toContain("const second = ");
   });
 });
 
@@ -261,11 +261,11 @@ describe("class declarations", () => {
         speak(): string { return this.name + " makes a noise"; }
       }
     `);
-    expect(result).toContain("local Animal = {}");
+    expect(result).toContain("const Animal = {}");
     expect(result).toContain("Animal.__index = Animal");
     expect(result).toContain("type Animal = typeof(setmetatable({} :: AnimalData, Animal))");
     expect(result).toContain("function Animal.new(name: string): Animal");
-    expect(result).toContain("local self = {}");
+    expect(result).toContain("const self = {}");
     expect(result).toContain("self.name = name");
     expect(result).toContain("return setmetatable(self, Animal)");
     expect(result).toContain("function Animal.speak(self: Animal): string");
@@ -285,7 +285,7 @@ describe("class declarations", () => {
     expect(result).toContain("type Dog = typeof(setmetatable({} :: DogData, Dog))");
     expect(result).toContain("Dog.__index = Dog");
     expect(result).toContain("function Dog.new(name: string): Dog");
-    expect(result).toContain("local self = (Animal.new(name) :: any) :: DogData");
+    expect(result).toContain("const self = (Animal.new(name) :: any) :: DogData");
     expect(result).toContain("return (setmetatable(self, Dog) :: any) :: Dog");
     expect(result).toContain("function Dog.speak(self: Dog): string");
   });
@@ -333,7 +333,7 @@ describe("class declarations", () => {
       }
     `);
     expect(result).toContain("function Simple.new(): Simple");
-    expect(result).toContain("local self = {}");
+    expect(result).toContain("const self = {}");
     expect(result).toContain("return setmetatable(self, Simple)");
   });
 
@@ -379,7 +379,7 @@ describe("class declarations", () => {
         constructor() {}
       }
     `);
-    expect(result).toContain("local MyClass = {}");
+    expect(result).toContain("const MyClass = {}");
     expect(result).toContain("return MyClass");
   });
 
@@ -392,8 +392,8 @@ describe("class declarations", () => {
         set fullName(value: string) { this.firstName = value; }
       }
     `);
-    expect(result).toContain("local Person_get = {}");
-    expect(result).toContain("local Person_set = {}");
+    expect(result).toContain("const Person_get = {}");
+    expect(result).toContain("const Person_set = {}");
     expect(result).toContain("Person.__index = function(self, key)");
     expect(result).toContain("Person.__newindex = function(self, key, value)");
     expect(result).toContain("function Person_get.fullName(self: Person): string");
@@ -412,7 +412,7 @@ describe("class declarations", () => {
       }
     `);
     expect(result).toContain("function Circle_get.area(self: Circle): number");
-    expect(result).toContain("local Circle_set = {}");
+    expect(result).toContain("const Circle_set = {}");
   });
 
   test("class without accessors keeps simple __index", () => {
@@ -453,7 +453,7 @@ describe("namespace declarations", () => {
         function add(a: number, b: number) { return a + b; }
       }
     `);
-    expect(result).toContain("local Utils = Utils or {}");
+    expect(result).toContain("const Utils = Utils or {}");
     expect(result).toContain("Utils.x = x");
     expect(result).toContain("function Utils.add");
   });
@@ -475,7 +475,7 @@ describe("namespace declarations", () => {
       namespace Foo { const a = 1; }
       namespace Foo { const b = 2; }
     `);
-    expect(result).toContain("local Foo = Foo or {}");
+    expect(result).toContain("const Foo = Foo or {}");
     expect(result).toContain("Foo.a = a");
     expect(result).toContain("Foo.b = b");
   });
@@ -501,7 +501,7 @@ describe("decorators", () => {
         greet() { return "hi"; }
       }
     `);
-    expect(result).toContain("local Bar = {}");
+    expect(result).toContain("const Bar = {}");
     expect(result).toContain("log(Bar");
     expect(result).toContain("value");
   });
