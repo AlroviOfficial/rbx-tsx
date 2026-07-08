@@ -1,18 +1,28 @@
 import { watch as fsWatch, type FSWatcher } from "fs";
 import { readdirSync, statSync } from "fs";
-import { join, resolve } from "path";
+import { join, resolve, sep } from "path";
 
 export function startWatch(
   watchPath: string,
+  outputDir: string | null,
   onCompile: (files: string[]) => void
 ): void {
   const absPath = resolve(watchPath);
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // When the output directory lives inside the watched tree (watch . -o out),
+  // writes into it must be invisible to the watcher — both to the change
+  // events and to file collection — or every compile would feed back into
+  // another compile and the copied tree would nest one level per cycle.
+  const excludeDir =
+    outputDir && outputDir !== absPath && outputDir.startsWith(absPath + sep)
+      ? outputDir
+      : null;
+
   const collectFiles = (): string[] => {
     const stat = statSync(absPath);
     if (stat.isFile()) return [absPath];
-    return findTSXFiles(absPath);
+    return findWatchedFiles(absPath, excludeDir);
   };
 
   // Initial compile
@@ -28,8 +38,13 @@ export function startWatch(
     { recursive: true },
     (eventType, filename) => {
       if (!filename) return;
-      if (!filename.match(/\.(tsx?|jsx?)$/)) return;
+      if (!filename.match(/\.(tsx?|jsx?|luau?)$/)) return;
       if (filename.includes(".test.") || filename.includes(".spec.")) return;
+      if (excludeDir) {
+        const fullPath = join(absPath, filename);
+        if (fullPath === excludeDir || fullPath.startsWith(excludeDir + sep))
+          return;
+      }
 
       // Debounce
       if (debounceTimer) clearTimeout(debounceTimer);
@@ -48,7 +63,7 @@ export function startWatch(
   });
 }
 
-function findTSXFiles(dir: string): string[] {
+function findWatchedFiles(dir: string, excludeDir: string | null): string[] {
   const files: string[] = [];
 
   try {
@@ -57,9 +72,10 @@ function findTSXFiles(dir: string): string[] {
       const fullPath = join(dir, entry.name);
       if (entry.isDirectory()) {
         if (entry.name === "node_modules" || entry.name === ".git") continue;
-        files.push(...findTSXFiles(fullPath));
+        if (fullPath === excludeDir) continue;
+        files.push(...findWatchedFiles(fullPath, excludeDir));
       } else if (
-        entry.name.match(/\.(tsx?|jsx?)$/) &&
+        entry.name.match(/\.(tsx?|jsx?|luau?)$/) &&
         !entry.name.includes(".test.") &&
         !entry.name.includes(".spec.")
       ) {

@@ -80,6 +80,8 @@ rbx-tsx init <name>       # scaffold a new project
 rbx-tsx types [path]      # generate .d.ts from wally/pesde packages or local .luau modules
 ```
 
+Directory compilation and watch also copy hand-written `.lua`/`.luau` files into the output tree, so `-o out/` produces a complete Rojo tree. Copies are verbatim — same relative path and name (the `index.luau` → `init.luau` rename applies only to compiled sources; name a hand-written init `init.luau` directly). `.test.`/`.spec.` files, `.d.luau`/`.d.lua` declarations, and anything inside the output directory are skipped, and a hand-written file that collides with a compiled output is skipped with a warning.
+
 Full flag reference and feature details are in the **[docs](https://rbx-tsx.alrovi.com/guides/cli/)**:
 
 - [JSX & React](https://rbx-tsx.alrovi.com/guides/jsx-react/) — hooks, element & props mapping

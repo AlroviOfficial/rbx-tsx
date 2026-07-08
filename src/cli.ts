@@ -2,12 +2,13 @@ import { Command } from "commander";
 import {
   readFileSync,
   writeFileSync,
+  copyFileSync,
   mkdirSync,
   statSync,
   readdirSync,
   existsSync,
 } from "fs";
-import { join, resolve, dirname, relative, basename } from "path";
+import { join, resolve, dirname, relative, basename, sep } from "path";
 import {
   compile,
   compileProject,
@@ -237,6 +238,75 @@ function compileTreeToDisk(
   return hasErrors;
 }
 
+/**
+ * Hand-written Luau files that should be copied into the output tree
+ * verbatim. Expects a file name (basename), not a path — the test/spec
+ * checks must not match directory names.
+ */
+export function isCopyableLuau(name: string): boolean {
+  return (
+    /\.luau?$/.test(name) &&
+    !name.includes(".test.") &&
+    !name.includes(".spec.") &&
+    !name.endsWith(".d.luau") &&
+    !name.endsWith(".d.lua")
+  );
+}
+
+/**
+ * Copy hand-written .lua/.luau files into the output tree unchanged, so the
+ * output directory is a complete Rojo tree without a separate copy step.
+ * `compiledOutputs` holds the destinations produced by the compile phase;
+ * copies that would overwrite one are skipped with a warning.
+ */
+function copyLuauToDisk(
+  files: string[],
+  baseDir: string,
+  outputDir: string,
+  compiledOutputs?: Set<string>
+): void {
+  for (const file of files) {
+    const rel = relative(baseDir, file).split("\\").join("/");
+    const outputPath = join(outputDir, rel);
+    if (outputPath === file) continue; // compiling in place; nothing to copy
+    if (compiledOutputs?.has(outputPath)) {
+      console.warn(
+        `Warning: ${rel} collides with a compiled output at ` +
+          `${relative(process.cwd(), outputPath)}; keeping the compiled file`
+      );
+      continue;
+    }
+    // Skip unchanged files so watch rebuilds don't bump mtimes and trigger
+    // spurious re-syncs in tools watching the output tree.
+    try {
+      const src = statSync(file);
+      const dest = statSync(outputPath);
+      if (dest.size === src.size && dest.mtimeMs >= src.mtimeMs) continue;
+    } catch {
+      // Destination missing — copy it.
+    }
+    mkdirSync(dirname(outputPath), { recursive: true });
+    copyFileSync(file, outputPath);
+    console.log(`${rel} -> ${relative(process.cwd(), outputPath)}`);
+  }
+}
+
+/**
+ * Destinations the compile phase writes for `files`, used to detect
+ * collisions with hand-written Luau copies.
+ */
+function compiledOutputPaths(
+  files: string[],
+  baseDir: string,
+  outputDir: string
+): Set<string> {
+  return new Set(
+    files.map((f) =>
+      join(outputDir, getOutputPath(relative(baseDir, f).split("\\").join("/")))
+    )
+  );
+}
+
 function handleCompile(
   input: string,
   opts: {
@@ -379,6 +449,17 @@ function handleCompile(
       compilerOpts
     );
 
+    // Phase 3: Copy hand-written Luau files into the output tree. Skip the
+    // output directory itself when it is nested inside the input directory,
+    // or each run would re-copy the previous run's output one level deeper.
+    const excludeDir = outputDir.startsWith(absInput + sep) ? outputDir : null;
+    copyLuauToDisk(
+      findLuauFiles(absInput, excludeDir),
+      absInput,
+      outputDir,
+      compiledOutputPaths(files, absInput, outputDir)
+    );
+
     if (hasErrors && opts.strict) {
       process.exit(1);
     }
@@ -418,8 +499,23 @@ function handleWatch(
   };
 
   const baseDir = statSync(absPath).isFile() ? dirname(absPath) : absPath;
-  startWatch(absPath, (files) => {
-    compileTreeToDisk(files, baseDir, outputDir, compilerOpts);
+  // Match compile's in-place behavior: without -o, nothing is copied. The
+  // default output (the watch path's parent) would otherwise clobber
+  // same-named files outside the watched tree.
+  const copyDir = opts.output ? outputDir : null;
+  startWatch(absPath, outputDir, (files) => {
+    const sourceFiles = files.filter((f) => !/\.luau?$/.test(f));
+    if (sourceFiles.length > 0) {
+      compileTreeToDisk(sourceFiles, baseDir, outputDir, compilerOpts);
+    }
+    if (copyDir) {
+      copyLuauToDisk(
+        files.filter((f) => isCopyableLuau(basename(f))),
+        baseDir,
+        copyDir,
+        compiledOutputPaths(sourceFiles, baseDir, copyDir)
+      );
+    }
   });
 }
 
@@ -477,6 +573,26 @@ function findCSSFiles(dir: string): string[] {
         if (entry.name === "node_modules" || entry.name === ".git") continue;
         files.push(...findCSSFiles(fullPath));
       } else if (entry.name.endsWith(".css")) {
+        files.push(fullPath);
+      }
+    }
+  } catch {
+    // Ignore permission errors
+  }
+  return files;
+}
+
+function findLuauFiles(dir: string, excludeDir: string | null): string[] {
+  const files: string[] = [];
+  try {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "node_modules" || entry.name === ".git") continue;
+        if (fullPath === excludeDir) continue;
+        files.push(...findLuauFiles(fullPath, excludeDir));
+      } else if (isCopyableLuau(entry.name)) {
         files.push(fullPath);
       }
     }
