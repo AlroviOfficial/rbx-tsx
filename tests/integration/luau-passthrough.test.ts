@@ -39,6 +39,7 @@ describe("isCopyableLuau", () => {
     expect(isCopyableLuau("config.test.luau")).toBe(false);
     expect(isCopyableLuau("config.spec.luau")).toBe(false);
     expect(isCopyableLuau("globalTypes.d.luau")).toBe(false);
+    expect(isCopyableLuau("globalTypes.d.lua")).toBe(false);
   });
 });
 
@@ -95,6 +96,60 @@ describe("Luau passthrough in directory compilation", () => {
   test("does not copy test or declaration files", () => {
     expect(existsSync(join(outDir, "shared", "config.test.luau"))).toBe(false);
     expect(existsSync(join(outDir, "types.d.luau"))).toBe(false);
+  });
+});
+
+describe("Luau passthrough with the output directory inside the input", () => {
+  let projectDir: string;
+  let outDir: string;
+
+  beforeAll(() => {
+    projectDir = mkdtempSync(join(tmpdir(), "rbx-tsx-nested-out-"));
+    outDir = join(projectDir, "out");
+    writeFileSync(join(projectDir, "main.ts"), "export const x: number = 1\n");
+    writeFileSync(join(projectDir, "config.luau"), "return 1\n");
+  });
+
+  afterAll(() => {
+    rmSync(projectDir, { recursive: true, force: true });
+  });
+
+  test("repeated runs do not re-copy the output into itself", () => {
+    expect(runCompile([projectDir, "-o", outDir]).exitCode).toBe(0);
+    expect(runCompile([projectDir, "-o", outDir]).exitCode).toBe(0);
+
+    expect(existsSync(join(outDir, "main.luau"))).toBe(true);
+    expect(existsSync(join(outDir, "config.luau"))).toBe(true);
+    expect(existsSync(join(outDir, "out"))).toBe(false);
+  });
+});
+
+describe("Luau passthrough collision with compiled output", () => {
+  let projectDir: string;
+  let srcDir: string;
+  let outDir: string;
+
+  beforeAll(() => {
+    projectDir = mkdtempSync(join(tmpdir(), "rbx-tsx-collision-"));
+    srcDir = join(projectDir, "src");
+    outDir = join(projectDir, "out");
+    mkdirSync(srcDir);
+    writeFileSync(join(srcDir, "foo.ts"), "export const x: number = 1\n");
+    writeFileSync(join(srcDir, "foo.luau"), "return 2\n");
+  });
+
+  afterAll(() => {
+    rmSync(projectDir, { recursive: true, force: true });
+  });
+
+  test("keeps the compiled file and warns instead of overwriting", () => {
+    const result = runCompile([srcDir, "-o", outDir]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain("collides with a compiled output");
+    // The compiled module wins; the hand-written copy is skipped.
+    expect(readFileSync(join(outDir, "foo.luau"), "utf-8")).toContain(
+      "const x: number = 1"
+    );
   });
 });
 
