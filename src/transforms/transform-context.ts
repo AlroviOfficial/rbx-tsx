@@ -215,7 +215,10 @@ export class TransformContext {
   /** Resolve a package import specifier to its Luau require path */
   resolvePackageRequirePath(specifier: string): string {
     const packageName = resolvePackageName(specifier, this.packageManifest);
-    return `ReplicatedStorage.Packages.${packageName}`;
+    // Inline the service getter: nothing guarantees a ReplicatedStorage
+    // local exists in the emitted file, and the self-contained form is
+    // convertible to a string require.
+    return `game:GetService("ReplicatedStorage").Packages.${packageName}`;
   }
 
   /** Generate a unique temp variable name for optional chain extraction */
