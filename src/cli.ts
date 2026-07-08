@@ -2,6 +2,7 @@ import { Command } from "commander";
 import {
   readFileSync,
   writeFileSync,
+  copyFileSync,
   mkdirSync,
   statSync,
   readdirSync,
@@ -237,6 +238,35 @@ function compileTreeToDisk(
   return hasErrors;
 }
 
+/** Hand-written Luau files that should be copied into the output tree verbatim. */
+export function isCopyableLuau(file: string): boolean {
+  return (
+    /\.luau?$/.test(file) &&
+    !file.includes(".test.") &&
+    !file.includes(".spec.") &&
+    !file.endsWith(".d.luau")
+  );
+}
+
+/**
+ * Copy hand-written .lua/.luau files into the output tree unchanged, so the
+ * output directory is a complete Rojo tree without a separate copy step.
+ */
+function copyLuauToDisk(
+  files: string[],
+  baseDir: string,
+  outputDir: string
+): void {
+  for (const file of files) {
+    const rel = relative(baseDir, file).split("\\").join("/");
+    const outputPath = join(outputDir, rel);
+    if (outputPath === file) continue; // compiling in place; nothing to copy
+    mkdirSync(dirname(outputPath), { recursive: true });
+    copyFileSync(file, outputPath);
+    console.log(`${rel} -> ${relative(process.cwd(), outputPath)}`);
+  }
+}
+
 function handleCompile(
   input: string,
   opts: {
@@ -379,6 +409,9 @@ function handleCompile(
       compilerOpts
     );
 
+    // Phase 3: Copy hand-written Luau files into the output tree
+    copyLuauToDisk(findLuauFiles(absInput), absInput, outputDir);
+
     if (hasErrors && opts.strict) {
       process.exit(1);
     }
@@ -419,7 +452,11 @@ function handleWatch(
 
   const baseDir = statSync(absPath).isFile() ? dirname(absPath) : absPath;
   startWatch(absPath, (files) => {
-    compileTreeToDisk(files, baseDir, outputDir, compilerOpts);
+    const sourceFiles = files.filter((f) => !/\.luau?$/.test(f));
+    if (sourceFiles.length > 0) {
+      compileTreeToDisk(sourceFiles, baseDir, outputDir, compilerOpts);
+    }
+    copyLuauToDisk(files.filter(isCopyableLuau), baseDir, outputDir);
   });
 }
 
@@ -477,6 +514,25 @@ function findCSSFiles(dir: string): string[] {
         if (entry.name === "node_modules" || entry.name === ".git") continue;
         files.push(...findCSSFiles(fullPath));
       } else if (entry.name.endsWith(".css")) {
+        files.push(fullPath);
+      }
+    }
+  } catch {
+    // Ignore permission errors
+  }
+  return files;
+}
+
+function findLuauFiles(dir: string): string[] {
+  const files: string[] = [];
+  try {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "node_modules" || entry.name === ".git") continue;
+        files.push(...findLuauFiles(fullPath));
+      } else if (isCopyableLuau(entry.name)) {
         files.push(fullPath);
       }
     }

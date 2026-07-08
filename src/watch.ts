@@ -12,7 +12,7 @@ export function startWatch(
   const collectFiles = (): string[] => {
     const stat = statSync(absPath);
     if (stat.isFile()) return [absPath];
-    return findTSXFiles(absPath);
+    return findWatchedFiles(absPath);
   };
 
   // Initial compile
@@ -28,7 +28,7 @@ export function startWatch(
     { recursive: true },
     (eventType, filename) => {
       if (!filename) return;
-      if (!filename.match(/\.(tsx?|jsx?)$/)) return;
+      if (!filename.match(/\.(tsx?|jsx?|luau?)$/)) return;
       if (filename.includes(".test.") || filename.includes(".spec.")) return;
 
       // Debounce
@@ -48,7 +48,7 @@ export function startWatch(
   });
 }
 
-function findTSXFiles(dir: string): string[] {
+function findWatchedFiles(dir: string): string[] {
   const files: string[] = [];
 
   try {
@@ -57,9 +57,9 @@ function findTSXFiles(dir: string): string[] {
       const fullPath = join(dir, entry.name);
       if (entry.isDirectory()) {
         if (entry.name === "node_modules" || entry.name === ".git") continue;
-        files.push(...findTSXFiles(fullPath));
+        files.push(...findWatchedFiles(fullPath));
       } else if (
-        entry.name.match(/\.(tsx?|jsx?)$/) &&
+        entry.name.match(/\.(tsx?|jsx?|luau?)$/) &&
         !entry.name.includes(".test.") &&
         !entry.name.includes(".spec.")
       ) {
