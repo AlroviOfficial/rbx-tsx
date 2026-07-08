@@ -110,6 +110,10 @@ function parsePesdeManifest(filePath: string): PackageManifest {
   return {
     pm: "pesde",
     dependencyKeys: keys,
+    // Unlike wally's [server-dependencies], pesde has no realm-specific
+    // dependency section — the realm lives in each dependency's own target
+    // (e.g. roblox_server), which the consuming manifest doesn't expose. All
+    // pesde packages therefore route to the shared mount.
     serverDependencyKeys: new Set<string>(),
   };
 }
