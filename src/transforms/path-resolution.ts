@@ -1,6 +1,13 @@
 import { posix } from "node:path";
 import type { TransformContext } from "./transform-context.ts";
 
+/** `game:GetService("X").a.b` → ["X", "a", "b"], or null if not that shape. */
+function parseInstancePath(path: string): string[] | null {
+  const match = path.match(/^game:GetService\("(\w+)"\)((?:\.\w+)*)$/);
+  if (!match) return null;
+  return [match[1]!, ...(match[2] ? match[2].slice(1).split(".") : [])];
+}
+
 /**
  * Convert an instance require path to a Luau string-require path:
  * `game:GetService("X").a.b` → `@game/X/a/b`, `script.Parent.a` → `./a`,
@@ -9,16 +16,16 @@ import type { TransformContext } from "./transform-context.ts";
  * user-supplied custom paths) so callers can keep the instance form.
  */
 export function instancePathToStringRequire(path: string): string | null {
-  const game = path.match(/^game:GetService\("(\w+)"\)((?:\.\w+)*)$/);
-  if (game) {
-    const rest = game[2] ? game[2].slice(1).split(".") : [];
-    return ["@game", game[1], ...rest].join("/");
-  }
+  const game = parseInstancePath(path);
+  if (game) return ["@game", ...game].join("/");
 
   const relative = path.match(/^script((?:\.Parent)*)((?:\.\w+)*)$/);
   if (relative) {
     const parents = relative[1] ? relative[1].split(".Parent").length - 1 : 0;
     const rest = relative[2] ? relative[2].slice(1).split(".") : [];
+    // A chain ending on script or a bare Parent hop ("." / "..") has no
+    // module segment to require; keep the instance form.
+    if (rest.length === 0) return null;
     if (parents === 0) return ["@self", ...rest].join("/");
     if (parents === 1) return [".", ...rest].join("/");
     return [...Array<string>(parents - 1).fill(".."), ...rest].join("/");
@@ -41,19 +48,17 @@ export function finalizeRequirePath(
   return stringPath ? `"${stringPath}"` : path;
 }
 
-/** `game:GetService("X").a.b` → ["X", "a", "b"], or null if not that shape. */
-function parseInstancePath(path: string): string[] | null {
-  const match = path.match(/^game:GetService\("(\w+)"\)((?:\.\w+)*)$/);
-  if (!match) return null;
-  return [match[1]!, ...(match[2] ? match[2].slice(1).split(".") : [])];
-}
-
 /**
  * Prefer a tree-relative require over an absolute alias target when the
- * importing module's own tree position is known (it has an alias too) and
- * both live under the same service. Alias targets don't mirror the source
+ * importing module's own tree position is known (it has a file-level alias)
+ * and both live under the same service. Alias targets don't mirror the source
  * layout, so the relative chain is derived from the two *tree* positions,
  * not from the filesystem. Cross-service imports keep the absolute path.
+ *
+ * Only file-level alias entries (ctx.pathAliasFiles) pin the importer's tree
+ * position: a directory alias whose key happens to equal the importer's path
+ * (`src/shared.ts` next to a mapped `src/shared/`) says nothing about where
+ * the file itself lives in the tree.
  */
 export function preferTreeRelative(
   targetPath: string,
@@ -61,7 +66,9 @@ export function preferTreeRelative(
 ): string {
   const importerKey = ctx.filename
     .replaceAll("\\", "/")
-    .replace(/\.(tsx?|jsx?)$/, "");
+    .replace(/\.(tsx?|jsx?)$/, "")
+    .replace(/\/index(?:\.client|\.server)?$/, "");
+  if (!ctx.pathAliasFiles.has(importerKey)) return targetPath;
   const importerAlias = ctx.pathAliases.get(importerKey);
   if (!importerAlias) return targetPath;
 
@@ -95,9 +102,12 @@ function resolvePathAlias(
   if (ctx.pathAliases.size === 0) return null;
 
   const fileDir = posix.dirname(ctx.filename.replaceAll("\\", "/"));
+  // "./foo/index" and "./foo" name the same module (the folder's init.luau),
+  // so normalize away the index segment before matching alias keys.
   const resolved = posix
     .normalize(posix.join(fileDir, moduleSpecifier))
-    .replace(/\.(tsx?|jsx?)$/, "");
+    .replace(/\.(tsx?|jsx?)$/, "")
+    .replace(/\/index$/, "");
 
   for (const [prefix, luauBase] of ctx.pathAliases) {
     if (fileDir === prefix || fileDir.startsWith(prefix + "/")) continue;

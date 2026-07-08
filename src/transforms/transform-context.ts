@@ -26,6 +26,12 @@ export interface CompileOptions {
   cssManifest?: CSSManifest | null;
   /** Directory-to-Luau-path mappings for cross-boundary imports */
   pathAliases?: Map<string, string>;
+  /**
+   * Keys in pathAliases that map a single module file (file-level Rojo $path)
+   * rather than a directory. Only these pin the importing module's own tree
+   * position for tree-relative require emission.
+   */
+  pathAliasFiles?: Set<string>;
   /** Package manifest for resolving import specifiers to correct dependency keys */
   packageManifest?: PackageManifest | null;
 }
@@ -103,6 +109,9 @@ export class TransformContext {
   /** Directory-to-Luau-path mappings for cross-boundary imports */
   readonly pathAliases: Map<string, string>;
 
+  /** Keys in pathAliases that alias a single module file, not a directory */
+  readonly pathAliasFiles: Set<string>;
+
   /** Package manifest for resolving import specifiers to correct dependency keys */
   readonly packageManifest: PackageManifest | null;
 
@@ -168,6 +177,7 @@ export class TransformContext {
     this.filename = options.filename ?? "unknown";
     this.cssManifest = options.cssManifest ?? null;
     this.pathAliases = options.pathAliases ?? new Map();
+    this.pathAliasFiles = options.pathAliasFiles ?? new Set();
     this.packageManifest = options.packageManifest ?? null;
     this.isIndexFile =
       /(?:^|[\\/])index(?:\.(?:client|server))?\.[tj]sx?$/.test(this.filename);

@@ -39,6 +39,8 @@ export interface CompilerOptions {
   cssManifest?: CSSManifest;
   /** Directory-to-Luau-path mappings for cross-boundary imports */
   pathAliases?: Map<string, string>;
+  /** Keys in pathAliases that alias a single module file, not a directory */
+  pathAliasFiles?: Set<string>;
   /** Package manifest for resolving import specifiers to correct dependency keys */
   packageManifest?: PackageManifest;
 }
@@ -76,6 +78,7 @@ export function buildCompileOptions(
     filename,
     cssManifest: options.cssManifest ?? null,
     pathAliases: options.pathAliases,
+    pathAliasFiles: options.pathAliasFiles,
     packageManifest: options.packageManifest ?? null,
   };
 }

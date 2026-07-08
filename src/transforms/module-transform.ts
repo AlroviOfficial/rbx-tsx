@@ -614,10 +614,13 @@ function resolvePathAlias(
   // Derive current file's directory relative to source root
   const fileDir = posix.dirname(ctx.filename.replaceAll("\\", "/"));
 
-  // Resolve the import relative to the file's directory
+  // Resolve the import relative to the file's directory. "./foo/index" and
+  // "./foo" name the same module (the folder's init.luau), so normalize away
+  // the index segment before matching alias keys.
   const resolved = posix
     .normalize(posix.join(fileDir, moduleSpecifier))
-    .replace(/\.(tsx?|jsx?)$/, ""); // strip extensions
+    .replace(/\.(tsx?|jsx?)$/, "") // strip extensions
+    .replace(/\/index$/, "");
 
   // Check each alias (skip if the file is within the same alias tree — use script.Parent instead)
   for (const [prefix, luauBase] of ctx.pathAliases) {
