@@ -90,10 +90,11 @@ describe("Rojo aliases from file-level $path entries", () => {
 		);
 	});
 
-	test("imports from the input root resolve through file-level aliases", () => {
+	test("same-service imports emit tree-relative requires", () => {
+		// main sits at ServerScriptService.server next to the balloon folder,
+		// even though on disk spawner lives under balloon/server/. The relative
+		// chain is derived from the two tree positions, not the filesystem.
 		const main = readFileSync(join(outDir, "main.server.luau"), "utf-8");
-		expect(main).toContain(
-			'require(game:GetService("ServerScriptService").server.balloon.spawner)'
-		);
+		expect(main).toContain("require(script.Parent.balloon.spawner)");
 	});
 });

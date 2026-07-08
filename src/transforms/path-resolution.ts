@@ -41,6 +41,53 @@ export function finalizeRequirePath(
   return stringPath ? `"${stringPath}"` : path;
 }
 
+/** `game:GetService("X").a.b` → ["X", "a", "b"], or null if not that shape. */
+function parseInstancePath(path: string): string[] | null {
+  const match = path.match(/^game:GetService\("(\w+)"\)((?:\.\w+)*)$/);
+  if (!match) return null;
+  return [match[1]!, ...(match[2] ? match[2].slice(1).split(".") : [])];
+}
+
+/**
+ * Prefer a tree-relative require over an absolute alias target when the
+ * importing module's own tree position is known (it has an alias too) and
+ * both live under the same service. Alias targets don't mirror the source
+ * layout, so the relative chain is derived from the two *tree* positions,
+ * not from the filesystem. Cross-service imports keep the absolute path.
+ */
+export function preferTreeRelative(
+  targetPath: string,
+  ctx: TransformContext
+): string {
+  const importerKey = ctx.filename
+    .replaceAll("\\", "/")
+    .replace(/\.(tsx?|jsx?)$/, "");
+  const importerAlias = ctx.pathAliases.get(importerKey);
+  if (!importerAlias) return targetPath;
+
+  const target = parseInstancePath(targetPath);
+  const importer = parseInstancePath(importerAlias);
+  if (!target || !importer || target[0] !== importer[0]) return targetPath;
+
+  const importerParent = importer.slice(0, -1);
+  let common = 0;
+  while (
+    common < importerParent.length &&
+    common < target.length &&
+    importerParent[common] === target[common]
+  ) {
+    common++;
+  }
+  const ups = importerParent.length - common;
+  const downs = target.slice(common);
+  if (downs.length === 0) return targetPath; // target is an ancestor; keep absolute
+
+  let base = "script";
+  for (let i = 0; i <= ups; i++) base += ".Parent";
+  for (const segment of downs) base += `.${segment}`;
+  return base;
+}
+
 function resolvePathAlias(
   moduleSpecifier: string,
   ctx: TransformContext
@@ -56,10 +103,10 @@ function resolvePathAlias(
     if (fileDir === prefix || fileDir.startsWith(prefix + "/")) continue;
     if (resolved === prefix || resolved.startsWith(prefix + "/")) {
       const rest = resolved.slice(prefix.length).replace(/^\//, "");
-      if (rest) {
-        return `${luauBase}.${rest.split("/").join(".")}`;
-      }
-      return luauBase;
+      const target = rest
+        ? `${luauBase}.${rest.split("/").join(".")}`
+        : luauBase;
+      return preferTreeRelative(target, ctx);
     }
   }
 

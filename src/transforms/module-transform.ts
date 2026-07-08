@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { finalizeRequirePath } from "./path-resolution.ts";
+import { finalizeRequirePath, preferTreeRelative } from "./path-resolution.ts";
 import type {
   LuauStatement,
   LuauExpression,
@@ -625,10 +625,10 @@ function resolvePathAlias(
 
     if (resolved === prefix || resolved.startsWith(prefix + "/")) {
       const rest = resolved.slice(prefix.length).replace(/^\//, "");
-      if (rest) {
-        return `${luauBase}.${rest.split("/").join(".")}`;
-      }
-      return luauBase;
+      const target = rest
+        ? `${luauBase}.${rest.split("/").join(".")}`
+        : luauBase;
+      return preferTreeRelative(target, ctx);
     }
   }
 
