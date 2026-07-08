@@ -25,6 +25,8 @@ export interface CompilerOptions {
   promisePath?: string;
   strict?: boolean;
   sourcemap?: boolean;
+  /** Emit Luau string requires (`require("@game/...")`) instead of instance paths */
+  stringRequires?: boolean;
   /** Omit the auto-generated header comments in the Luau output */
   silent?: boolean;
   /** Emit `local` everywhere instead of promoting unmodified bindings to `const` */
@@ -60,6 +62,7 @@ export function buildCompileOptions(
     promisePath: options.promisePath ?? DEFAULT_OPTIONS.promisePath,
     strict: options.strict ?? false,
     sourcemap: options.sourcemap ?? false,
+    stringRequires: options.stringRequires ?? false,
     filename,
     cssManifest: options.cssManifest ?? null,
     pathAliases: options.pathAliases,

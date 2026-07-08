@@ -23,6 +23,7 @@ import {
   raw,
 } from "../ast/luau-ast.ts";
 import type { TransformContext } from "./transform-context.ts";
+import { finalizeRequirePath } from "./path-resolution.ts";
 import {
   transformImport,
   processExportDeclaration,
@@ -146,7 +147,7 @@ export function transformSourceFile(
       type: "local",
       name: "React",
       value: call(ident("require"), [
-        raw(buildRequirePath(ctx.options.reactPath)),
+        raw(buildRequirePath(ctx.options.reactPath, ctx.options.stringRequires)),
       ]),
     });
 
@@ -166,7 +167,7 @@ export function transformSourceFile(
       type: "local",
       name: "ReactRoblox",
       value: call(ident("require"), [
-        raw(buildRequirePath(ctx.options.reactRobloxPath)),
+        raw(buildRequirePath(ctx.options.reactRobloxPath, ctx.options.stringRequires)),
       ]),
     });
   }
@@ -215,7 +216,7 @@ export function transformSourceFile(
       type: "local",
       name: "Promise",
       value: call(ident("require"), [
-        raw(buildRequirePath(ctx.options.promisePath)),
+        raw(buildRequirePath(ctx.options.promisePath, ctx.options.stringRequires)),
       ]),
     });
   }
@@ -226,7 +227,7 @@ export function transformSourceFile(
       type: "local",
       name: "RegExp",
       value: call(ident("require"), [
-        raw(buildRequirePath(ctx.options.regExpPath)),
+        raw(buildRequirePath(ctx.options.regExpPath, ctx.options.stringRequires)),
       ]),
     });
   }
@@ -289,13 +290,16 @@ function hasJSX(sourceFile: ts.SourceFile): boolean {
   return found;
 }
 
-function buildRequirePath(configPath: string): string {
+function buildRequirePath(configPath: string, stringRequires = false): string {
   // "ReplicatedStorage.Packages.React" → game:GetService("ReplicatedStorage").Packages.React
   const parts = configPath.split(".");
   if (parts.length > 0 && parts[0]) {
     const service = parts[0];
     const rest = parts.slice(1).join(".");
-    return `game:GetService("${service}")${rest ? "." + rest : ""}`;
+    return finalizeRequirePath(
+      `game:GetService("${service}")${rest ? "." + rest : ""}`,
+      stringRequires
+    );
   }
   return configPath;
 }

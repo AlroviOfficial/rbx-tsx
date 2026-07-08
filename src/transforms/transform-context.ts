@@ -15,6 +15,8 @@ export interface CompileOptions {
   promisePath: string;
   strict: boolean;
   sourcemap: boolean;
+  /** Emit Luau string requires (`require("@game/...")`) instead of instance paths */
+  stringRequires: boolean;
   filename?: string;
   cssManifest?: CSSManifest | null;
   /** Directory-to-Luau-path mappings for cross-boundary imports */
@@ -30,6 +32,7 @@ export const DEFAULT_OPTIONS: CompileOptions = {
   promisePath: "ReplicatedStorage.Packages.Promise",
   strict: false,
   sourcemap: false,
+  stringRequires: false,
 };
 
 /**

@@ -45,6 +45,11 @@ export function createCLI(): Command {
     .option("--react-roblox-path <path>", "Require path for react-roblox")
     .option("--strict", "Treat warnings as errors", false)
     .option("--sourcemap", "Emit source map comments", false)
+    .option(
+      "--string-requires",
+      'Emit Luau string requires (require("@game/...")) instead of instance paths',
+      false
+    )
     .option("-s, --silent", "Omit the auto-generated header comments", false)
     .option("--no-const", "Emit `local` everywhere (const requires a recent Luau)")
     .option("--warn <level>", "Warning level: all, unsupported, none", "all")
@@ -59,6 +64,11 @@ export function createCLI(): Command {
     .option("-o, --output <path>", "Output directory")
     .option("--react-path <path>", "Require path for react-lua")
     .option("--react-roblox-path <path>", "Require path for react-roblox")
+    .option(
+      "--string-requires",
+      'Emit Luau string requires (require("@game/...")) instead of instance paths',
+      false
+    )
     .option("-s, --silent", "Omit the auto-generated header comments", false)
     .option("--no-const", "Emit `local` everywhere (const requires a recent Luau)")
     .option("--warn <level>", "Warning level", "all")
@@ -318,6 +328,7 @@ function handleCompile(
     reactRobloxPath?: string;
     strict: boolean;
     sourcemap: boolean;
+    stringRequires: boolean;
     silent: boolean;
     /** Commander negatable --no-const: false when the flag is passed */
     const: boolean;
@@ -338,6 +349,7 @@ function handleCompile(
     ...(opts.reactRobloxPath ? { reactRobloxPath: opts.reactRobloxPath } : {}),
     strict: opts.strict,
     sourcemap: opts.sourcemap,
+    stringRequires: opts.stringRequires,
     silent: opts.silent,
     noConst: opts.const === false,
     warnLevel: opts.warn as WarningLevel,
@@ -474,6 +486,7 @@ function handleWatch(
     output?: string;
     reactPath?: string;
     reactRobloxPath?: string;
+    stringRequires: boolean;
     silent: boolean;
     /** Commander negatable --no-const: false when the flag is passed */
     const: boolean;
@@ -494,6 +507,7 @@ function handleWatch(
     ...(opts.reactPath ? { reactPath: opts.reactPath } : {}),
     ...(opts.reactRobloxPath ? { reactRobloxPath: opts.reactRobloxPath } : {}),
     strict: false,
+    stringRequires: opts.stringRequires,
     silent: opts.silent,
     noConst: opts.const === false,
     warnLevel: opts.warn as WarningLevel,

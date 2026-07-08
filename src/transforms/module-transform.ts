@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { finalizeRequirePath } from "./path-resolution.ts";
 import type {
   LuauStatement,
   LuauExpression,
@@ -213,9 +214,9 @@ function transformRelativeImport(
 ): LuauStatement[] {
   const results: LuauStatement[] = [];
   const aliasPath = resolvePathAlias(moduleSpecifier, ctx);
-  const requirePath = aliasPath ?? relativePathToRequirePath(
-    moduleSpecifier,
-    ctx.isIndexFile
+  const requirePath = finalizeRequirePath(
+    aliasPath ?? relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile),
+    ctx.options.stringRequires
   );
 
   const defaultImport = node.importClause?.name;
@@ -380,7 +381,10 @@ function transformPackageImport(
 ): LuauStatement[] {
   // Generic package import → require from Packages folder
   const results: LuauStatement[] = [];
-  const requirePath = ctx.resolvePackageRequirePath(moduleSpecifier);
+  const requirePath = finalizeRequirePath(
+    ctx.resolvePackageRequirePath(moduleSpecifier),
+    ctx.options.stringRequires
+  );
 
   if (node.importClause?.name) {
     results.push({
@@ -433,10 +437,13 @@ function transformTypeImport(
     moduleSpecifier.startsWith("./") || moduleSpecifier.startsWith("../")
       ? resolvePathAlias(moduleSpecifier, ctx)
       : null;
-  const requirePath = aliasPath ??
-    (moduleSpecifier.startsWith("./") || moduleSpecifier.startsWith("../")
-      ? relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile)
-      : ctx.resolvePackageRequirePath(moduleSpecifier));
+  const requirePath = finalizeRequirePath(
+    aliasPath ??
+      (moduleSpecifier.startsWith("./") || moduleSpecifier.startsWith("../")
+        ? relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile)
+        : ctx.resolvePackageRequirePath(moduleSpecifier)),
+    ctx.options.stringRequires
+  );
 
   if (
     node.importClause?.namedBindings &&
@@ -508,6 +515,7 @@ export function processExportDeclaration(
     } else {
       requirePath = ctx.resolvePackageRequirePath(moduleSpecifier);
     }
+    requirePath = finalizeRequirePath(requirePath, ctx.options.stringRequires);
 
     const results: LuauStatement[] = [];
     const moduleName = `_reexport_${sanitizeName(moduleSpecifier)}`;
