@@ -92,6 +92,17 @@ describe("compile with stringRequires", () => {
 		);
 	});
 
+	test("emits package imports under a custom mount as @game paths", () => {
+		const result = compile(
+			'import Maid from "maid";\nexport const m = Maid;\n',
+			"main.ts",
+			{ ...opts, packagesPath: "ReplicatedStorage.shared.packages" }
+		);
+		expect(result.luau).toContain(
+			'require("@game/ReplicatedStorage/shared/packages/Maid")'
+		);
+	});
+
 	test("keeps instance paths when the option is off", () => {
 		const result = compile(
 			'import { helper } from "./util/helper";\nexport const x = helper();\n',
@@ -99,5 +110,16 @@ describe("compile with stringRequires", () => {
 			{ warnLevel: "none" }
 		);
 		expect(result.luau).toContain("require(script.Parent.util.helper)");
+	});
+
+	test("package requires are self-contained instance paths when the option is off", () => {
+		const result = compile(
+			'import Maid from "maid";\nexport const m = Maid;\n',
+			"main.ts",
+			{ warnLevel: "none", packagesPath: "ReplicatedStorage.shared.packages" }
+		);
+		expect(result.luau).toContain(
+			'require(game:GetService("ReplicatedStorage").shared.packages.Maid)'
+		);
 	});
 });

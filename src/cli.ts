@@ -43,6 +43,11 @@ export function createCLI(): Command {
     .option("--css", "Also compile .css files via rbx-css", false)
     .option("--react-path <path>", "Require path for react-lua")
     .option("--react-roblox-path <path>", "Require path for react-roblox")
+    .option(
+      "--packages-path <path>",
+      "Instance path where wally/pesde packages are mounted",
+      "ReplicatedStorage.Packages"
+    )
     .option("--strict", "Treat warnings as errors", false)
     .option("--sourcemap", "Emit source map comments", false)
     .option(
@@ -64,6 +69,11 @@ export function createCLI(): Command {
     .option("-o, --output <path>", "Output directory")
     .option("--react-path <path>", "Require path for react-lua")
     .option("--react-roblox-path <path>", "Require path for react-roblox")
+    .option(
+      "--packages-path <path>",
+      "Instance path where wally/pesde packages are mounted",
+      "ReplicatedStorage.Packages"
+    )
     .option(
       "--string-requires",
       'Emit Luau string requires (require("@game/...")) instead of instance paths',
@@ -326,6 +336,7 @@ function handleCompile(
     css: boolean;
     reactPath?: string;
     reactRobloxPath?: string;
+    packagesPath: string;
     strict: boolean;
     sourcemap: boolean;
     stringRequires: boolean;
@@ -347,6 +358,7 @@ function handleCompile(
   const compilerOpts: CompilerOptions = {
     ...(opts.reactPath ? { reactPath: opts.reactPath } : {}),
     ...(opts.reactRobloxPath ? { reactRobloxPath: opts.reactRobloxPath } : {}),
+    packagesPath: opts.packagesPath,
     strict: opts.strict,
     sourcemap: opts.sourcemap,
     stringRequires: opts.stringRequires,
@@ -486,6 +498,7 @@ function handleWatch(
     output?: string;
     reactPath?: string;
     reactRobloxPath?: string;
+    packagesPath: string;
     stringRequires: boolean;
     silent: boolean;
     /** Commander negatable --no-const: false when the flag is passed */
@@ -506,6 +519,7 @@ function handleWatch(
   const compilerOpts: CompilerOptions = {
     ...(opts.reactPath ? { reactPath: opts.reactPath } : {}),
     ...(opts.reactRobloxPath ? { reactRobloxPath: opts.reactRobloxPath } : {}),
+    packagesPath: opts.packagesPath,
     strict: false,
     stringRequires: opts.stringRequires,
     silent: opts.silent,

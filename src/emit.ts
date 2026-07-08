@@ -23,6 +23,8 @@ export interface CompilerOptions {
   reactRobloxPath?: string;
   regExpPath?: string;
   promisePath?: string;
+  /** Base instance path where wally/pesde packages are mounted */
+  packagesPath?: string;
   strict?: boolean;
   sourcemap?: boolean;
   /** Emit Luau string requires (`require("@game/...")`) instead of instance paths */
@@ -60,6 +62,7 @@ export function buildCompileOptions(
     reactRobloxPath: options.reactRobloxPath ?? DEFAULT_OPTIONS.reactRobloxPath,
     regExpPath: options.regExpPath ?? DEFAULT_OPTIONS.regExpPath,
     promisePath: options.promisePath ?? DEFAULT_OPTIONS.promisePath,
+    packagesPath: options.packagesPath ?? DEFAULT_OPTIONS.packagesPath,
     strict: options.strict ?? false,
     sourcemap: options.sourcemap ?? false,
     stringRequires: options.stringRequires ?? false,

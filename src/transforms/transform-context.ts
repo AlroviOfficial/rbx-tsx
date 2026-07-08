@@ -13,6 +13,8 @@ export interface CompileOptions {
   reactRobloxPath: string;
   regExpPath: string;
   promisePath: string;
+  /** Base instance path where wally/pesde packages are mounted */
+  packagesPath: string;
   strict: boolean;
   sourcemap: boolean;
   /** Emit Luau string requires (`require("@game/...")`) instead of instance paths */
@@ -30,6 +32,7 @@ export const DEFAULT_OPTIONS: CompileOptions = {
   reactRobloxPath: "ReplicatedStorage.Packages.ReactRoblox",
   regExpPath: "ReplicatedStorage.Packages.RegExp",
   promisePath: "ReplicatedStorage.Packages.Promise",
+  packagesPath: "ReplicatedStorage.Packages",
   strict: false,
   sourcemap: false,
   stringRequires: false,
@@ -215,10 +218,13 @@ export class TransformContext {
   /** Resolve a package import specifier to its Luau require path */
   resolvePackageRequirePath(specifier: string): string {
     const packageName = resolvePackageName(specifier, this.packageManifest);
-    // Inline the service getter: nothing guarantees a ReplicatedStorage
-    // local exists in the emitted file, and the self-contained form is
+    // Inline the service getter: nothing guarantees a service local
+    // exists in the emitted file, and the self-contained form is
     // convertible to a string require.
-    return `game:GetService("ReplicatedStorage").Packages.${packageName}`;
+    const [service, ...rest] = this.options.packagesPath.split(".");
+    let base = `game:GetService("${service}")`;
+    for (const segment of rest) base += `.${segment}`;
+    return `${base}.${packageName}`;
   }
 
   /** Generate a unique temp variable name for optional chain extraction */
