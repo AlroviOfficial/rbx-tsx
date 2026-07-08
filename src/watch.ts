@@ -40,6 +40,7 @@ export function startWatch(
       if (!filename) return;
       if (!filename.match(/\.(tsx?|jsx?|luau?)$/)) return;
       if (filename.includes(".test.") || filename.includes(".spec.")) return;
+      if (filename.endsWith(".d.ts")) return;
       if (excludeDir) {
         const fullPath = join(absPath, filename);
         if (fullPath === excludeDir || fullPath.startsWith(excludeDir + sep))
@@ -77,7 +78,8 @@ function findWatchedFiles(dir: string, excludeDir: string | null): string[] {
       } else if (
         entry.name.match(/\.(tsx?|jsx?|luau?)$/) &&
         !entry.name.includes(".test.") &&
-        !entry.name.includes(".spec.")
+        !entry.name.includes(".spec.") &&
+        !entry.name.endsWith(".d.ts")
       ) {
         files.push(fullPath);
       }

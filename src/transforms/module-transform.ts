@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { finalizeRequirePath, preferTreeRelative } from "./path-resolution.ts";
 import type {
   LuauStatement,
   LuauExpression,
@@ -213,9 +214,9 @@ function transformRelativeImport(
 ): LuauStatement[] {
   const results: LuauStatement[] = [];
   const aliasPath = resolvePathAlias(moduleSpecifier, ctx);
-  const requirePath = aliasPath ?? relativePathToRequirePath(
-    moduleSpecifier,
-    ctx.isIndexFile
+  const requirePath = finalizeRequirePath(
+    aliasPath ?? relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile),
+    ctx.options.stringRequires
   );
 
   const defaultImport = node.importClause?.name;
@@ -380,7 +381,10 @@ function transformPackageImport(
 ): LuauStatement[] {
   // Generic package import → require from Packages folder
   const results: LuauStatement[] = [];
-  const requirePath = ctx.resolvePackageRequirePath(moduleSpecifier);
+  const requirePath = finalizeRequirePath(
+    ctx.resolvePackageRequirePath(moduleSpecifier),
+    ctx.options.stringRequires
+  );
 
   if (node.importClause?.name) {
     results.push({
@@ -433,10 +437,13 @@ function transformTypeImport(
     moduleSpecifier.startsWith("./") || moduleSpecifier.startsWith("../")
       ? resolvePathAlias(moduleSpecifier, ctx)
       : null;
-  const requirePath = aliasPath ??
-    (moduleSpecifier.startsWith("./") || moduleSpecifier.startsWith("../")
-      ? relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile)
-      : ctx.resolvePackageRequirePath(moduleSpecifier));
+  const requirePath = finalizeRequirePath(
+    aliasPath ??
+      (moduleSpecifier.startsWith("./") || moduleSpecifier.startsWith("../")
+        ? relativePathToRequirePath(moduleSpecifier, ctx.isIndexFile)
+        : ctx.resolvePackageRequirePath(moduleSpecifier)),
+    ctx.options.stringRequires
+  );
 
   if (
     node.importClause?.namedBindings &&
@@ -508,6 +515,7 @@ export function processExportDeclaration(
     } else {
       requirePath = ctx.resolvePackageRequirePath(moduleSpecifier);
     }
+    requirePath = finalizeRequirePath(requirePath, ctx.options.stringRequires);
 
     const results: LuauStatement[] = [];
     const moduleName = `_reexport_${sanitizeName(moduleSpecifier)}`;
@@ -606,10 +614,13 @@ function resolvePathAlias(
   // Derive current file's directory relative to source root
   const fileDir = posix.dirname(ctx.filename.replaceAll("\\", "/"));
 
-  // Resolve the import relative to the file's directory
+  // Resolve the import relative to the file's directory. "./foo/index" and
+  // "./foo" name the same module (the folder's init.luau), so normalize away
+  // the index segment before matching alias keys.
   const resolved = posix
     .normalize(posix.join(fileDir, moduleSpecifier))
-    .replace(/\.(tsx?|jsx?)$/, ""); // strip extensions
+    .replace(/\.(tsx?|jsx?)$/, "") // strip extensions
+    .replace(/\/index$/, "");
 
   // Check each alias (skip if the file is within the same alias tree — use script.Parent instead)
   for (const [prefix, luauBase] of ctx.pathAliases) {
@@ -617,10 +628,10 @@ function resolvePathAlias(
 
     if (resolved === prefix || resolved.startsWith(prefix + "/")) {
       const rest = resolved.slice(prefix.length).replace(/^\//, "");
-      if (rest) {
-        return `${luauBase}.${rest.split("/").join(".")}`;
-      }
-      return luauBase;
+      const target = rest
+        ? `${luauBase}.${rest.split("/").join(".")}`
+        : luauBase;
+      return preferTreeRelative(target, ctx);
     }
   }
 

@@ -23,8 +23,14 @@ export interface CompilerOptions {
   reactRobloxPath?: string;
   regExpPath?: string;
   promisePath?: string;
+  /** Base instance path where wally/pesde packages are mounted */
+  packagesPath?: string;
+  /** Base instance path where server-realm packages are mounted */
+  serverPackagesPath?: string;
   strict?: boolean;
   sourcemap?: boolean;
+  /** Emit Luau string requires (`require("@game/...")`) instead of instance paths */
+  stringRequires?: boolean;
   /** Omit the auto-generated header comments in the Luau output */
   silent?: boolean;
   /** Emit `local` everywhere instead of promoting unmodified bindings to `const` */
@@ -33,6 +39,8 @@ export interface CompilerOptions {
   cssManifest?: CSSManifest;
   /** Directory-to-Luau-path mappings for cross-boundary imports */
   pathAliases?: Map<string, string>;
+  /** Keys in pathAliases that alias a single module file, not a directory */
+  pathAliasFiles?: Set<string>;
   /** Package manifest for resolving import specifiers to correct dependency keys */
   packageManifest?: PackageManifest;
 }
@@ -53,16 +61,24 @@ export function buildCompileOptions(
   filename: string,
   options: CompilerOptions
 ): CompileOptions {
+  // Helper packages live in the shared packages mount unless overridden,
+  // so a custom --packages-path moves React and friends along with it.
+  const packagesPath = options.packagesPath ?? DEFAULT_OPTIONS.packagesPath;
   return {
-    reactPath: options.reactPath ?? DEFAULT_OPTIONS.reactPath,
-    reactRobloxPath: options.reactRobloxPath ?? DEFAULT_OPTIONS.reactRobloxPath,
-    regExpPath: options.regExpPath ?? DEFAULT_OPTIONS.regExpPath,
-    promisePath: options.promisePath ?? DEFAULT_OPTIONS.promisePath,
+    reactPath: options.reactPath ?? `${packagesPath}.React`,
+    reactRobloxPath: options.reactRobloxPath ?? `${packagesPath}.ReactRoblox`,
+    regExpPath: options.regExpPath ?? `${packagesPath}.RegExp`,
+    promisePath: options.promisePath ?? `${packagesPath}.Promise`,
+    packagesPath,
+    serverPackagesPath:
+      options.serverPackagesPath ?? DEFAULT_OPTIONS.serverPackagesPath,
     strict: options.strict ?? false,
     sourcemap: options.sourcemap ?? false,
+    stringRequires: options.stringRequires ?? false,
     filename,
     cssManifest: options.cssManifest ?? null,
     pathAliases: options.pathAliases,
+    pathAliasFiles: options.pathAliasFiles,
     packageManifest: options.packageManifest ?? null,
   };
 }

@@ -8,6 +8,8 @@ export interface PackageManifest {
   pm: PackageManager;
   /** Map from normalized import specifier to the actual dependency key */
   dependencyKeys: Map<string, string>;
+  /** Normalized keys that come from the server-realm section */
+  serverDependencyKeys?: Set<string>;
 }
 
 /**
@@ -83,9 +85,11 @@ function parseWallyManifest(filePath: string): PackageManifest {
     "dev-dependencies",
     "server-dependencies",
   ]);
+  const serverKeys = extractTomlSectionKeys(content, ["server-dependencies"]);
   return {
     pm: "wally",
     dependencyKeys: keys,
+    serverDependencyKeys: new Set(serverKeys.keys()),
   };
 }
 
@@ -106,6 +110,11 @@ function parsePesdeManifest(filePath: string): PackageManifest {
   return {
     pm: "pesde",
     dependencyKeys: keys,
+    // Unlike wally's [server-dependencies], pesde has no realm-specific
+    // dependency section — the realm lives in each dependency's own target
+    // (e.g. roblox_server), which the consuming manifest doesn't expose. All
+    // pesde packages therefore route to the shared mount.
+    serverDependencyKeys: new Set<string>(),
   };
 }
 
