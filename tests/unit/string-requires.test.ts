@@ -103,6 +103,27 @@ describe("compile with stringRequires", () => {
 		);
 	});
 
+	test("routes server-realm packages to the server mount", () => {
+		const manifest = {
+			pm: "wally" as const,
+			dependencyKeys: new Map([["secretvault", "SecretVault"]]),
+			serverDependencyKeys: new Set(["secretvault"]),
+		};
+		const result = compile(
+			'import Vault from "secretvault";\nexport const v = Vault;\n',
+			"main.server.ts",
+			{
+				...opts,
+				packageManifest: manifest,
+				packagesPath: "ReplicatedStorage.shared.packages",
+				serverPackagesPath: "ServerScriptService.server.packages",
+			}
+		);
+		expect(result.luau).toContain(
+			'require("@game/ServerScriptService/server/packages/SecretVault")'
+		);
+	});
+
 	test("keeps instance paths when the option is off", () => {
 		const result = compile(
 			'import { helper } from "./util/helper";\nexport const x = helper();\n',

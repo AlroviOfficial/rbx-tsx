@@ -25,7 +25,7 @@ import type { WarningLevel } from "./warnings.ts";
 import { execSync } from "child_process";
 import { handleInit, type InitOptions } from "./init.ts";
 import { handleTypes, generatePackageTypes, type TypesOptions } from "./types-command.ts";
-import { findPackageManifest } from "./package-manifest.ts";
+import { findPackageManifest, findManifestDir } from "./package-manifest.ts";
 import { version } from "../package.json";
 
 export function createCLI(): Command {
@@ -45,8 +45,11 @@ export function createCLI(): Command {
     .option("--react-roblox-path <path>", "Require path for react-roblox")
     .option(
       "--packages-path <path>",
-      "Instance path where wally/pesde packages are mounted",
-      "ReplicatedStorage.Packages"
+      "Instance path where packages are mounted (default: auto-detected from the Rojo project, else ReplicatedStorage.Packages)"
+    )
+    .option(
+      "--server-packages-path <path>",
+      "Instance path where server-realm packages are mounted (default: auto-detected, else ServerScriptService.ServerPackages)"
     )
     .option("--strict", "Treat warnings as errors", false)
     .option("--sourcemap", "Emit source map comments", false)
@@ -71,8 +74,11 @@ export function createCLI(): Command {
     .option("--react-roblox-path <path>", "Require path for react-roblox")
     .option(
       "--packages-path <path>",
-      "Instance path where wally/pesde packages are mounted",
-      "ReplicatedStorage.Packages"
+      "Instance path where packages are mounted (default: auto-detected from the Rojo project, else ReplicatedStorage.Packages)"
+    )
+    .option(
+      "--server-packages-path <path>",
+      "Instance path where server-realm packages are mounted (default: auto-detected, else ServerScriptService.ServerPackages)"
     )
     .option(
       "--string-requires",
@@ -207,6 +213,43 @@ function buildAliasesFromRojo(
 }
 
 /**
+ * Derive the package mount points from the Rojo project: the tree entries
+ * whose $path points at the package-manager install directories (Packages/
+ * and ServerPackages/ next to the manifest). Explicit CLI flags win; without
+ * a match the compiler defaults apply.
+ */
+function applyPackageMountsFromRojo(
+  projectPath: string,
+  searchStart: string,
+  compilerOpts: CompilerOptions
+): void {
+  const manifestDir = findManifestDir(searchStart);
+  if (!manifestDir) return;
+
+  let project: { tree?: Record<string, unknown> };
+  try {
+    project = JSON.parse(readFileSync(projectPath, "utf-8"));
+  } catch {
+    return;
+  }
+  if (!project.tree) return;
+
+  const projectRoot = dirname(projectPath);
+  const packagesRel = relative(projectRoot, join(manifestDir, "Packages"))
+    .replaceAll("\\", "/");
+  const serverRel = relative(projectRoot, join(manifestDir, "ServerPackages"))
+    .replaceAll("\\", "/");
+
+  for (const { fsPath, robloxPath } of walkRojoTree(project.tree)) {
+    if (fsPath === packagesRel && !compilerOpts.packagesPath) {
+      compilerOpts.packagesPath = robloxPath.join(".");
+    } else if (fsPath === serverRel && !compilerOpts.serverPackagesPath) {
+      compilerOpts.serverPackagesPath = robloxPath.join(".");
+    }
+  }
+}
+
+/**
  * Compile a set of source files as one project (shared type checker across
  * imports) and write each result to `outputDir`. Paths are made relative to
  * `baseDir` so cross-file module resolution and require-path emission line up.
@@ -336,7 +379,8 @@ function handleCompile(
     css: boolean;
     reactPath?: string;
     reactRobloxPath?: string;
-    packagesPath: string;
+    packagesPath?: string;
+    serverPackagesPath?: string;
     strict: boolean;
     sourcemap: boolean;
     stringRequires: boolean;
@@ -358,7 +402,10 @@ function handleCompile(
   const compilerOpts: CompilerOptions = {
     ...(opts.reactPath ? { reactPath: opts.reactPath } : {}),
     ...(opts.reactRobloxPath ? { reactRobloxPath: opts.reactRobloxPath } : {}),
-    packagesPath: opts.packagesPath,
+    ...(opts.packagesPath ? { packagesPath: opts.packagesPath } : {}),
+    ...(opts.serverPackagesPath
+      ? { serverPackagesPath: opts.serverPackagesPath }
+      : {}),
     strict: opts.strict,
     sourcemap: opts.sourcemap,
     stringRequires: opts.stringRequires,
@@ -408,6 +455,7 @@ function handleCompile(
             `Rojo: ${relative(process.cwd(), rojoProject)}`
           );
         }
+        applyPackageMountsFromRojo(rojoProject, absInput, compilerOpts);
       }
     }
 
@@ -498,7 +546,8 @@ function handleWatch(
     output?: string;
     reactPath?: string;
     reactRobloxPath?: string;
-    packagesPath: string;
+    packagesPath?: string;
+    serverPackagesPath?: string;
     stringRequires: boolean;
     silent: boolean;
     /** Commander negatable --no-const: false when the flag is passed */
@@ -519,7 +568,10 @@ function handleWatch(
   const compilerOpts: CompilerOptions = {
     ...(opts.reactPath ? { reactPath: opts.reactPath } : {}),
     ...(opts.reactRobloxPath ? { reactRobloxPath: opts.reactRobloxPath } : {}),
-    packagesPath: opts.packagesPath,
+    ...(opts.packagesPath ? { packagesPath: opts.packagesPath } : {}),
+    ...(opts.serverPackagesPath
+      ? { serverPackagesPath: opts.serverPackagesPath }
+      : {}),
     strict: false,
     stringRequires: opts.stringRequires,
     silent: opts.silent,
@@ -538,6 +590,7 @@ function handleWatch(
       compilerOpts.pathAliases = aliases;
       console.log(`Rojo: ${relative(process.cwd(), rojoProject)}`);
     }
+    applyPackageMountsFromRojo(rojoProject, absPath, compilerOpts);
   }
 
   const baseDir = statSync(absPath).isFile() ? dirname(absPath) : absPath;

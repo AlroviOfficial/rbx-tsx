@@ -25,6 +25,8 @@ export interface CompilerOptions {
   promisePath?: string;
   /** Base instance path where wally/pesde packages are mounted */
   packagesPath?: string;
+  /** Base instance path where server-realm packages are mounted */
+  serverPackagesPath?: string;
   strict?: boolean;
   sourcemap?: boolean;
   /** Emit Luau string requires (`require("@game/...")`) instead of instance paths */
@@ -57,12 +59,17 @@ export function buildCompileOptions(
   filename: string,
   options: CompilerOptions
 ): CompileOptions {
+  // Helper packages live in the shared packages mount unless overridden,
+  // so a custom --packages-path moves React and friends along with it.
+  const packagesPath = options.packagesPath ?? DEFAULT_OPTIONS.packagesPath;
   return {
-    reactPath: options.reactPath ?? DEFAULT_OPTIONS.reactPath,
-    reactRobloxPath: options.reactRobloxPath ?? DEFAULT_OPTIONS.reactRobloxPath,
-    regExpPath: options.regExpPath ?? DEFAULT_OPTIONS.regExpPath,
-    promisePath: options.promisePath ?? DEFAULT_OPTIONS.promisePath,
-    packagesPath: options.packagesPath ?? DEFAULT_OPTIONS.packagesPath,
+    reactPath: options.reactPath ?? `${packagesPath}.React`,
+    reactRobloxPath: options.reactRobloxPath ?? `${packagesPath}.ReactRoblox`,
+    regExpPath: options.regExpPath ?? `${packagesPath}.RegExp`,
+    promisePath: options.promisePath ?? `${packagesPath}.Promise`,
+    packagesPath,
+    serverPackagesPath:
+      options.serverPackagesPath ?? DEFAULT_OPTIONS.serverPackagesPath,
     strict: options.strict ?? false,
     sourcemap: options.sourcemap ?? false,
     stringRequires: options.stringRequires ?? false,

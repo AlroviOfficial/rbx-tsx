@@ -5,6 +5,7 @@ import type { JsType } from "./js-type.ts";
 import type { CSSManifest } from "../css-manifest.ts";
 import {
   type PackageManifest,
+  normalizePackageName,
   resolvePackageName,
 } from "../package-manifest.ts";
 
@@ -15,6 +16,8 @@ export interface CompileOptions {
   promisePath: string;
   /** Base instance path where wally/pesde packages are mounted */
   packagesPath: string;
+  /** Base instance path where server-realm packages are mounted */
+  serverPackagesPath: string;
   strict: boolean;
   sourcemap: boolean;
   /** Emit Luau string requires (`require("@game/...")`) instead of instance paths */
@@ -33,6 +36,7 @@ export const DEFAULT_OPTIONS: CompileOptions = {
   regExpPath: "ReplicatedStorage.Packages.RegExp",
   promisePath: "ReplicatedStorage.Packages.Promise",
   packagesPath: "ReplicatedStorage.Packages",
+  serverPackagesPath: "ServerScriptService.ServerPackages",
   strict: false,
   sourcemap: false,
   stringRequires: false,
@@ -218,10 +222,17 @@ export class TransformContext {
   /** Resolve a package import specifier to its Luau require path */
   resolvePackageRequirePath(specifier: string): string {
     const packageName = resolvePackageName(specifier, this.packageManifest);
+    const isServerPackage =
+      this.packageManifest?.serverDependencyKeys?.has(
+        normalizePackageName(specifier)
+      ) ?? false;
+    const mount = isServerPackage
+      ? this.options.serverPackagesPath
+      : this.options.packagesPath;
     // Inline the service getter: nothing guarantees a service local
     // exists in the emitted file, and the self-contained form is
     // convertible to a string require.
-    const [service, ...rest] = this.options.packagesPath.split(".");
+    const [service, ...rest] = mount.split(".");
     let base = `game:GetService("${service}")`;
     for (const segment of rest) base += `.${segment}`;
     return `${base}.${packageName}`;

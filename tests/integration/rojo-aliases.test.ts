@@ -34,6 +34,10 @@ describe("Rojo aliases from file-level $path entries", () => {
 		mkdirSync(join(srcDir, "balloon", "shared"), { recursive: true });
 
 		writeFileSync(
+			join(projectDir, "wally.toml"),
+			'[package]\nname = "tests/file-level-paths"\nversion = "0.0.0"\nregistry = "https://github.com/UpliftGames/wally-index"\nrealm = "shared"\n\n[dependencies]\nAcme = "acme/acme@1.0.0"\n\n[server-dependencies]\nSecretVault = "acme/secret-vault@1.0.0"\n'
+		);
+		writeFileSync(
 			join(projectDir, "default.project.json"),
 			JSON.stringify({
 				name: "file-level-paths",
@@ -42,6 +46,7 @@ describe("Rojo aliases from file-level $path entries", () => {
 					ReplicatedStorage: {
 						shared: {
 							$className: "Folder",
+							packages: { $path: "Packages" },
 							balloon: {
 								$className: "Folder",
 								config: { $path: "out/balloon/shared/config.luau" },
@@ -51,6 +56,7 @@ describe("Rojo aliases from file-level $path entries", () => {
 					ServerScriptService: {
 						server: {
 							$className: "Folder",
+							packages: { $path: "ServerPackages" },
 							balloon: {
 								$className: "Folder",
 								spawner: { $path: "out/balloon/server/spawner.luau" },
@@ -68,7 +74,7 @@ describe("Rojo aliases from file-level $path entries", () => {
 		);
 		writeFileSync(
 			join(srcDir, "balloon", "server", "spawner.ts"),
-			'import { maxBalloons } from "../shared/config";\nexport function count(): number {\n\treturn maxBalloons;\n}\n'
+			'import { maxBalloons } from "../shared/config";\nimport Acme from "acme";\nimport Vault from "secretvault";\nexport const deps = [Acme, Vault];\nexport function count(): number {\n\treturn maxBalloons;\n}\n'
 		);
 		writeFileSync(
 			join(srcDir, "main.server.ts"),
@@ -87,6 +93,16 @@ describe("Rojo aliases from file-level $path entries", () => {
 		const spawner = readFileSync(join(outDir, "balloon", "server", "spawner.luau"), "utf-8");
 		expect(spawner).toContain(
 			'require(game:GetService("ReplicatedStorage").shared.balloon.config)'
+		);
+	});
+
+	test("package mounts are auto-detected from the Rojo project per realm", () => {
+		const spawner = readFileSync(join(outDir, "balloon", "server", "spawner.luau"), "utf-8");
+		expect(spawner).toContain(
+			'require(game:GetService("ReplicatedStorage").shared.packages.Acme)'
+		);
+		expect(spawner).toContain(
+			'require(game:GetService("ServerScriptService").server.packages.SecretVault)'
 		);
 	});
 
