@@ -45,6 +45,9 @@ export const DOT_CALL_GLOBALS = new Set([
   "utf8",
   "bit32",
   "buffer",
+  "math",
+  "string",
+  "table",
 ]);
 
 /**
